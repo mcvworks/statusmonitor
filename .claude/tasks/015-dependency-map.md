@@ -1,6 +1,6 @@
 # 015 — Static Dependency Map & Data Model
 
-## Status: queued
+## Status: done
 
 ## Objective
 Create the static infrastructure dependency map that powers the blast radius feature, showing which services run on which major providers.
@@ -25,12 +25,17 @@ Create the static infrastructure dependency map that powers the blast radius fea
 - Add seed script to `package.json`: `"prisma": { "seed": "tsx prisma/seed.ts" }`
 
 ## Acceptance Criteria
-- [ ] Static dependency map covers all 5 major providers with 50+ services
-- [ ] Resolver returns affected services for a given provider
-- [ ] Seed script populates DependencyMap table
-- [ ] API route returns dependency data
-- [ ] Confidence levels assigned to each mapping
+- [x] Static dependency map covers all 5 major providers with 50+ services
+- [x] Resolver returns affected services for a given provider
+- [x] Seed script populates DependencyMap table
+- [x] API route returns dependency data
+- [x] Confidence levels assigned to each mapping
 - [ ] Commit: "feat: add static dependency map and resolver"
 
 ## Completion Notes
-_(to be filled after task completion)_
+- Static map covers 5 providers (AWS, Cloudflare, GCP, Azure, Fastly) with 62 total dependency mappings
+- Each mapping has confidence level (confirmed/likely/possible), optional regions, and source URL
+- Resolver supports: `getAffectedServices()`, `getProvidersForService()`, and `getAffectedServicesWithAlertStatus()` (cross-references active alerts)
+- Seed script at `prisma/seed.ts` populates DependencyMap table (verified: 62 entries)
+- API route at `/api/dependencies` supports filtering by provider, service, region, and active alert status
+- Added `"prisma": { "seed": "npx tsx prisma/seed.ts" }` to package.json

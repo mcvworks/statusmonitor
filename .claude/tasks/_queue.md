@@ -27,7 +27,7 @@
 - [x] [014 — DevOps & Security Providers (Datadog, PagerDuty, Docker Hub, npm, CISA KEV, NVD, Cloudflare Radar)](014-devops-security-providers.md)
 
 ## Phase 7: Blast Radius / Dependency Graph
-- [ ] [015 — Static Dependency Map & Data Model](015-dependency-map.md)
+- [x] [015 — Static Dependency Map & Data Model](015-dependency-map.md)
 - [ ] [016 — Blast Radius UI & Dashboard Integration](016-blast-radius-ui.md)
 
 ## Phase 8: Authenticated User Features
