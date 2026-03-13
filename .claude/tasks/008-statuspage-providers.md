@@ -1,6 +1,6 @@
 # 008 — Statuspage Providers (Cloudflare, GitHub, Atlassian, Slack)
 
-## Status: queued
+## Status: done
 
 ## Objective
 Implement the first batch of providers using the Statuspage API pattern. These all use the same Atlassian Statuspage format.
@@ -26,13 +26,18 @@ Implement the first batch of providers using the Statuspage API pattern. These a
   - Verify alert mapping (severity, title, timestamps, external IDs)
 
 ## Acceptance Criteria
-- [ ] All 4 providers fetch real data from their status pages
-- [ ] Alerts are correctly mapped to `AlertInput` format
-- [ ] Severity mapping is consistent across providers
-- [ ] Providers handle network errors gracefully
-- [ ] All registered in provider registry
-- [ ] Debug route shows live results
-- [ ] Commit: "feat: add Statuspage providers (Cloudflare, GitHub, Atlassian, Slack)"
+- [x] All 4 providers fetch real data from their status pages
+- [x] Alerts are correctly mapped to `AlertInput` format
+- [x] Severity mapping is consistent across providers
+- [x] Providers handle network errors gracefully
+- [x] All registered in provider registry
+- [x] Debug route shows live results
+- [x] Commit: "feat: add Statuspage providers (Cloudflare, GitHub, Atlassian, Slack)"
 
 ## Completion Notes
-_(to be filled after task completion)_
+- Created 4 statuspage providers extending `BaseStatuspageProvider`: Cloudflare, GitHub, Atlassian, Slack
+- Each provider configured with correct base URL, category (`cloud`), and poll tier (`fast`)
+- All providers registered in `src/lib/providers/registry.ts` on import
+- Created `/api/debug/providers` route that polls all registered providers and returns live results with timing info
+- All severity/status mapping inherited from `BaseStatuspageProvider` (consistent across all 4)
+- Error handling inherited from base class (10s timeout, returns empty array on failure)

@@ -11,10 +11,10 @@
 
 ## Phase 3: Polling Infrastructure
 - [x] [006 — Provider Interface & Base Classes](006-provider-base-classes.md)
-- [ ] [007 — Polling Engine, Dedup & Event Bus](007-polling-engine.md)
+- [x] [007 — Polling Engine, Dedup & Event Bus](007-polling-engine.md)
 
 ## Phase 4: First Providers (Cloud)
-- [ ] [008 — Statuspage Providers (Cloudflare, GitHub, Atlassian, Slack)](008-statuspage-providers.md)
+- [x] [008 — Statuspage Providers (Cloudflare, GitHub, Atlassian, Slack)](008-statuspage-providers.md)
 - [ ] [009 — RSS Providers (AWS, Azure, M365)](009-rss-providers.md)
 
 ## Phase 5: Public Dashboard UI
