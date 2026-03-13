@@ -3,18 +3,18 @@ import { z } from "zod";
 const envSchema = z.object({
   // ─── Required ──────────────────────────────────────────────
   DATABASE_URL: z.string().min(1),
-  NEXTAUTH_SECRET: z.string().min(1),
-  NEXTAUTH_URL: z.string().url(),
+  AUTH_SECRET: z.string().min(1),
+  AUTH_URL: z.string().url(),
 
   // ─── OAuth (optional — enable per provider) ────────────────
-  GOOGLE_CLIENT_ID: z.string().optional(),
-  GOOGLE_CLIENT_SECRET: z.string().optional(),
-  MICROSOFT_CLIENT_ID: z.string().optional(),
-  MICROSOFT_CLIENT_SECRET: z.string().optional(),
-  APPLE_CLIENT_ID: z.string().optional(),
-  APPLE_CLIENT_SECRET: z.string().optional(),
-  GITHUB_CLIENT_ID: z.string().optional(),
-  GITHUB_CLIENT_SECRET: z.string().optional(),
+  AUTH_GOOGLE_ID: z.string().optional(),
+  AUTH_GOOGLE_SECRET: z.string().optional(),
+  AUTH_MICROSOFT_ID: z.string().optional(),
+  AUTH_MICROSOFT_SECRET: z.string().optional(),
+  AUTH_APPLE_ID: z.string().optional(),
+  AUTH_APPLE_SECRET: z.string().optional(),
+  AUTH_GITHUB_ID: z.string().optional(),
+  AUTH_GITHUB_SECRET: z.string().optional(),
 
   // ─── Notifications (optional) ──────────────────────────────
   RESEND_API_KEY: z.string().optional(),

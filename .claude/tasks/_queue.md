@@ -3,10 +3,10 @@
 ## Phase 1: Project Setup
 - [x] [001 — Initialize Next.js Project](001-init-nextjs.md)
 - [x] [002 — Prisma Schema & Database Setup](002-prisma-schema.md)
-- [ ] [003 — Config Validation & Lib Scaffolding](003-config-scaffolding.md)
+- [x] [003 — Config Validation & Lib Scaffolding](003-config-scaffolding.md)
 
 ## Phase 2: Authentication
-- [ ] [004 — Auth.js Setup with OAuth Providers](004-authjs-setup.md)
+- [x] [004 — Auth.js Setup with OAuth Providers](004-authjs-setup.md)
 - [ ] [005 — Auth UI & Protected Routes](005-auth-ui-routes.md)
 
 ## Phase 3: Polling Infrastructure
