@@ -3,9 +3,17 @@ import { CloudflareProvider } from './cloudflare';
 import { GitHubProvider } from './github';
 import { AtlassianProvider } from './atlassian';
 import { SlackStatusProvider } from './slack-status';
+import { OktaProvider } from './okta';
+import { StripeProvider } from './stripe';
+import { DigitalOceanProvider } from './digitalocean';
+import { FastlyProvider } from './fastly';
+import { VercelProvider } from './vercel';
+import { NetlifyProvider } from './netlify';
 import { AWSProvider } from './aws';
 import { AzureProvider } from './azure';
 import { M365Provider } from './m365';
+import { GCPProvider } from './gcp';
+import { GoogleWorkspaceProvider } from './google-workspace';
 
 const providerRegistry = new Map<string, AlertProvider>();
 
@@ -18,11 +26,21 @@ registerProvider(new CloudflareProvider());
 registerProvider(new GitHubProvider());
 registerProvider(new AtlassianProvider());
 registerProvider(new SlackStatusProvider());
+registerProvider(new OktaProvider());
+registerProvider(new StripeProvider());
+registerProvider(new DigitalOceanProvider());
+registerProvider(new FastlyProvider());
+registerProvider(new VercelProvider());
+registerProvider(new NetlifyProvider());
 
 // Register RSS providers
 registerProvider(new AWSProvider());
 registerProvider(new AzureProvider());
 registerProvider(new M365Provider());
+
+// Register JSON providers
+registerProvider(new GCPProvider());
+registerProvider(new GoogleWorkspaceProvider());
 
 export function getProvider(name: string): AlertProvider | undefined {
   return providerRegistry.get(name);
