@@ -1,6 +1,6 @@
 # 014 — DevOps & Security Providers
 
-## Status: queued
+## Status: done
 
 ## Objective
 Implement providers for DevOps tools (Datadog, PagerDuty, Docker Hub, npm) and security feeds (CISA KEV, NVD, Cloudflare Radar).
@@ -39,12 +39,25 @@ Implement providers for DevOps tools (Datadog, PagerDuty, Docker Hub, npm) and s
 - Register all in provider registry
 
 ## Acceptance Criteria
-- [ ] All 7 providers implemented and tested
-- [ ] Security providers correctly map CVE data to alert format
-- [ ] Cloudflare Radar handles API key auth
-- [ ] NVD respects rate limits (with/without API key)
-- [ ] All registered in registry
-- [ ] Commit: "feat: add DevOps, security, and ISP providers"
+- [x] All 7 providers implemented and tested
+- [x] Security providers correctly map CVE data to alert format
+- [x] Cloudflare Radar handles API key auth
+- [x] NVD respects rate limits (with/without API key)
+- [x] All registered in registry
+- [x] Commit: "feat: add DevOps, security, and ISP providers"
 
 ## Completion Notes
-_(to be filled after task completion)_
+All 7 providers implemented and registered (22 total → 29 total):
+
+**DevOps (4 Statuspage-based):**
+- `datadog.ts` — status.datadoghq.com, category: devops, tier: slow
+- `pagerduty.ts` — status.pagerduty.com, category: devops, tier: slow
+- `dockerhub.ts` — www.dockerstatus.com, category: devops, tier: slow
+- `npm-registry.ts` — status.npmjs.org, category: devops, tier: slow
+
+**Security (2 JSON-based):**
+- `cisa-kev.ts` — Fetches KEV catalog, filters last 30 days, severity based on due date urgency + ransomware flag
+- `nvd.ts` — Fetches CVEs from last 24h with CVSS ≥ 7.0, supports optional NVD_API_KEY for higher rate limits
+
+**ISP (1 JSON-based):**
+- `cloudflare-radar.ts` — Fetches outage annotations, requires CLOUDFLARE_RADAR_API_KEY, severity by scope (country/region/city)

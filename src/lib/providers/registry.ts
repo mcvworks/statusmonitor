@@ -14,6 +14,13 @@ import { AzureProvider } from './azure';
 import { M365Provider } from './m365';
 import { GCPProvider } from './gcp';
 import { GoogleWorkspaceProvider } from './google-workspace';
+import { DatadogProvider } from './datadog';
+import { PagerDutyProvider } from './pagerduty';
+import { DockerHubProvider } from './dockerhub';
+import { NpmRegistryProvider } from './npm-registry';
+import { CISAKEVProvider } from './cisa-kev';
+import { NVDProvider } from './nvd';
+import { CloudflareRadarProvider } from './cloudflare-radar';
 
 const providerRegistry = new Map<string, AlertProvider>();
 
@@ -41,6 +48,19 @@ registerProvider(new M365Provider());
 // Register JSON providers
 registerProvider(new GCPProvider());
 registerProvider(new GoogleWorkspaceProvider());
+
+// Register DevOps providers
+registerProvider(new DatadogProvider());
+registerProvider(new PagerDutyProvider());
+registerProvider(new DockerHubProvider());
+registerProvider(new NpmRegistryProvider());
+
+// Register Security providers
+registerProvider(new CISAKEVProvider());
+registerProvider(new NVDProvider());
+
+// Register ISP provider
+registerProvider(new CloudflareRadarProvider());
 
 export function getProvider(name: string): AlertProvider | undefined {
   return providerRegistry.get(name);

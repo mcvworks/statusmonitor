@@ -23,8 +23,8 @@
 - [x] [012 — SSE Live Updates & Search/Filter](012-sse-search-filter.md)
 
 ## Phase 6: Additional Providers
-- [ ] [013 — Remaining Cloud Providers (GCP, Okta, Stripe, Google Workspace, DigitalOcean, Fastly, Vercel/Netlify)](013-remaining-cloud-providers.md)
-- [ ] [014 — DevOps & Security Providers (Datadog, PagerDuty, Docker Hub, npm, CISA KEV, NVD, Cloudflare Radar)](014-devops-security-providers.md)
+- [x] [013 — Remaining Cloud Providers (GCP, Okta, Stripe, Google Workspace, DigitalOcean, Fastly, Vercel/Netlify)](013-remaining-cloud-providers.md)
+- [x] [014 — DevOps & Security Providers (Datadog, PagerDuty, Docker Hub, npm, CISA KEV, NVD, Cloudflare Radar)](014-devops-security-providers.md)
 
 ## Phase 7: Blast Radius / Dependency Graph
 - [ ] [015 — Static Dependency Map & Data Model](015-dependency-map.md)
