@@ -12,6 +12,8 @@ import { SearchFilter, type FilterValues } from "@/components/dashboard/SearchFi
 import { AlertList } from "@/components/dashboard/AlertList";
 import { StatusOverview } from "@/components/dashboard/StatusOverview";
 import { BlastRadiusSummary } from "@/components/blast-radius/BlastRadiusSummary";
+import { PersonalBlastRadius } from "@/components/blast-radius/PersonalBlastRadius";
+import { useStack } from "@/hooks/useStack";
 import { SavedViewSwitcher } from "@/components/dashboard/SavedViewSwitcher";
 import { DashboardCustomizer } from "@/components/dashboard/DashboardCustomizer";
 import { PinnedServices } from "@/components/dashboard/PinnedServices";
@@ -19,6 +21,8 @@ import { PinnedServices } from "@/components/dashboard/PinnedServices";
 export function CustomDashboard() {
   const { status } = useSSE();
   const { views, createView, updateView, deleteView } = useDashboardViews();
+  const { stack } = useStack();
+  const hasStack = stack.length > 0;
 
   const [activeViewId, setActiveViewId] = useState<string | null>(() => {
     // Will be updated once views load
@@ -145,8 +149,8 @@ export function CustomDashboard() {
       {/* Pinned services (from active view) */}
       <PinnedServices pinnedServiceKeys={viewPinnedServices} />
 
-      {/* Blast radius summary */}
-      <BlastRadiusSummary />
+      {/* Blast radius — personalized if user has stack entries */}
+      {hasStack ? <PersonalBlastRadius /> : <BlastRadiusSummary />}
 
       {/* Provider status grid — filtered by view */}
       <StatusOverview sourceFilter={viewSourceFilter} />
