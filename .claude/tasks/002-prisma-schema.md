@@ -1,6 +1,6 @@
 # 002 — Prisma Schema & Database Setup
 
-## Status: queued
+## Status: done
 
 ## Objective
 Define the complete Prisma schema with all models and run the initial migration to create the SQLite database.
@@ -23,11 +23,19 @@ Define the complete Prisma schema with all models and run the initial migration 
 - Verify with `npx prisma studio`
 
 ## Acceptance Criteria
-- [ ] All models defined in schema.prisma
-- [ ] Migration runs cleanly, `dev.db` created
-- [ ] `db.ts` exports a singleton Prisma client
-- [ ] `npx prisma studio` opens and shows all tables
-- [ ] Relations are correct (User → UserDashboard, UserStack, etc.)
+- [x] All models defined in schema.prisma
+- [x] Migration runs cleanly, `dev.db` created
+- [x] `db.ts` exports a singleton Prisma client
+- [x] `npx prisma studio` opens and shows all tables
+- [x] Relations are correct (User → UserDashboard, UserStack, etc.)
 
 ## Completion Notes
-_(to be filled after task completion)_
+- Initialized Prisma with SQLite provider via `npx prisma init --datasource-provider sqlite`
+- Defined 13 models: User, Account, Session, VerificationToken (Auth.js), Alert, UserDashboard, UserStack, UserNotificationPref, UserAlertState, PushSubscription, NotificationLog, PollLog, DependencyMap
+- All relations configured with cascade deletes on user/alert references
+- JSON fields stored as String (SQLite limitation)
+- Alert has `@@unique([source, externalId])` for dedup; UserAlertState has `@@unique([userId, alertId])`
+- Created `src/lib/db.ts` with Prisma singleton pattern for dev hot reload
+- Migration `20260313044340_init` applied, `dev.db` created
+- Added `*.db` and `*.db-journal` to `.gitignore`
+- Installed `dotenv` dependency (required by `prisma.config.ts`)

@@ -1,8 +1,8 @@
 # StatusMonitor — Task Queue
 
 ## Phase 1: Project Setup
-- [ ] [001 — Initialize Next.js Project](001-init-nextjs.md)
-- [ ] [002 — Prisma Schema & Database Setup](002-prisma-schema.md)
+- [x] [001 — Initialize Next.js Project](001-init-nextjs.md)
+- [x] [002 — Prisma Schema & Database Setup](002-prisma-schema.md)
 - [ ] [003 — Config Validation & Lib Scaffolding](003-config-scaffolding.md)
 
 ## Phase 2: Authentication
