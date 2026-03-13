@@ -1,6 +1,7 @@
 import { schedule, type ScheduledTask } from "node-cron";
 import type { AlertProvider } from "@/lib/providers/types";
 import { pollAll } from "./engine";
+import { initNotifications } from "@/lib/notifications/integration";
 
 let fastTask: ScheduledTask | null = null;
 let slowTask: ScheduledTask | null = null;
@@ -35,6 +36,9 @@ export function startScheduler() {
   console.log(
     `[scheduler] Starting with ${providers.length} registered providers`,
   );
+
+  // Initialize notification dispatcher (listens to event bus)
+  initNotifications();
 
   // Initial poll on startup
   pollAll("fast", providers).then((results) => {

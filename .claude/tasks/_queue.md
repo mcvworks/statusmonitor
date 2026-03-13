@@ -36,7 +36,7 @@
 - [x] [019 — Alert Acknowledgment & Snooze](019-alert-ack-snooze.md)
 
 ## Phase 9: Notifications (Auth-Only)
-- [ ] [020 — Notification Dispatcher & Email Channel](020-notification-email.md)
+- [x] [020 — Notification Dispatcher & Email Channel](020-notification-email.md)
 - [ ] [021 — Slack & Teams Webhook Channels](021-slack-teams-webhooks.md)
 - [ ] [022 — Browser Push Notifications](022-browser-push.md)
 
