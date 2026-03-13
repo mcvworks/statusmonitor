@@ -18,7 +18,7 @@
 - [x] [009 — RSS Providers (AWS, Azure, M365)](009-rss-providers.md)
 
 ## Phase 5: Public Dashboard UI
-- [ ] [010 — Layout, Header & Sidebar](010-layout-shell.md)
+- [x] [010 — Layout, Header & Sidebar](010-layout-shell.md)
 - [ ] [011 — Dashboard Page & Alert Components](011-dashboard-alerts.md)
 - [ ] [012 — SSE Live Updates & Search/Filter](012-sse-search-filter.md)
 

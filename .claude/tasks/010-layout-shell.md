@@ -1,6 +1,6 @@
 # 010 — Layout, Header & Sidebar
 
-## Status: queued
+## Status: done
 
 ## Objective
 Build the app shell with header, sidebar navigation, and root layout that works for both public and authenticated views.
@@ -33,15 +33,25 @@ Build the app shell with header, sidebar navigation, and root layout that works 
   - Dark mode CSS variables (implement toggle in Phase 10)
 
 ## Acceptance Criteria
-- [ ] App shell renders with header, sidebar, content area
-- [ ] Navigation links work
-- [ ] Responsive layout (sidebar collapses on mobile)
-- [ ] Auth state reflected in header (sign in vs user menu)
-- [ ] Severity/status color system defined
-- [ ] Footer includes "Built by Ducktyped" backlink
-- [ ] Organization JSON-LD structured data present
-- [ ] Fonts match Ducktyped (Orbitron, Space Grotesk, Fira Code)
-- [ ] Commit: "feat: add app layout shell with header and sidebar"
+- [x] App shell renders with header, sidebar, content area
+- [x] Navigation links work
+- [x] Responsive layout (sidebar collapses on mobile)
+- [x] Auth state reflected in header (sign in vs user menu)
+- [x] Severity/status color system defined
+- [x] Footer includes "Built by Ducktyped" backlink
+- [x] Organization JSON-LD structured data present
+- [x] Fonts match Ducktyped (Orbitron, Space Grotesk, Fira Code)
+- [x] Commit: "feat: add app layout shell with header and sidebar"
 
 ## Completion Notes
-_(to be filled after task completion)_
+All layout components created and wired into root layout:
+
+- **Header** (`src/components/layout/Header.tsx`): Logo with Orbitron font, Dashboard/History nav links, live indicator dot, last-updated timestamp, auth-aware (SignInButton vs UserMenu), responsive hamburger menu on mobile.
+- **Sidebar** (`src/components/layout/Sidebar.tsx`): Collapsible sidebar with category sections (Cloud/DevOps/Security/ISP), provider lists with status dots, auth-only My Stack/Settings links. Hidden on mobile, toggle on desktop.
+- **Footer** (`src/components/layout/Footer.tsx`): "Built by Ducktyped" backlink (standard `<a>`, no nofollow, no target), data source attribution.
+- **AppShell** (`src/components/layout/AppShell.tsx`): Client component orchestrating Header + Sidebar + main content + Footer with sidebar collapse state.
+- **Root layout** (`src/app/layout.tsx`): Updated with AppShell wrapper, Organization JSON-LD structured data, favicon metadata.
+- **globals.css**: Full Lunar-Tech design token system — brand/severity/surface/text color tokens in `@theme inline`, glassmorphism card utility, corner bracket decoration, section divider, status dots, tech grid background, light-theme variables, custom scrollbar.
+- **Home page** (`src/app/page.tsx`): Replaced Next.js placeholder with hero section and summary cards using design system classes.
+
+Build passes cleanly.
