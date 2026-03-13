@@ -33,7 +33,11 @@ const STATUS_STYLES: Record<
   unknown: { dot: "bg-text-muted", label: "Unknown" },
 };
 
-export function StatusOverview() {
+interface StatusOverviewProps {
+  sourceFilter?: string[];
+}
+
+export function StatusOverview({ sourceFilter }: StatusOverviewProps = {}) {
   const { alerts, isLoading } = useAlerts();
 
   // Group alerts by source
@@ -43,8 +47,12 @@ export function StatusOverview() {
     alertsBySource[alert.source].push(alert);
   }
 
-  // Build provider status list (only providers with at least one registered provider)
-  const providerEntries = Object.entries(PROVIDERS).map(([key, meta]) => {
+  // Build provider status list, optionally filtered by selected services
+  const entries = Object.entries(PROVIDERS);
+  const filteredEntries = sourceFilter
+    ? entries.filter(([key]) => sourceFilter.includes(key))
+    : entries;
+  const providerEntries = filteredEntries.map(([key, meta]) => {
     const status = alertsBySource[key]
       ? deriveStatus(alertsBySource[key])
       : "operational";

@@ -28,6 +28,7 @@ interface AlertListProps {
   severity?: string;
   status?: string;
   search?: string;
+  sourceFilter?: string[];
 }
 
 export function AlertList({
@@ -35,6 +36,7 @@ export function AlertList({
   severity,
   status,
   search,
+  sourceFilter,
 }: AlertListProps = {}) {
   const { alerts, isLoading, isError } = useAlerts({
     category,
@@ -42,16 +44,23 @@ export function AlertList({
     status,
   });
 
-  // Client-side text search for instant filtering
+  // Client-side filtering: text search + source filter from saved views
   const filtered = useMemo(() => {
-    if (!search) return alerts;
-    const q = search.toLowerCase();
-    return alerts.filter(
-      (a) =>
-        a.title.toLowerCase().includes(q) ||
-        (a.description && a.description.toLowerCase().includes(q)),
-    );
-  }, [alerts, search]);
+    let result = alerts;
+    if (sourceFilter && sourceFilter.length > 0) {
+      const allowed = new Set(sourceFilter);
+      result = result.filter((a) => allowed.has(a.source));
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (a) =>
+          a.title.toLowerCase().includes(q) ||
+          (a.description && a.description.toLowerCase().includes(q)),
+      );
+    }
+    return result;
+  }, [alerts, search, sourceFilter]);
 
   if (isLoading) {
     return (
