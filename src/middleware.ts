@@ -9,7 +9,7 @@ const publicRoutes = [
   "/api/dependencies",
 ];
 
-const authRoutes = ["/auth/signin", "/auth/verify"];
+const authRoutes = ["/auth/signin", "/auth/verify-request", "/auth/error"];
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
