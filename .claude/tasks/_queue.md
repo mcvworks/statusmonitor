@@ -7,10 +7,10 @@
 
 ## Phase 2: Authentication
 - [x] [004 — Auth.js Setup with OAuth Providers](004-authjs-setup.md)
-- [ ] [005 — Auth UI & Protected Routes](005-auth-ui-routes.md)
+- [x] [005 — Auth UI & Protected Routes](005-auth-ui-routes.md)
 
 ## Phase 3: Polling Infrastructure
-- [ ] [006 — Provider Interface & Base Classes](006-provider-base-classes.md)
+- [x] [006 — Provider Interface & Base Classes](006-provider-base-classes.md)
 - [ ] [007 — Polling Engine, Dedup & Event Bus](007-polling-engine.md)
 
 ## Phase 4: First Providers (Cloud)

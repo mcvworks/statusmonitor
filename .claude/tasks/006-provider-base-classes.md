@@ -1,6 +1,6 @@
 # 006 — Provider Interface & Base Classes
 
-## Status: queued
+## Status: done
 
 ## Objective
 Define the provider interface and create reusable base classes for the three main data source patterns: Statuspage API, RSS feeds, and JSON feeds.
@@ -30,12 +30,19 @@ Define the provider interface and create reusable base classes for the three mai
   - `getProvidersByCategory()`, `getProvidersByPollTier()` helpers
 
 ## Acceptance Criteria
-- [ ] `AlertProvider` interface is clean and minimal
-- [ ] All three base classes handle errors gracefully (return empty array, log error)
-- [ ] Base classes handle timeouts (10s default)
-- [ ] Registry can list/filter providers
-- [ ] No TypeScript errors
-- [ ] Commit: "feat: add provider interface and base classes"
+- [x] `AlertProvider` interface is clean and minimal
+- [x] All three base classes handle errors gracefully (return empty array, log error)
+- [x] Base classes handle timeouts (10s default)
+- [x] Registry can list/filter providers
+- [x] No TypeScript errors
+- [x] Commit: "feat: add provider interface and base classes"
 
 ## Completion Notes
-_(to be filled after task completion)_
+All files created in `src/lib/providers/`:
+- `types.ts` — `AlertProvider` interface, `AlertInput` type (matching Prisma Alert model), `ProviderMetadata` type
+- `base-statuspage.ts` — `BaseStatuspageProvider` fetches `/api/v2/incidents.json`, maps Statuspage impact → severity, handles component names in descriptions
+- `base-rss.ts` — `BaseRSSProvider` uses `rss-parser` with 10s timeout, subclasses implement `mapItem()` for provider-specific mapping
+- `base-json.ts` — `BaseJSONProvider<T>` with optional Zod schema validation, subclasses implement `mapResponse()`
+- `registry.ts` — `providerRegistry` Map with `registerProvider()`, `getProvidersByCategory()`, `getProvidersByPollTier()` helpers
+
+All base classes return `[]` on error and log to console. All use 10s timeouts (AbortController for fetch-based, parser config for RSS).
