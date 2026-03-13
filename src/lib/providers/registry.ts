@@ -3,6 +3,9 @@ import { CloudflareProvider } from './cloudflare';
 import { GitHubProvider } from './github';
 import { AtlassianProvider } from './atlassian';
 import { SlackStatusProvider } from './slack-status';
+import { AWSProvider } from './aws';
+import { AzureProvider } from './azure';
+import { M365Provider } from './m365';
 
 const providerRegistry = new Map<string, AlertProvider>();
 
@@ -15,6 +18,11 @@ registerProvider(new CloudflareProvider());
 registerProvider(new GitHubProvider());
 registerProvider(new AtlassianProvider());
 registerProvider(new SlackStatusProvider());
+
+// Register RSS providers
+registerProvider(new AWSProvider());
+registerProvider(new AzureProvider());
+registerProvider(new M365Provider());
 
 export function getProvider(name: string): AlertProvider | undefined {
   return providerRegistry.get(name);

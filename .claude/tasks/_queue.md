@@ -15,7 +15,7 @@
 
 ## Phase 4: First Providers (Cloud)
 - [x] [008 — Statuspage Providers (Cloudflare, GitHub, Atlassian, Slack)](008-statuspage-providers.md)
-- [ ] [009 — RSS Providers (AWS, Azure, M365)](009-rss-providers.md)
+- [x] [009 — RSS Providers (AWS, Azure, M365)](009-rss-providers.md)
 
 ## Phase 5: Public Dashboard UI
 - [ ] [010 — Layout, Header & Sidebar](010-layout-shell.md)
