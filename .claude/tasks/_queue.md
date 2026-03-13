@@ -19,7 +19,7 @@
 
 ## Phase 5: Public Dashboard UI
 - [x] [010 — Layout, Header & Sidebar](010-layout-shell.md)
-- [ ] [011 — Dashboard Page & Alert Components](011-dashboard-alerts.md)
+- [x] [011 — Dashboard Page & Alert Components](011-dashboard-alerts.md)
 - [ ] [012 — SSE Live Updates & Search/Filter](012-sse-search-filter.md)
 
 ## Phase 6: Additional Providers

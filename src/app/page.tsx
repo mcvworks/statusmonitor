@@ -1,6 +1,38 @@
 import { Activity, AlertTriangle, Clock, Shield } from "lucide-react";
+import { prisma } from "@/lib/db";
+import { StatusOverview } from "@/components/dashboard/StatusOverview";
+import { AlertList } from "@/components/dashboard/AlertList";
 
-export default function Home() {
+async function getStats() {
+  const [activeCount, securityCount, lastPoll] = await Promise.all([
+    prisma.alert.count({
+      where: { status: { not: "resolved" } },
+    }),
+    prisma.alert.count({
+      where: { category: "security", status: { not: "resolved" } },
+    }),
+    prisma.pollLog.findFirst({
+      orderBy: { completedAt: "desc" },
+      where: { completedAt: { not: null } },
+      select: { completedAt: true },
+    }),
+  ]);
+
+  return { activeCount, securityCount, lastPoll: lastPoll?.completedAt };
+}
+
+function formatPollTime(date: Date | null | undefined): string {
+  if (!date) return "—";
+  const diff = Date.now() - new Date(date).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "Just now";
+  if (mins === 1) return "1 min ago";
+  return `${mins} min ago`;
+}
+
+export default async function Home() {
+  const { activeCount, securityCount, lastPoll } = await getStats();
+
   return (
     <div className="space-y-6">
       {/* Hero */}
@@ -28,26 +60,25 @@ export default function Home() {
         <SummaryCard
           icon={<AlertTriangle className="h-5 w-5 text-critical" />}
           label="Active Incidents"
-          value="—"
+          value={String(activeCount)}
         />
         <SummaryCard
           icon={<Clock className="h-5 w-5 text-minor" />}
           label="Last Poll"
-          value="—"
+          value={formatPollTime(lastPoll)}
         />
         <SummaryCard
           icon={<Shield className="h-5 w-5 text-info" />}
           label="Security Advisories"
-          value="—"
+          value={String(securityCount)}
         />
       </div>
 
-      {/* Placeholder for alert list (task 011) */}
-      <div className="glass-card flex items-center justify-center p-12 text-text-muted">
-        <p className="font-[family-name:var(--font-mono)] text-sm">
-          Alert feed will appear here once dashboard components are built.
-        </p>
-      </div>
+      {/* Provider status grid */}
+      <StatusOverview />
+
+      {/* Alert feed */}
+      <AlertList />
     </div>
   );
 }
