@@ -1,6 +1,6 @@
 # 012 — SSE Live Updates & Search/Filter
 
-## Status: queued
+## Status: done
 
 ## Objective
 Add real-time updates via Server-Sent Events and search/filter functionality to the dashboard.
@@ -30,13 +30,19 @@ Add real-time updates via Server-Sent Events and search/filter functionality to 
 - Ensure filters work both client-side (for speed) and via API (for pagination)
 
 ## Acceptance Criteria
-- [ ] SSE endpoint streams real-time alert events
-- [ ] useSSE hook connects, reconnects, and merges updates
-- [ ] LiveIndicator shows connection status
-- [ ] Search filters alerts by text
-- [ ] Category/severity/status filters work
-- [ ] Filters reflect in URL params
-- [ ] Commit: "feat: add SSE live updates and search/filter UI"
+- [x] SSE endpoint streams real-time alert events
+- [x] useSSE hook connects, reconnects, and merges updates
+- [x] LiveIndicator shows connection status
+- [x] Search filters alerts by text
+- [x] Category/severity/status filters work
+- [x] Filters reflect in URL params
+- [x] Commit: "feat: add SSE live updates and search/filter UI"
 
 ## Completion Notes
-_(to be filled after task completion)_
+- SSE endpoint at `/api/alerts/sse` streams `alert:new`, `alert:updated`, `alert:resolved` events from the event bus with heartbeat keepalive
+- `useSSE` hook auto-connects with exponential backoff reconnection (up to 10 retries), invalidates SWR cache on events
+- `LiveIndicator` shows connected/connecting/disconnected status with colored dot + label
+- `SearchFilter` with debounced text search (300ms), category/severity/status dropdowns, active filter chips, URL query param sync
+- `AlertList` updated to accept filter props and perform client-side text search for instant results
+- `DashboardClient` wrapper ties SSE + search/filter + StatusOverview + AlertList together
+- Dashboard page (`page.tsx`) updated to use DashboardClient for all interactive parts

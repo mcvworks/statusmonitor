@@ -1,7 +1,6 @@
 import { Activity, AlertTriangle, Clock, Shield } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { StatusOverview } from "@/components/dashboard/StatusOverview";
-import { AlertList } from "@/components/dashboard/AlertList";
+import { DashboardClient } from "@/components/dashboard/DashboardClient";
 
 async function getStats() {
   const [activeCount, securityCount, lastPoll] = await Promise.all([
@@ -74,11 +73,8 @@ export default async function Home() {
         />
       </div>
 
-      {/* Provider status grid */}
-      <StatusOverview />
-
-      {/* Alert feed */}
-      <AlertList />
+      {/* SSE-connected search/filter + provider grid + alert feed */}
+      <DashboardClient />
     </div>
   );
 }

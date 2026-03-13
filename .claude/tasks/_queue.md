@@ -20,7 +20,7 @@
 ## Phase 5: Public Dashboard UI
 - [x] [010 — Layout, Header & Sidebar](010-layout-shell.md)
 - [x] [011 — Dashboard Page & Alert Components](011-dashboard-alerts.md)
-- [ ] [012 — SSE Live Updates & Search/Filter](012-sse-search-filter.md)
+- [x] [012 — SSE Live Updates & Search/Filter](012-sse-search-filter.md)
 
 ## Phase 6: Additional Providers
 - [ ] [013 — Remaining Cloud Providers (GCP, Okta, Stripe, Google Workspace, DigitalOcean, Fastly, Vercel/Netlify)](013-remaining-cloud-providers.md)

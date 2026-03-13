@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { CheckCircle } from "lucide-react";
 import type { AlertCategory, SerializedAlert } from "@/lib/alert-schema";
 import { useAlerts } from "@/hooks/useAlerts";
@@ -22,8 +23,35 @@ function groupByCategory(alerts: SerializedAlert[]) {
   return groups;
 }
 
-export function AlertList() {
-  const { alerts, isLoading, isError } = useAlerts();
+interface AlertListProps {
+  category?: string;
+  severity?: string;
+  status?: string;
+  search?: string;
+}
+
+export function AlertList({
+  category,
+  severity,
+  status,
+  search,
+}: AlertListProps = {}) {
+  const { alerts, isLoading, isError } = useAlerts({
+    category,
+    severity,
+    status,
+  });
+
+  // Client-side text search for instant filtering
+  const filtered = useMemo(() => {
+    if (!search) return alerts;
+    const q = search.toLowerCase();
+    return alerts.filter(
+      (a) =>
+        a.title.toLowerCase().includes(q) ||
+        (a.description && a.description.toLowerCase().includes(q)),
+    );
+  }, [alerts, search]);
 
   if (isLoading) {
     return (
@@ -48,21 +76,25 @@ export function AlertList() {
     );
   }
 
-  if (alerts.length === 0) {
+  if (filtered.length === 0) {
     return (
       <div className="glass-card corner-brackets flex flex-col items-center justify-center p-12">
         <CheckCircle className="mb-3 h-8 w-8 text-secondary" />
         <p className="text-lg font-medium text-text-primary">
-          All Systems Operational
+          {search || category || severity || status
+            ? "No Matching Alerts"
+            : "All Systems Operational"}
         </p>
         <p className="mt-1 text-sm text-text-muted">
-          No active incidents detected across all monitored services.
+          {search || category || severity || status
+            ? "Try adjusting your search or filters."
+            : "No active incidents detected across all monitored services."}
         </p>
       </div>
     );
   }
 
-  const grouped = groupByCategory(alerts);
+  const grouped = groupByCategory(filtered);
 
   return (
     <div className="space-y-6">
