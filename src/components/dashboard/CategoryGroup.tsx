@@ -1,10 +1,10 @@
-import type { AlertCategory, SerializedAlert } from "@/lib/alert-schema";
+import type { AlertCategory, SerializedAlertWithState } from "@/lib/alert-schema";
 import { CATEGORY_LABELS } from "@/lib/constants";
 import { AlertCard } from "./AlertCard";
 
 interface CategoryGroupProps {
   category: AlertCategory;
-  alerts: SerializedAlert[];
+  alerts: SerializedAlertWithState[];
 }
 
 export function CategoryGroup({ category, alerts }: CategoryGroupProps) {

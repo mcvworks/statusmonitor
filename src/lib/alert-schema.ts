@@ -54,3 +54,17 @@ export const SerializedAlertSchema = z.object({
 });
 
 export type SerializedAlert = z.infer<typeof SerializedAlertSchema>;
+
+// ─── User Alert State ──────────────────────────────────────
+
+export const UserAlertStateValue = z.enum(["acknowledged", "snoozed", "dismissed"]);
+export type UserAlertStateValue = z.infer<typeof UserAlertStateValue>;
+
+export interface AlertUserState {
+  state: UserAlertStateValue;
+  snoozedUntil: string | null;
+}
+
+export type SerializedAlertWithState = SerializedAlert & {
+  userState: AlertUserState | null;
+};

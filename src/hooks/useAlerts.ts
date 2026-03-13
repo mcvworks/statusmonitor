@@ -1,5 +1,5 @@
 import useSWR from "swr";
-import type { SerializedAlert } from "@/lib/alert-schema";
+import type { SerializedAlertWithState } from "@/lib/alert-schema";
 
 interface AlertFilters {
   category?: string;
@@ -11,7 +11,7 @@ interface AlertFilters {
 }
 
 interface AlertsResponse {
-  alerts: SerializedAlert[];
+  alerts: SerializedAlertWithState[];
   total: number;
   limit: number;
   offset: number;

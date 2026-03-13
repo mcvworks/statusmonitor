@@ -1,6 +1,6 @@
 # 019 — Alert Acknowledgment & Snooze (Auth Required)
 
-## Status: queued
+## Status: done
 
 ## Objective
 Allow authenticated users to acknowledge, snooze, or dismiss alerts so they can focus on unhandled incidents.
@@ -28,13 +28,21 @@ Allow authenticated users to acknowledge, snooze, or dismiss alerts so they can 
 - Handle snooze expiry: alerts reappear when snoozedUntil passes
 
 ## Acceptance Criteria
-- [ ] Acknowledge/snooze/dismiss buttons appear for authenticated users only
-- [ ] Actions persist across page reloads (stored in DB)
-- [ ] Snoozed alerts reappear after expiry
-- [ ] Dismissed alerts reappear when alert status changes
-- [ ] "Show dismissed" toggle works
-- [ ] Public dashboard unaffected (no action buttons)
-- [ ] Commit: "feat: add alert acknowledgment, snooze, and dismiss"
+- [x] Acknowledge/snooze/dismiss buttons appear for authenticated users only
+- [x] Actions persist across page reloads (stored in DB)
+- [x] Snoozed alerts reappear after expiry
+- [x] Dismissed alerts reappear when alert status changes
+- [x] "Show dismissed" toggle works
+- [x] Public dashboard unaffected (no action buttons)
+- [x] Commit: "feat: add alert acknowledgment, snooze, and dismiss"
 
 ## Completion Notes
-_(to be filled after task completion)_
+- Created `src/app/api/alerts/[id]/route.ts` with PATCH (ack/snooze/dismiss) and DELETE (clear state) endpoints, both auth-protected
+- Updated `src/app/api/alerts/route.ts` to include user alert states when authenticated (joined via Prisma include)
+- Added `SerializedAlertWithState` type and `UserAlertStateValue` enum to `src/lib/alert-schema.ts`
+- Created `src/hooks/useAlertActions.ts` with `acknowledge`, `snooze`, `dismiss`, and `clear` functions that revalidate SWR cache
+- Updated `AlertCard` with acknowledge (check), snooze (clock with dropdown), dismiss (x), and undo buttons — only visible for authenticated users on active alerts
+- Acknowledged alerts show with reduced opacity and "Acknowledged" badge
+- Updated `AlertList` to filter out snoozed (unexpired) and dismissed alerts, with a "Show/Hide dismissed" toggle and count badge
+- Updated `CategoryGroup` and `useAlerts` to use `SerializedAlertWithState` type
+- Snooze expiry handled client-side: alerts reappear when `snoozedUntil` passes current time

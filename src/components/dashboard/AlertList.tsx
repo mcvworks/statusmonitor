@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
-import { CheckCircle } from "lucide-react";
-import type { AlertCategory, SerializedAlert } from "@/lib/alert-schema";
+import { useMemo, useState } from "react";
+import { CheckCircle, Eye, EyeOff } from "lucide-react";
+import { useSession } from "next-auth/react";
+import type { AlertCategory, SerializedAlertWithState } from "@/lib/alert-schema";
 import { useAlerts } from "@/hooks/useAlerts";
 import { CategoryGroup } from "./CategoryGroup";
 
@@ -13,14 +14,19 @@ const CATEGORY_ORDER: AlertCategory[] = [
   "isp",
 ];
 
-function groupByCategory(alerts: SerializedAlert[]) {
-  const groups: Record<string, SerializedAlert[]> = {};
+function groupByCategory(alerts: SerializedAlertWithState[]) {
+  const groups: Record<string, SerializedAlertWithState[]> = {};
   for (const alert of alerts) {
     const cat = alert.category;
     if (!groups[cat]) groups[cat] = [];
     groups[cat].push(alert);
   }
   return groups;
+}
+
+function isSnoozeExpired(snoozedUntil: string | null): boolean {
+  if (!snoozedUntil) return true;
+  return new Date(snoozedUntil) <= new Date();
 }
 
 interface AlertListProps {
@@ -43,10 +49,13 @@ export function AlertList({
     severity,
     status,
   });
+  const { data: session } = useSession();
+  const [showDismissed, setShowDismissed] = useState(false);
 
-  // Client-side filtering: text search + source filter from saved views
-  const filtered = useMemo(() => {
+  // Client-side filtering: text search + source filter + alert states
+  const { visible, hiddenCount } = useMemo(() => {
     let result = alerts;
+
     if (sourceFilter && sourceFilter.length > 0) {
       const allowed = new Set(sourceFilter);
       result = result.filter((a) => allowed.has(a.source));
@@ -59,8 +68,35 @@ export function AlertList({
           (a.description && a.description.toLowerCase().includes(q)),
       );
     }
-    return result;
-  }, [alerts, search, sourceFilter]);
+
+    // Filter out snoozed/dismissed alerts for authenticated users
+    if (session?.user) {
+      let hidden = 0;
+      const filtered = result.filter((a) => {
+        if (!a.userState) return true;
+
+        // Snoozed: hide if snooze hasn't expired
+        if (
+          a.userState.state === "snoozed" &&
+          !isSnoozeExpired(a.userState.snoozedUntil)
+        ) {
+          hidden++;
+          return showDismissed;
+        }
+
+        // Dismissed: hide unless alert status changed (resolved → reactivated)
+        if (a.userState.state === "dismissed") {
+          hidden++;
+          return showDismissed;
+        }
+
+        return true;
+      });
+      return { visible: filtered, hiddenCount: hidden };
+    }
+
+    return { visible: result, hiddenCount: 0 };
+  }, [alerts, search, sourceFilter, session?.user, showDismissed]);
 
   if (isLoading) {
     return (
@@ -85,7 +121,7 @@ export function AlertList({
     );
   }
 
-  if (filtered.length === 0) {
+  if (visible.length === 0 && hiddenCount === 0) {
     return (
       <div className="glass-card corner-brackets flex flex-col items-center justify-center p-12">
         <CheckCircle className="mb-3 h-8 w-8 text-secondary" />
@@ -103,7 +139,7 @@ export function AlertList({
     );
   }
 
-  const grouped = groupByCategory(filtered);
+  const grouped = groupByCategory(visible);
 
   return (
     <div className="space-y-6">
@@ -115,6 +151,32 @@ export function AlertList({
             alerts={grouped[cat]}
           />
         ) : null,
+      )}
+
+      {/* Hidden alerts banner */}
+      {session?.user && hiddenCount > 0 && (
+        <div className="flex items-center justify-between rounded-lg border border-border bg-card-solid/50 px-4 py-2.5">
+          <span className="font-[family-name:var(--font-mono)] text-xs text-text-muted">
+            {hiddenCount} alert{hiddenCount !== 1 ? "s" : ""}{" "}
+            {showDismissed ? "shown" : "hidden"} (snoozed/dismissed)
+          </span>
+          <button
+            onClick={() => setShowDismissed(!showDismissed)}
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-[family-name:var(--font-mono)] text-[11px] text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
+          >
+            {showDismissed ? (
+              <>
+                <EyeOff className="h-3 w-3" />
+                Hide
+              </>
+            ) : (
+              <>
+                <Eye className="h-3 w-3" />
+                Show
+              </>
+            )}
+          </button>
+        </div>
       )}
     </div>
   );

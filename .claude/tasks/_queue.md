@@ -31,9 +31,9 @@
 - [x] [016 — Blast Radius UI & Dashboard Integration](016-blast-radius-ui.md)
 
 ## Phase 8: Authenticated User Features
-- [ ] [017 — Custom Dashboard & Saved Views](017-custom-dashboard.md)
-- [ ] [018 — My Stack (User Dependency Mapping)](018-my-stack.md)
-- [ ] [019 — Alert Acknowledgment & Snooze](019-alert-ack-snooze.md)
+- [x] [017 — Custom Dashboard & Saved Views](017-custom-dashboard.md)
+- [x] [018 — My Stack (User Dependency Mapping)](018-my-stack.md)
+- [x] [019 — Alert Acknowledgment & Snooze](019-alert-ack-snooze.md)
 
 ## Phase 9: Notifications (Auth-Only)
 - [ ] [020 — Notification Dispatcher & Email Channel](020-notification-email.md)
