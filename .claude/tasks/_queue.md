@@ -28,7 +28,7 @@
 
 ## Phase 7: Blast Radius / Dependency Graph
 - [x] [015 — Static Dependency Map & Data Model](015-dependency-map.md)
-- [ ] [016 — Blast Radius UI & Dashboard Integration](016-blast-radius-ui.md)
+- [x] [016 — Blast Radius UI & Dashboard Integration](016-blast-radius-ui.md)
 
 ## Phase 8: Authenticated User Features
 - [ ] [017 — Custom Dashboard & Saved Views](017-custom-dashboard.md)

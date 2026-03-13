@@ -6,6 +6,7 @@ import { LiveIndicator } from "./LiveIndicator";
 import { SearchFilter, type FilterValues } from "./SearchFilter";
 import { AlertList } from "./AlertList";
 import { StatusOverview } from "./StatusOverview";
+import { BlastRadiusSummary } from "@/components/blast-radius/BlastRadiusSummary";
 
 export function DashboardClient() {
   const { status } = useSSE();
@@ -32,6 +33,9 @@ export function DashboardClient() {
           <SearchFilter onChange={handleFilterChange} />
         </Suspense>
       </div>
+
+      {/* Blast radius summary (shown when major providers have incidents) */}
+      <BlastRadiusSummary />
 
       {/* Provider status grid */}
       <StatusOverview />

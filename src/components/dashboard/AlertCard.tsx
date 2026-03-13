@@ -6,6 +6,7 @@ import type { SerializedAlert } from "@/lib/alert-schema";
 import { formatRelativeTime, truncate } from "@/lib/utils";
 import { PROVIDERS } from "@/lib/constants";
 import { SeverityBadge } from "./SeverityBadge";
+import { BlastRadiusPanel, hasBlastRadius } from "@/components/blast-radius/BlastRadiusPanel";
 
 export function AlertCard({ alert }: { alert: SerializedAlert }) {
   const [expanded, setExpanded] = useState(false);
@@ -51,6 +52,10 @@ export function AlertCard({ alert }: { alert: SerializedAlert }) {
                 ? alert.description
                 : truncate(alert.description, 140)}
             </p>
+          )}
+
+          {!isResolved && hasBlastRadius(alert.source) && (
+            <BlastRadiusPanel provider={alert.source} />
           )}
         </div>
 
