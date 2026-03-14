@@ -1,0 +1,20 @@
+services:
+  statusmonitor:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=file:/app/data/monitor.db
+    restart: unless-stopped
+
+  # Optional: auto-update container when image changes
+  # watchtower:
+  #   image: containrrr/watchtower
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   command: --interval 300 statusmonitor
+  #   restart: unless-stopped

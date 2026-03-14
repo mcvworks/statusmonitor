@@ -45,7 +45,7 @@
 - [x] [024 — Dark Mode, Loading States & Responsive Design](024-polish-darkmode.md)
 
 ## Phase 11: Docker & Deployment
-- [ ] [025 — Dockerfile & docker-compose](025-docker-setup.md)
+- [x] [025 — Dockerfile & docker-compose](025-docker-setup.md)
 - [ ] [026 — Production Config & Healthcheck](026-production-config.md)
 
 ## Phase 12: Finalization & Handoff
