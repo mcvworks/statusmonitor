@@ -1,6 +1,6 @@
 # 022 — Browser Push Notifications (Auth Required)
 
-## Status: queued
+## Status: done
 
 ## Objective
 Add browser push notifications using the Web Push API with VAPID keys.
@@ -48,4 +48,18 @@ Add browser push notifications using the Web Push API with VAPID keys.
 - [ ] Commit: "feat: add browser push notifications"
 
 ## Completion Notes
-_(to be filled after task completion)_
+Implemented browser push notifications with the following files:
+
+**Created:**
+- `src/lib/notifications/web-push.ts` — Push notification channel using `web-push` library with VAPID credentials, auto-cleanup of expired subscriptions (404/410)
+- `src/app/api/push/vapid/route.ts` — Public GET endpoint returning VAPID public key
+- `src/app/api/push/subscribe/route.ts` — POST/DELETE for managing push subscriptions (auth required, Zod validated, upsert by endpoint)
+- `public/sw.js` — Service worker handling `push` events (notification display) and `notificationclick` (opens alert URL or focuses existing window)
+- `src/hooks/usePushNotifications.ts` — Client hook: `{ isSupported, permission, isSubscribed, isLoading, subscribe, unsubscribe }`, handles SW registration, VAPID key fetch, permission request
+
+**Modified:**
+- `src/components/settings/NotificationForm.tsx` — Added "push" to AVAILABLE_CHANNELS, integrated `usePushNotifications` hook, added `PushPermissionUI` component showing browser support state, permission denied help, active subscription status, and enable/unsubscribe buttons
+- `src/lib/notifications/dispatcher.ts` — Registered push channel handler
+- `src/app/api/settings/route.ts` — Added push test notification handler calling `sendTestPush()`
+
+Notifications are capped at 5 per batch, tagged by alertId for deduplication, and include click-to-open with the alert URL.

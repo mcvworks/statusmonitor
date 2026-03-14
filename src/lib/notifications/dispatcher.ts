@@ -3,6 +3,7 @@ import type { Alert } from "@/generated/prisma/client";
 import { sendEmailNotification } from "./email";
 import { sendSlackNotification } from "./slack";
 import { sendTeamsNotification } from "./teams";
+import { sendPushNotification } from "./web-push";
 
 interface NotificationChannel {
   channel: string;
@@ -18,6 +19,7 @@ const channels: NotificationChannel[] = [
   { channel: "email", send: sendEmailNotification },
   { channel: "slack", send: sendSlackNotification },
   { channel: "teams", send: sendTeamsNotification },
+  { channel: "push", send: sendPushNotification },
 ];
 
 /**

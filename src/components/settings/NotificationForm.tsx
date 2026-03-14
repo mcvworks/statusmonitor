@@ -6,13 +6,16 @@ import {
   MessageSquare,
   Users,
   Bell,
+  BellOff,
   Send,
   Loader2,
   Check,
   X,
   ExternalLink,
+  AlertTriangle,
 } from "lucide-react";
 import { useNotificationPrefs, type NotificationPref } from "@/hooks/useNotificationPrefs";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { PROVIDERS } from "@/lib/constants";
 
 const SEVERITIES = ["critical", "major", "minor", "info"] as const;
@@ -50,7 +53,7 @@ const CHANNEL_META: Record<
   },
 };
 
-const AVAILABLE_CHANNELS = ["email", "slack", "teams"];
+const AVAILABLE_CHANNELS = ["email", "slack", "teams", "push"];
 
 const WEBHOOK_PATTERNS: Record<string, { pattern: RegExp; hint: string; helpUrl: string; helpLabel: string }> = {
   slack: {
@@ -69,6 +72,7 @@ const WEBHOOK_PATTERNS: Record<string, { pattern: RegExp; hint: string; helpUrl:
 
 export function NotificationForm() {
   const { prefs, isLoading, save, sendTest } = useNotificationPrefs();
+  const push = usePushNotifications();
   const [localPrefs, setLocalPrefs] = useState<Record<string, NotificationPref>>({});
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState<string | null>(null);
@@ -194,6 +198,11 @@ export function NotificationForm() {
 
             {pref.enabled && (
               <div className="space-y-4 border-t border-border pt-4">
+                {/* Push notification permission & subscription UI */}
+                {channel === "push" && (
+                  <PushPermissionUI push={push} />
+                )}
+
                 {/* Webhook URL config (Slack / Teams) */}
                 {WEBHOOK_PATTERNS[channel] && (() => {
                   const wp = WEBHOOK_PATTERNS[channel];
@@ -329,32 +338,6 @@ export function NotificationForm() {
         );
       })}
 
-      {/* Upcoming channels (disabled, shown for awareness) */}
-      {["push"]
-        .filter((ch) => !AVAILABLE_CHANNELS.includes(ch))
-        .map((channel) => {
-          const meta = CHANNEL_META[channel];
-          return (
-            <div
-              key={channel}
-              className="glass-card rounded-xl border border-border p-5 opacity-50"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-text-muted">{meta.icon}</span>
-                <div>
-                  <h3 className="text-sm font-semibold text-text-secondary">
-                    {meta.label}
-                    <span className="ml-2 rounded-full bg-surface-hover px-2 py-0.5 text-[10px] font-normal text-text-muted">
-                      Coming soon
-                    </span>
-                  </h3>
-                  <p className="text-xs text-text-muted">{meta.description}</p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-
       {/* Save button */}
       <div className="flex items-center gap-3">
         <button
@@ -370,6 +353,95 @@ export function NotificationForm() {
           {saveSuccess ? "Saved!" : "Save preferences"}
         </button>
       </div>
+    </div>
+  );
+}
+
+// ─── Push Permission UI ──────────────────────────────────────
+
+function PushPermissionUI({
+  push,
+}: {
+  push: ReturnType<typeof usePushNotifications>;
+}) {
+  if (!push.isSupported) {
+    return (
+      <div className="flex items-start gap-3 rounded-lg border border-border bg-input p-3">
+        <BellOff className="mt-0.5 h-4 w-4 shrink-0 text-text-muted" />
+        <div>
+          <p className="text-xs font-medium text-text-secondary">
+            Browser push not supported
+          </p>
+          <p className="mt-0.5 text-xs text-text-muted">
+            Your browser doesn&apos;t support push notifications. Try using Chrome, Firefox, or Edge.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (push.permission === "denied") {
+    return (
+      <div className="flex items-start gap-3 rounded-lg border border-error/20 bg-error/5 p-3">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-error" />
+        <div>
+          <p className="text-xs font-medium text-error">
+            Notifications blocked
+          </p>
+          <p className="mt-0.5 text-xs text-text-muted">
+            You&apos;ve blocked notifications for this site. To re-enable, click the lock icon
+            in your browser&apos;s address bar and allow notifications.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (push.isSubscribed) {
+    return (
+      <div className="flex items-center justify-between rounded-lg border border-success/20 bg-success/5 p-3">
+        <div className="flex items-center gap-2">
+          <Bell className="h-4 w-4 text-success" />
+          <span className="text-xs font-medium text-success">
+            Push notifications active
+          </span>
+        </div>
+        <button
+          onClick={push.unsubscribe}
+          disabled={push.isLoading}
+          className="btn-ghost flex items-center gap-1.5 text-xs text-text-muted"
+        >
+          {push.isLoading ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <BellOff className="h-3.5 w-3.5" />
+          )}
+          Unsubscribe
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-border bg-input p-3">
+      <div className="flex items-center gap-2">
+        <Bell className="h-4 w-4 text-text-muted" />
+        <span className="text-xs text-text-muted">
+          Allow browser notifications to receive alerts
+        </span>
+      </div>
+      <button
+        onClick={push.subscribe}
+        disabled={push.isLoading}
+        className="btn-primary flex items-center gap-1.5 text-xs"
+      >
+        {push.isLoading ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Bell className="h-3.5 w-3.5" />
+        )}
+        Enable notifications
+      </button>
     </div>
   );
 }

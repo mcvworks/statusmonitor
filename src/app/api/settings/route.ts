@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { sendTestEmail } from "@/lib/notifications/email";
 import { sendTestSlack } from "@/lib/notifications/slack";
 import { sendTestTeams } from "@/lib/notifications/teams";
+import { sendTestPush } from "@/lib/notifications/web-push";
 
 // ─── Validation ─────────────────────────────────────────────────
 
@@ -171,6 +172,8 @@ export async function POST(req: NextRequest) {
         );
       }
       await sendTestTeams(webhookUrl);
+    } else if (channel === "push") {
+      await sendTestPush(session.user.id);
     } else {
       return NextResponse.json(
         { error: `Test not implemented for ${channel} yet` },
