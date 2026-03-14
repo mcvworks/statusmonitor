@@ -46,7 +46,7 @@
 
 ## Phase 11: Docker & Deployment
 - [x] [025 — Dockerfile & docker-compose](025-docker-setup.md)
-- [ ] [026 — Production Config & Healthcheck](026-production-config.md)
+- [x] [026 — Production Config & Healthcheck](026-production-config.md)
 
 ## Phase 12: Finalization & Handoff
 - [ ] [027 — Git Cleanup & Final Push](027-git-final-push.md)

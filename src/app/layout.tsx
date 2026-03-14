@@ -22,11 +22,35 @@ const firaCode = Fira_Code({
   weight: ["400", "500", "600", "700"],
 });
 
+const BASE_URL = "https://monitor.ducktyped.com";
+
 export const metadata: Metadata = {
-  title: "StatusMonitor — IT Alert Dashboard",
+  metadataBase: new URL(BASE_URL),
+  title: {
+    default: "StatusMonitor — IT Alert Dashboard",
+    template: "%s | StatusMonitor",
+  },
   description:
     "Centralized IT alert dashboard for monitoring cloud service outages, SaaS incidents, security vulnerabilities, and ISP issues.",
   icons: { icon: "/favicon.ico" },
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "StatusMonitor",
+    title: "StatusMonitor — IT Alert Dashboard",
+    description:
+      "Monitor cloud service outages, SaaS incidents, security vulnerabilities, and ISP issues in real time.",
+    url: BASE_URL,
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "StatusMonitor — IT Alert Dashboard",
+    description:
+      "Monitor cloud service outages, SaaS incidents, security vulnerabilities, and ISP issues in real time.",
+  },
 };
 
 const jsonLd = {

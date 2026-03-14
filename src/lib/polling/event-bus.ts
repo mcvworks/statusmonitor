@@ -40,6 +40,10 @@ class AlertEventBus {
   emit<K extends AlertEventName>(event: K, ...args: AlertEventMap[K]) {
     this.emitter.emit(event, ...args);
   }
+
+  removeAllListeners() {
+    this.emitter.removeAllListeners();
+  }
 }
 
 // ─── Singleton ──────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 # 026 — Production Config & Healthcheck
 
-## Status: queued
+## Status: done
 
 ## Objective
 Add production hardening: healthcheck endpoint, graceful shutdown, log management, and security headers.
@@ -38,17 +38,23 @@ Add production hardening: healthcheck endpoint, graceful shutdown, log managemen
   - `Organization` JSON-LD structured data matching Ducktyped's entity (same org, different `sameAs` URLs)
 
 ## Acceptance Criteria
-- [ ] Health endpoint returns comprehensive status
-- [ ] Docker healthcheck configured and working
-- [ ] Security headers set on all responses
-- [ ] Graceful shutdown stops all background tasks
-- [ ] Data cleanup job runs daily
-- [ ] Rate limiting on auth routes
-- [ ] Sitemap and robots.txt generated correctly
-- [ ] Canonical URLs set on all pages
-- [ ] OG/Twitter Card meta tags present
-- [ ] JSON-LD structured data matches Ducktyped org
-- [ ] Commit: "feat: add production config, healthcheck, and security hardening"
+- [x] Health endpoint returns comprehensive status
+- [x] Docker healthcheck configured and working
+- [x] Security headers set on all responses
+- [x] Graceful shutdown stops all background tasks
+- [x] Data cleanup job runs daily
+- [x] Rate limiting on auth routes
+- [x] Sitemap and robots.txt generated correctly
+- [x] Canonical URLs set on all pages
+- [x] OG/Twitter Card meta tags present
+- [x] JSON-LD structured data matches Ducktyped org
+- [x] Commit: "feat: add production config, healthcheck, and security hardening"
 
 ## Completion Notes
-_(to be filled after task completion)_
+- Health endpoint at `/api/health` returns status, uptime, version, provider health from PollLog, and DB connectivity; returns 503 if DB is down
+- Docker healthcheck added with `curl -f`, 30s interval, 10s timeout, 3 retries, 30s start period; added `curl` to Dockerfile runner stage
+- Security headers (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, CSP) via `next.config.ts` headers()
+- Graceful shutdown in `instrumentation.ts` handles SIGTERM/SIGINT: stops scheduler, cleanup job, removes event bus listeners, disconnects Prisma
+- Daily cleanup job at 03:00 UTC via node-cron: purges resolved alerts >30 days, poll logs >7 days, notification logs >30 days
+- In-memory rate limiting on `/api/auth` endpoints: 20 req/min per IP with automatic cleanup
+- SEO: `sitemap.ts` (public pages), `robots.ts` (disallow api/dashboard/auth), canonical URLs via `metadataBase`, OG + Twitter Card meta tags, JSON-LD Organization structured data preserved
