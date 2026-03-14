@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StatusMonitor
 
-## Getting Started
+A centralized IT alert dashboard for monitoring cloud service outages, SaaS incidents, security vulnerabilities, and ISP issues. Deployed at [monitor.ducktyped.com](https://monitor.ducktyped.com).
 
-First, run the development server:
+## Features
+
+### Public (no account required)
+- Live dashboard with real-time updates via Server-Sent Events
+- 22 monitored providers across cloud, DevOps, security, and ISP categories
+- Blast radius visualization — see which downstream services are affected by provider incidents
+- Alert history with timeline and table views
+- Search, filter by category/severity/source/status
+
+### Authenticated users
+- Custom dashboard layouts with pinned services and saved views
+- My Stack — map your infrastructure dependencies for personalized blast radius
+- Alert acknowledgment, snooze, and dismiss
+- Multi-channel notifications: email, Slack, Teams, browser push
+- Per-channel severity and source filtering
+
+## Quick Start
 
 ```bash
+# Install dependencies
+npm install
+
+# Copy environment config
+cp .env.example .env
+# Edit .env — at minimum set AUTH_SECRET
+
+# Generate Prisma client and run migrations
+npx prisma generate
+npx prisma migrate dev
+
+# Seed the dependency map
+npx tsx prisma/seed.ts
+
+# Start dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tech Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router, TypeScript) |
+| Styling | Tailwind CSS 4 |
+| Database | Prisma ORM + SQLite |
+| Auth | Auth.js v5 (Google, Microsoft, Apple, GitHub, magic link) |
+| Real-time | Server-Sent Events (SSE) |
+| Notifications | Resend/SMTP, Slack/Teams webhooks, web-push |
+| Deployment | Docker on cloud VM |
 
-## Learn More
+## Monitored Providers (22)
 
-To learn more about Next.js, take a look at the following resources:
+**Cloud:** AWS, Azure, GCP, Cloudflare, GitHub, Slack, Atlassian, Okta, Stripe, Google Workspace, DigitalOcean, Fastly, Vercel, Netlify
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**DevOps:** Datadog, PagerDuty, Docker Hub, npm Registry
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Security:** CISA KEV, NVD
 
-## Deploy on Vercel
+**ISP:** Cloudflare Radar
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Meta:** Downdetector
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Documentation
+
+- [Deployment Guide](docs/DEPLOYMENT.md) — production setup, OAuth, Docker, nginx
+- [Architecture](docs/ARCHITECTURE.md) — system design, data flows, key decisions
+- [Adding Providers](docs/ADDING-PROVIDERS.md) — extend with new status sources
+- [API Reference](docs/API.md) — all endpoints with examples
+- [Cross-Linking](docs/CROSS-LINKING.md) — Ducktyped integration and SEO
+
+## Docker
+
+```bash
+docker compose up --build
+```
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for full production setup.
+
+---
+
+Built by [Ducktyped](https://ducktyped.com)

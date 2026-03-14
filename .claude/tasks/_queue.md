@@ -49,6 +49,6 @@
 - [x] [026 — Production Config & Healthcheck](026-production-config.md)
 
 ## Phase 12: Finalization & Handoff
-- [ ] [027 — Git Cleanup & Final Push](027-git-final-push.md)
-- [ ] [028 — Handoff Documentation](028-handoff-docs.md)
+- [x] [027 — Git Cleanup & Final Push](027-git-final-push.md)
+- [x] [028 — Handoff Documentation](028-handoff-docs.md)
 - [ ] [029 — Add StatusMonitor Link to Ducktyped Toolbar](029-ducktyped-toolbar-link.md)

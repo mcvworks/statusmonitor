@@ -1,6 +1,6 @@
 # 028 — Handoff Documentation
 
-## Status: queued
+## Status: done
 
 ## Objective
 Create comprehensive documentation for deploying, operating, and extending StatusMonitor.
@@ -69,15 +69,22 @@ Create comprehensive documentation for deploying, operating, and extending Statu
   - Error response format
 
 ## Acceptance Criteria
-- [ ] README provides clear project overview and quick start
-- [ ] Deployment guide covers OAuth setup for all 5 providers
-- [ ] Environment variable reference is complete
-- [ ] Architecture doc explains all data flows
-- [ ] Adding providers guide enables extension without reading source
-- [ ] API reference covers all endpoints
-- [ ] Cross-linking doc covers subdomain strategy and Ducktyped integration
-- [ ] All docs committed and pushed
-- [ ] Commit: "docs: add comprehensive handoff documentation"
+- [x] README provides clear project overview and quick start
+- [x] Deployment guide covers OAuth setup for all 5 providers
+- [x] Environment variable reference is complete
+- [x] Architecture doc explains all data flows
+- [x] Adding providers guide enables extension without reading source
+- [x] API reference covers all endpoints
+- [x] Cross-linking doc covers subdomain strategy and Ducktyped integration
+- [x] All docs committed and pushed
+- [x] Commit: "docs: add comprehensive handoff documentation"
 
 ## Completion Notes
-_(to be filled after task completion)_
+Created comprehensive handoff documentation:
+
+- **README.md** — Replaced default Next.js README with project overview, features, quick start, tech stack, and links to detailed docs
+- **docs/DEPLOYMENT.md** — Full deployment guide covering DNS, nginx, SSL, OAuth setup for all 4 providers + magic link, complete env var reference, VAPID key generation, Docker deployment on common VMs, and first-run checklist
+- **docs/ARCHITECTURE.md** — System architecture diagram, data flow from providers through polling/dedup/DB/SSE to UI, notification flow, blast radius flow, database schema overview, auth flow, and key design decisions with rationale
+- **docs/ADDING-PROVIDERS.md** — Step-by-step guide for all 3 base classes with full code examples, registration instructions, dependency map integration, and provider interface reference
+- **docs/API.md** — All 17 API endpoints documented with auth requirements, query parameters, request/response examples, and error format
+- **docs/CROSS-LINKING.md** — Subdomain strategy, Ducktyped toolbar link markup, footer backlink, SEO checklist covering sitemaps, structured data, canonical URLs, and Search Console setup
