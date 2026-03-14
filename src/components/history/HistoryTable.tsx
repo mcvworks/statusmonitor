@@ -225,7 +225,7 @@ export function HistoryTable({
                     </button>
 
                     {isExpanded && (
-                      <div className="border-b border-border bg-[rgba(21,26,34,0.5)] px-10 py-4">
+                      <div className="border-b border-border bg-[var(--expanded-row-bg)] px-10 py-4">
                         <div className="text-sm text-text-secondary">
                           {alert.description ? (
                             <p className="whitespace-pre-wrap">

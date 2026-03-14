@@ -19,35 +19,86 @@
   --color-minor: #F2C200;
   --color-info: #48E0C7;
 
-  /* Surface (dark) */
-  --color-surface: #151A22;
-  --color-surface-input: #10141A;
-  --color-surface-hover: #1A2030;
-  --color-border: #232A35;
-  --color-border-hover: #2a3140;
+  /* Surface — reference CSS custom properties for theme switching */
+  --color-surface: var(--t-surface);
+  --color-surface-input: var(--t-surface-input);
+  --color-surface-hover: var(--t-surface-hover);
+  --color-surface-card: var(--t-surface-card);
+  --color-card-solid: var(--t-card-solid);
+  --color-border: var(--t-border);
+  --color-border-hover: var(--t-border-hover);
 
   /* Text */
-  --color-text-primary: #E9EEF5;
-  --color-text-secondary: #B8C0CC;
-  --color-text-muted: #8892A0;
+  --color-text-primary: var(--t-text-primary);
+  --color-text-secondary: var(--t-text-secondary);
+  --color-text-muted: var(--t-text-muted);
 
   /* Background/foreground aliases */
-  --color-background: #0F1114;
-  --color-foreground: #E9EEF5;
+  --color-background: var(--t-background);
+  --color-foreground: var(--t-foreground);
 }
 
 /* ─── Dark Theme (default) ──────────────────────────────── */
 :root {
+  --t-background: #0F1114;
   --background: #0F1114;
   --background-end: #0B0D10;
+  --t-foreground: #E9EEF5;
   --foreground: #E9EEF5;
+
+  --t-surface: #151A22;
+  --t-surface-input: #10141A;
+  --t-surface-hover: #1A2030;
+  --t-surface-card: #151A22;
+  --t-card-solid: #151A22;
+  --t-border: #232A35;
+  --t-border-hover: #2a3140;
+
+  --t-text-primary: #E9EEF5;
+  --t-text-secondary: #B8C0CC;
+  --t-text-muted: #8892A0;
+
+  /* Glass card vars */
+  --glass-bg: rgba(21, 26, 34, 0.70);
+  --glass-border: #232A35;
+  --glass-scanline: rgba(255, 255, 255, 0.02);
+  --header-bg: rgba(15, 17, 20, 0.85);
+  --sidebar-bg: rgba(15, 17, 20, 0.5);
+  --expanded-row-bg: rgba(21, 26, 34, 0.5);
+  --grid-line: rgba(242, 194, 0, 0.025);
+  --scrollbar-thumb: #232A35;
+  --scrollbar-thumb-hover: #2a3140;
 }
 
 /* ─── Light Theme ───────────────────────────────────────── */
-body.light-theme {
+.light-theme {
+  --t-background: #F0F2F5;
   --background: #F0F2F5;
   --background-end: #E8EAEF;
+  --t-foreground: #0F1114;
   --foreground: #0F1114;
+
+  --t-surface: #ffffff;
+  --t-surface-input: #f5f6f8;
+  --t-surface-hover: #eceef2;
+  --t-surface-card: #ffffff;
+  --t-card-solid: #ffffff;
+  --t-border: #D0D5DD;
+  --t-border-hover: #bcc2cc;
+
+  --t-text-primary: #0F1114;
+  --t-text-secondary: #555555;
+  --t-text-muted: #777777;
+
+  --glass-bg: rgba(255, 255, 255, 0.80);
+  --glass-border: #D0D5DD;
+  --glass-scanline: rgba(0, 0, 0, 0.01);
+  --header-bg: rgba(240, 242, 245, 0.90);
+  --sidebar-bg: rgba(240, 242, 245, 0.6);
+  --expanded-row-bg: rgba(245, 246, 248, 0.8);
+  --grid-line: rgba(0, 0, 0, 0.03);
+  --scrollbar-thumb: #D0D5DD;
+  --scrollbar-thumb-hover: #bcc2cc;
 }
 
 /* ─── Base ──────────────────────────────────────────────── */
@@ -64,8 +115,8 @@ body::before {
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(242, 194, 0, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(242, 194, 0, 0.025) 1px, transparent 1px);
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
   background-size: 60px 60px;
   pointer-events: none;
   z-index: 0;
@@ -73,9 +124,9 @@ body::before {
 
 /* ─── Glassmorphism Card ────────────────────────────────── */
 .glass-card {
-  background: rgba(21, 26, 34, 0.70);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px);
-  border: 1px solid #232A35;
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
   position: relative;
   overflow: hidden;
@@ -89,8 +140,8 @@ body::before {
     0deg,
     transparent,
     transparent 2px,
-    rgba(255, 255, 255, 0.02) 2px,
-    rgba(255, 255, 255, 0.02) 4px
+    var(--glass-scanline) 2px,
+    var(--glass-scanline) 4px
   );
   pointer-events: none;
 }
@@ -121,7 +172,7 @@ body::before {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #8892A0;
+  color: var(--t-text-muted);
 }
 
 .section-label::before {
@@ -166,10 +217,18 @@ body::before {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #232A35;
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #2a3140;
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* ─── Theme Transition ──────────────────────────────────── */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
 }

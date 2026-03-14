@@ -8,16 +8,24 @@ import {
   Clock,
   Menu,
   X,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { SignInButton } from "@/components/auth/SignInButton";
 import { UserMenu } from "@/components/auth/UserMenu";
+import { useDarkMode } from "@/hooks/useDarkMode";
 
-export function Header() {
+interface HeaderProps {
+  onMenuToggle?: () => void;
+}
+
+export function Header({ onMenuToggle }: HeaderProps) {
   const { data: session } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { resolved, toggle } = useDarkMode();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-[rgba(15,17,20,0.85)] backdrop-blur-[18px]">
+    <header className="sticky top-0 z-40 border-b border-border bg-[var(--header-bg)] backdrop-blur-[18px]">
       <div className="flex h-14 items-center justify-between px-4 lg:px-6">
         {/* Logo + Nav */}
         <div className="flex items-center gap-6">
@@ -53,6 +61,19 @@ export function Header() {
             </span>
           </div>
 
+          {/* Theme toggle */}
+          <button
+            onClick={toggle}
+            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary"
+            aria-label={resolved === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {resolved === "dark" ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
+          </button>
+
           {/* Auth */}
           <div className="hidden md:block">
             {session?.user ? (
@@ -64,8 +85,11 @@ export function Header() {
 
           {/* Mobile hamburger */}
           <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary md:hidden"
+            onClick={() => {
+              setMobileOpen(!mobileOpen);
+              onMenuToggle?.();
+            }}
+            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary lg:hidden"
             aria-label="Toggle menu"
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -121,7 +145,7 @@ function MobileNavLink({
     <Link
       href={href}
       onClick={onClick}
-      className="rounded-lg px-3 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
+      className="rounded-lg px-3 py-3 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
     >
       {children}
     </Link>

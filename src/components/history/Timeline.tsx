@@ -114,7 +114,7 @@ function TimelineNode({ alert }: { alert: SerializedAlert }) {
         </button>
 
         {expanded && (
-          <div className="mt-2 rounded-lg border border-border bg-surface-card p-3 text-sm text-text-secondary">
+          <div className="mt-2 rounded-lg border border-border bg-[var(--t-surface-card)] p-3 text-sm text-text-secondary">
             {alert.description ? (
               <p className="whitespace-pre-wrap">{alert.description}</p>
             ) : (

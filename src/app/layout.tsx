@@ -57,9 +57,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Inline script to prevent FOUC — runs before paint
+  const themeScript = `(function(){try{var t=localStorage.getItem('theme')||'system';var d=t==='system'?window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light':t;if(d==='light'){document.documentElement.classList.remove('dark');document.documentElement.classList.add('light-theme')}else{document.documentElement.classList.add('dark');document.documentElement.classList.remove('light-theme')}}catch(e){}})()`;
+
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

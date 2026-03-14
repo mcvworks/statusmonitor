@@ -2,7 +2,7 @@ import { Activity } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-[rgba(15,17,20,0.5)]">
+    <footer className="border-t border-border bg-[var(--sidebar-bg)]">
       <div className="flex flex-col items-center justify-between gap-3 px-4 py-4 text-text-muted sm:flex-row lg:px-6">
         <div className="flex items-center gap-2 font-[family-name:var(--font-mono)] text-[11px]">
           <Activity className="h-3.5 w-3.5 text-primary" />

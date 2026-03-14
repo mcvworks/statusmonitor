@@ -31,9 +31,10 @@ const CATEGORY_ICONS: Record<AlertCategory, React.ReactNode> = {
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  mobile?: boolean;
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, mobile }: SidebarProps) {
   const { data: session } = useSession();
 
   // Group providers by category
@@ -48,58 +49,68 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
   const categories: AlertCategory[] = ["cloud", "devops", "security", "isp"];
 
+  // Inner content shared between desktop and mobile
+  const content = (
+    <div className="flex h-full flex-col">
+      {/* Toggle */}
+      <div className={`flex items-center border-b border-border px-3 py-2 ${collapsed && !mobile ? "justify-center" : "justify-end"}`}>
+        <button
+          onClick={onToggle}
+          className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary"
+          aria-label={mobile ? "Close sidebar" : collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {mobile ? (
+            <PanelLeftClose className="h-4 w-4" />
+          ) : collapsed ? (
+            <PanelLeft className="h-4 w-4" />
+          ) : (
+            <PanelLeftClose className="h-4 w-4" />
+          )}
+        </button>
+      </div>
+
+      {/* Categories */}
+      <nav className="flex-1 overflow-y-auto py-2">
+        {(!collapsed || mobile) &&
+          categories.map((cat) => (
+            <CategorySection
+              key={cat}
+              category={cat}
+              providers={grouped[cat] ?? []}
+            />
+          ))}
+        {collapsed && !mobile &&
+          categories.map((cat) => (
+            <div key={cat} className="flex justify-center py-2" title={CATEGORY_LABELS[cat]}>
+              <span className="text-text-muted">{CATEGORY_ICONS[cat]}</span>
+            </div>
+          ))}
+      </nav>
+
+      {/* Auth-only links */}
+      {session?.user && (!collapsed || mobile) && (
+        <div className="border-t border-border p-3">
+          <SidebarLink href="/dashboard/my-stack" icon={<Layers className="h-4 w-4" />}>
+            My Stack
+          </SidebarLink>
+          <SidebarLink href="/dashboard/settings" icon={<Settings className="h-4 w-4" />}>
+            Settings
+          </SidebarLink>
+        </div>
+      )}
+    </div>
+  );
+
+  // Mobile: render just the inner content (wrapper is in AppShell)
+  if (mobile) return content;
+
   return (
     <aside
-      className={`hidden flex-shrink-0 border-r border-border bg-[rgba(15,17,20,0.5)] transition-[width] duration-200 lg:block ${
+      className={`hidden flex-shrink-0 border-r border-border bg-[var(--sidebar-bg)] transition-[width] duration-200 lg:block ${
         collapsed ? "w-14" : "w-60"
       }`}
     >
-      <div className="flex h-full flex-col">
-        {/* Toggle */}
-        <div className={`flex items-center border-b border-border px-3 py-2 ${collapsed ? "justify-center" : "justify-end"}`}>
-          <button
-            onClick={onToggle}
-            className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? (
-              <PanelLeft className="h-4 w-4" />
-            ) : (
-              <PanelLeftClose className="h-4 w-4" />
-            )}
-          </button>
-        </div>
-
-        {/* Categories */}
-        <nav className="flex-1 overflow-y-auto py-2">
-          {!collapsed &&
-            categories.map((cat) => (
-              <CategorySection
-                key={cat}
-                category={cat}
-                providers={grouped[cat] ?? []}
-              />
-            ))}
-          {collapsed &&
-            categories.map((cat) => (
-              <div key={cat} className="flex justify-center py-2" title={CATEGORY_LABELS[cat]}>
-                <span className="text-text-muted">{CATEGORY_ICONS[cat]}</span>
-              </div>
-            ))}
-        </nav>
-
-        {/* Auth-only links */}
-        {session?.user && !collapsed && (
-          <div className="border-t border-border p-3">
-            <SidebarLink href="/dashboard/my-stack" icon={<Layers className="h-4 w-4" />}>
-              My Stack
-            </SidebarLink>
-            <SidebarLink href="/dashboard/settings" icon={<Settings className="h-4 w-4" />}>
-              Settings
-            </SidebarLink>
-          </div>
-        )}
-      </div>
+      {content}
     </aside>
   );
 }

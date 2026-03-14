@@ -42,7 +42,7 @@
 
 ## Phase 10: History & Polish
 - [x] [023 — Alert History Page & Timeline](023-history-timeline.md)
-- [ ] [024 — Dark Mode, Loading States & Responsive Design](024-polish-darkmode.md)
+- [x] [024 — Dark Mode, Loading States & Responsive Design](024-polish-darkmode.md)
 
 ## Phase 11: Docker & Deployment
 - [ ] [025 — Dockerfile & docker-compose](025-docker-setup.md)
