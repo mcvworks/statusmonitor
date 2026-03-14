@@ -1,6 +1,6 @@
 # 021 — Slack & Teams Webhook Channels (Auth Required)
 
-## Status: queued
+## Status: done
 
 ## Objective
 Add Slack and Microsoft Teams notification channels using incoming webhooks.
@@ -32,13 +32,19 @@ Add Slack and Microsoft Teams notification channels using incoming webhooks.
 - Test buttons send a sample alert to verify webhook works
 
 ## Acceptance Criteria
-- [ ] Slack notifications render with Block Kit formatting
-- [ ] Teams notifications render with Adaptive Cards
-- [ ] Webhook URLs validated before saving
-- [ ] Test buttons verify webhook connectivity
-- [ ] Multiple alerts batched into single messages
-- [ ] Errors logged to NotificationLog
-- [ ] Commit: "feat: add Slack and Teams webhook notification channels"
+- [x] Slack notifications render with Block Kit formatting
+- [x] Teams notifications render with Adaptive Cards
+- [x] Webhook URLs validated before saving
+- [x] Test buttons verify webhook connectivity
+- [x] Multiple alerts batched into single messages
+- [x] Errors logged to NotificationLog
+- [x] Commit: "feat: add Slack and Teams webhook notification channels"
 
 ## Completion Notes
-_(to be filled after task completion)_
+- Created `src/lib/notifications/slack.ts` with Block Kit formatting (header, per-alert sections with severity emoji, source, description, view button, color sidebar via attachments)
+- Created `src/lib/notifications/teams.ts` with Adaptive Card format (title, FactSet with source/severity/status/time, description, action button)
+- Both channels batch multiple alerts into a single message
+- Registered both channels in dispatcher — errors are logged to NotificationLog via existing dispatcher logic
+- Updated settings API POST handler to support Slack/Teams test notifications (fetches saved webhook URL from DB)
+- Updated NotificationForm: Slack and Teams now appear as full channels with webhook URL input, inline URL validation (pattern matching), setup help links, severity/source filters, and test buttons
+- Browser Push remains as "Coming soon"

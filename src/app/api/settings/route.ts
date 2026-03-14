@@ -3,6 +3,8 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { sendTestEmail } from "@/lib/notifications/email";
+import { sendTestSlack } from "@/lib/notifications/slack";
+import { sendTestTeams } from "@/lib/notifications/teams";
 
 // ─── Validation ─────────────────────────────────────────────────
 
@@ -134,9 +136,41 @@ export async function POST(req: NextRequest) {
 
   const { channel } = result.data;
 
+  // For webhook channels, we need the saved config to get the webhook URL
+  const getWebhookUrl = async (ch: string): Promise<string | null> => {
+    const pref = await prisma.userNotificationPref.findFirst({
+      where: { userId: session.user!.id!, channel: ch },
+    });
+    if (!pref) return null;
+    try {
+      const config = JSON.parse(pref.config);
+      return config.webhookUrl ?? null;
+    } catch {
+      return null;
+    }
+  };
+
   try {
     if (channel === "email") {
       await sendTestEmail(session.user.email);
+    } else if (channel === "slack") {
+      const webhookUrl = await getWebhookUrl("slack");
+      if (!webhookUrl) {
+        return NextResponse.json(
+          { error: "Save your Slack webhook URL first, then test" },
+          { status: 400 },
+        );
+      }
+      await sendTestSlack(webhookUrl);
+    } else if (channel === "teams") {
+      const webhookUrl = await getWebhookUrl("teams");
+      if (!webhookUrl) {
+        return NextResponse.json(
+          { error: "Save your Teams webhook URL first, then test" },
+          { status: 400 },
+        );
+      }
+      await sendTestTeams(webhookUrl);
     } else {
       return NextResponse.json(
         { error: `Test not implemented for ${channel} yet` },

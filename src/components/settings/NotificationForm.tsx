@@ -10,6 +10,7 @@ import {
   Loader2,
   Check,
   X,
+  ExternalLink,
 } from "lucide-react";
 import { useNotificationPrefs, type NotificationPref } from "@/hooks/useNotificationPrefs";
 import { PROVIDERS } from "@/lib/constants";
@@ -49,8 +50,22 @@ const CHANNEL_META: Record<
   },
 };
 
-// Only email is implemented in this task
-const AVAILABLE_CHANNELS = ["email"];
+const AVAILABLE_CHANNELS = ["email", "slack", "teams"];
+
+const WEBHOOK_PATTERNS: Record<string, { pattern: RegExp; hint: string; helpUrl: string; helpLabel: string }> = {
+  slack: {
+    pattern: /^https:\/\/hooks\.slack\.com\//,
+    hint: "Must start with https://hooks.slack.com/",
+    helpUrl: "https://api.slack.com/messaging/webhooks",
+    helpLabel: "How to create a Slack incoming webhook",
+  },
+  teams: {
+    pattern: /^https:\/\/.+\.webhook\.office\.com\//,
+    hint: "Must be a valid Teams webhook URL (*.webhook.office.com)",
+    helpUrl: "https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook",
+    helpLabel: "How to create a Teams incoming webhook",
+  },
+};
 
 export function NotificationForm() {
   const { prefs, isLoading, save, sendTest } = useNotificationPrefs();
@@ -179,6 +194,45 @@ export function NotificationForm() {
 
             {pref.enabled && (
               <div className="space-y-4 border-t border-border pt-4">
+                {/* Webhook URL config (Slack / Teams) */}
+                {WEBHOOK_PATTERNS[channel] && (() => {
+                  const wp = WEBHOOK_PATTERNS[channel];
+                  const webhookUrl = (pref.config as Record<string, unknown>).webhookUrl as string ?? "";
+                  const isInvalid = webhookUrl.length > 0 && !wp.pattern.test(webhookUrl);
+                  return (
+                    <div>
+                      <label className="section-label mb-2">Webhook URL</label>
+                      <input
+                        type="url"
+                        value={webhookUrl}
+                        onChange={(e) =>
+                          updatePref(channel, {
+                            config: { ...pref.config as Record<string, unknown>, webhookUrl: e.target.value },
+                          })
+                        }
+                        placeholder={wp.hint}
+                        className={`w-full rounded-lg border bg-input px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 ${
+                          isInvalid
+                            ? "border-error focus:ring-error/20"
+                            : "border-border focus:ring-primary/20"
+                        }`}
+                      />
+                      {isInvalid && (
+                        <p className="mt-1 text-xs text-error">{wp.hint}</p>
+                      )}
+                      <a
+                        href={wp.helpUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1.5 inline-flex items-center gap-1 text-xs text-text-muted hover:text-primary transition-colors"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        {wp.helpLabel}
+                      </a>
+                    </div>
+                  );
+                })()}
+
                 {/* Severity filter */}
                 <div>
                   <label className="section-label mb-2">
@@ -276,7 +330,7 @@ export function NotificationForm() {
       })}
 
       {/* Upcoming channels (disabled, shown for awareness) */}
-      {["slack", "teams", "push"]
+      {["push"]
         .filter((ch) => !AVAILABLE_CHANNELS.includes(ch))
         .map((channel) => {
           const meta = CHANNEL_META[channel];

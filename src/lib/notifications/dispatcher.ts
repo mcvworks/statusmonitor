@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/db";
 import type { Alert } from "@/generated/prisma/client";
 import { sendEmailNotification } from "./email";
+import { sendSlackNotification } from "./slack";
+import { sendTeamsNotification } from "./teams";
 
 interface NotificationChannel {
   channel: string;
@@ -14,6 +16,8 @@ interface NotificationChannel {
 
 const channels: NotificationChannel[] = [
   { channel: "email", send: sendEmailNotification },
+  { channel: "slack", send: sendSlackNotification },
+  { channel: "teams", send: sendTeamsNotification },
 ];
 
 /**

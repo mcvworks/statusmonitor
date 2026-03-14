@@ -37,7 +37,7 @@
 
 ## Phase 9: Notifications (Auth-Only)
 - [x] [020 — Notification Dispatcher & Email Channel](020-notification-email.md)
-- [ ] [021 — Slack & Teams Webhook Channels](021-slack-teams-webhooks.md)
+- [x] [021 — Slack & Teams Webhook Channels](021-slack-teams-webhooks.md)
 - [ ] [022 — Browser Push Notifications](022-browser-push.md)
 
 ## Phase 10: History & Polish
