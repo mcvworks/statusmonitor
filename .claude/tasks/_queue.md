@@ -51,4 +51,4 @@
 ## Phase 12: Finalization & Handoff
 - [x] [027 — Git Cleanup & Final Push](027-git-final-push.md)
 - [x] [028 — Handoff Documentation](028-handoff-docs.md)
-- [ ] [029 — Add StatusMonitor Link to Ducktyped Toolbar](029-ducktyped-toolbar-link.md)
+- [ ] [029 — Add StatusMonitor Link to Ducktyped Toolbar](029-ducktyped-toolbar-link.md) _(deferred — URL-only access for now)_

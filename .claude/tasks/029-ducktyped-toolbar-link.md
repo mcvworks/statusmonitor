@@ -1,6 +1,6 @@
 # 029 — Add StatusMonitor Link to Ducktyped Toolbar
 
-## Status: queued
+## Status: deferred
 
 ## Objective
 Add a "Service Status Monitor" link to the Ducktyped site's toolbar/navigation, connecting the two properties with SEO-friendly cross-linking.
@@ -31,4 +31,4 @@ Add a "Service Status Monitor" link to the Ducktyped site's toolbar/navigation, 
 - [ ] Commit (in Ducktyped repo): "feat: add Service Status Monitor link to toolbar"
 
 ## Completion Notes
-_(to be filled after task completion)_
+Deferred — user wants StatusMonitor accessible by URL only (https://monitor.ducktyped.com), not linked from Ducktyped toolbar for now.

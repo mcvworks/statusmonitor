@@ -4,7 +4,17 @@
       "Read(//c/Users/vigdev/ducktyped 2>/dev/**)",
       "Bash(config)",
       "Bash(tsconfig \")",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(node -e \"const c = require\\(''node-cron''\\); console.log\\(typeof c.schedule, typeof c.ScheduledTask\\)\")",
+      "Bash(find C:UsersvigdevProjectsmonitorsrc -type f -name *provider*)",
+      "WebSearch",
+      "Bash(git status:*)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\vigdev\\Projects\\monitor\\src\\app\\api\\auth"
     ]
   }
 }
