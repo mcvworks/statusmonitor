@@ -1,6 +1,6 @@
 # 023 — Alert History Page & Timeline
 
-## Status: queued
+## Status: done
 
 ## Objective
 Build the alert history page with timeline visualization and detailed historical data.
@@ -36,14 +36,20 @@ Build the alert history page with timeline visualization and detailed historical
   - Incidents by severity breakdown
 
 ## Acceptance Criteria
-- [ ] Timeline view renders chronological incident history
-- [ ] Table view with sorting and pagination works
-- [ ] Date range picker filters results
-- [ ] Category/severity/source filters work
-- [ ] Stats summary shows meaningful metrics
-- [ ] CSV export works
-- [ ] Page is publicly accessible (no auth required)
-- [ ] Commit: "feat: add alert history page with timeline and table views"
+- [x] Timeline view renders chronological incident history
+- [x] Table view with sorting and pagination works
+- [x] Date range picker filters results
+- [x] Category/severity/source filters work
+- [x] Stats summary shows meaningful metrics
+- [x] CSV export works
+- [x] Page is publicly accessible (no auth required)
+- [x] Commit: "feat: add alert history page with timeline and table views"
 
 ## Completion Notes
-_(to be filled after task completion)_
+All deliverables implemented:
+- **API**: `GET /api/alerts/history` with pagination (page/limit), date range (startDate/endDate), filters (category/severity/source/status), sorting (sort/order), and stats computation (total incidents, avg resolution time, severity breakdown, top sources)
+- **Hook**: `useAlertHistory` SWR hook managing pagination, filter, and sort state with `keepPreviousData` for smooth UX
+- **Timeline**: Vertical timeline grouped by day, color-coded severity dots with glow, expandable nodes showing description/region/duration/external link
+- **HistoryTable**: Sortable columns (timestamp/source/severity/status), expandable rows, CSV export button
+- **History Page**: Stats summary cards (total incidents, avg resolution, most affected, severity breakdown), date range picker, category/severity/status filters, timeline/table view toggle, pagination controls
+- Page is public (no auth required), linked from header navigation

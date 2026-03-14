@@ -41,7 +41,7 @@
 - [x] [022 — Browser Push Notifications](022-browser-push.md)
 
 ## Phase 10: History & Polish
-- [ ] [023 — Alert History Page & Timeline](023-history-timeline.md)
+- [x] [023 — Alert History Page & Timeline](023-history-timeline.md)
 - [ ] [024 — Dark Mode, Loading States & Responsive Design](024-polish-darkmode.md)
 
 ## Phase 11: Docker & Deployment
