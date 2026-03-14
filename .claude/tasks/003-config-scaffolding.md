@@ -1,6 +1,6 @@
 # 003 — Config Validation & Lib Scaffolding
 
-## Status: queued
+## Status: done
 
 ## Objective
 Set up environment variable validation with Zod, create the alert schema types, and scaffold shared utility files.
@@ -24,12 +24,19 @@ Set up environment variable validation with Zod, create the alert schema types, 
   - Max alert age for cleanup
 
 ## Acceptance Criteria
-- [ ] `config.ts` validates env and exports typed config
-- [ ] `alert-schema.ts` exports Zod schemas and TypeScript types
-- [ ] `utils.ts` has `cn`, `formatRelativeTime`, `truncate`
-- [ ] `constants.ts` has all shared constants
-- [ ] No TypeScript errors
-- [ ] Commit: "feat: add config validation and lib scaffolding"
+- [x] `config.ts` validates env and exports typed config
+- [x] `alert-schema.ts` exports Zod schemas and TypeScript types
+- [x] `utils.ts` has `cn`, `formatRelativeTime`, `truncate`
+- [x] `constants.ts` has all shared constants
+- [x] No TypeScript errors
+- [x] Commit: "feat: add config validation and lib scaffolding"
 
 ## Completion Notes
-_(to be filled after task completion)_
+All four files created and committed:
+
+- **config.ts** — Zod schema validates required vars (DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL) and optional vars (OAuth, Resend, VAPID, provider API keys). Exports typed `env` object, throws on invalid config.
+- **alert-schema.ts** — Zod enums for severity/category/status, `AlertInputSchema` for provider output, `SerializedAlertSchema` for API responses, with matching TypeScript types.
+- **utils.ts** — `cn()` (clsx + tailwind-merge), `formatRelativeTime()` using Intl.RelativeTimeFormat, `truncate()` with ellipsis.
+- **constants.ts** — Polling intervals (2min/5min), severity order + colors, category labels, full provider registry (22 providers) with name/category/tier metadata.
+
+No TypeScript errors in new files. Commit: `920f8d6`.

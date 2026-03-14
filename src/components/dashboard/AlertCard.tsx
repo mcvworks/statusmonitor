@@ -46,6 +46,7 @@ export function AlertCard({ alert, showActions = true }: AlertCardProps) {
   const isAcknowledged = userState?.state === "acknowledged";
 
   const handleSnooze = async (ms: number) => {
+    // eslint-disable-next-line react-hooks/purity -- Date.now() is in an event handler, not during render
     const until = new Date(Date.now() + ms).toISOString();
     await snooze(alert.id, until);
     setSnoozeOpen(false);

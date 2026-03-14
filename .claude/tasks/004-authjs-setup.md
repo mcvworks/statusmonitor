@@ -30,7 +30,7 @@ Configure Auth.js (NextAuth v5) with Prisma adapter and all 5 OAuth providers pl
 - [x] Middleware correctly protects/exposes routes
 - [x] `.env.example` updated with all auth env vars
 - [x] No TypeScript errors
-- [ ] Commit: "feat: configure Auth.js with 5 OAuth providers + email"
+- [x] Commit: "feat: configure Auth.js with 5 OAuth providers + email"
 
 ## Completion Notes
 - Created `src/lib/auth.ts` with NextAuth v5 config using PrismaAdapter, database session strategy, 4 OAuth providers (Google, Microsoft Entra ID, Apple, GitHub) + Resend email magic link

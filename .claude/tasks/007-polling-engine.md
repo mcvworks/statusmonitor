@@ -1,6 +1,6 @@
 # 007 — Polling Engine, Dedup & Event Bus
 
-## Status: queued
+## Status: done
 
 ## Objective
 Build the polling orchestration layer that runs providers on schedule, deduplicates alerts, stores them, and emits events for live updates.
@@ -29,12 +29,20 @@ Build the polling orchestration layer that runs providers on schedule, deduplica
 - Update `next.config.ts` to enable `instrumentationHook: true` if needed
 
 ## Acceptance Criteria
-- [ ] Event bus emits typed events for new/updated/resolved alerts
-- [ ] Dedup correctly identifies new vs updated alerts
-- [ ] Engine polls providers concurrently, isolates failures
-- [ ] PollLog entries created for each poll cycle
-- [ ] Scheduler starts on server boot via instrumentation
-- [ ] Commit: "feat: add polling engine with dedup, event bus, and scheduler"
+- [x] Event bus emits typed events for new/updated/resolved alerts
+- [x] Dedup correctly identifies new vs updated alerts
+- [x] Engine polls providers concurrently, isolates failures
+- [x] PollLog entries created for each poll cycle
+- [x] Scheduler starts on server boot via instrumentation
+- [x] Commit: "feat: add polling engine with dedup, event bus, and scheduler"
 
 ## Completion Notes
-_(to be filled after task completion)_
+All polling infrastructure implemented:
+
+- **event-bus.ts**: Typed `AlertEventBus` class wrapping Node `EventEmitter` with singleton pattern. Supports `alert:new`, `alert:updated`, `alert:resolved` events with `Alert` model payloads. Max 200 listeners for SSE connections.
+- **dedup.ts**: `deduplicateAlerts()` fetches existing alerts by `[source, externalId]` pairs, classifies incoming as `new` (not in DB) or `updated` (status or severity changed). Unchanged alerts are skipped.
+- **engine.ts**: `pollProvider()` orchestrates fetch → dedup → upsert → emit → log. `pollAll(tier)` runs all providers in a tier concurrently via `Promise.allSettled` with error isolation. PollLog entries written for each cycle.
+- **scheduler.ts**: Provider registry with `registerProvider()`/`registerProviders()`. `startScheduler()` runs initial poll then schedules fast tier (every 2 min) and slow tier (every 5 min) via `node-cron`.
+- **instrumentation.ts**: Next.js `register()` hook that dynamically imports and starts the scheduler on Node.js runtime only (not edge).
+
+No config changes needed — Next.js 14+ supports instrumentation natively. Build passes cleanly (pre-existing Prisma edge warnings unrelated to this task).

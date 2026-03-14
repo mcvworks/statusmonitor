@@ -17,7 +17,6 @@ import type { HistoryFilters } from "@/hooks/useAlertHistory";
 import { Timeline } from "@/components/history/Timeline";
 import { HistoryTable } from "@/components/history/HistoryTable";
 import { CATEGORY_LABELS, PROVIDERS, SEVERITY_COLORS } from "@/lib/constants";
-import type { AlertCategory, AlertSeverity } from "@/lib/alert-schema";
 
 type ViewMode = "timeline" | "table";
 
@@ -61,7 +60,7 @@ function formatMinutes(minutes: number): string {
 
 export default function HistoryPage() {
   const [view, setView] = useState<ViewMode>("timeline");
-  const defaults = useMemo(defaultDateRange, []);
+  const defaults = useMemo(() => defaultDateRange(), []);
   const [dateRange, setDateRange] = useState(defaults);
   const [filterValues, setFilterValues] = useState<{
     category: string;

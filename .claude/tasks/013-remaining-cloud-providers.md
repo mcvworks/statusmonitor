@@ -1,6 +1,6 @@
 # 013 — Remaining Cloud Providers
 
-## Status: queued
+## Status: done
 
 ## Objective
 Implement providers for GCP, Okta, Stripe, Google Workspace, DigitalOcean, Fastly, and Vercel/Netlify.
@@ -23,11 +23,14 @@ Implement providers for GCP, Okta, Stripe, Google Workspace, DigitalOcean, Fastl
 - Test via debug route
 
 ## Acceptance Criteria
-- [ ] All 8 providers fetch and parse correctly
-- [ ] Statuspage providers work with zero custom code (just URL + metadata)
-- [ ] GCP and Google Workspace handle Google's custom JSON format
-- [ ] All registered in registry
-- [ ] Commit: "feat: add remaining cloud providers (GCP, Okta, Stripe, DigitalOcean, Fastly, Vercel, Netlify, Google Workspace)"
+- [x] All 8 providers fetch and parse correctly
+- [x] Statuspage providers work with zero custom code (just URL + metadata)
+- [x] GCP and Google Workspace handle Google's custom JSON format
+- [x] All registered in registry
+- [x] Commit: "feat: add remaining cloud providers (GCP, Okta, Stripe, DigitalOcean, Fastly, Vercel, Netlify, Google Workspace)"
 
 ## Completion Notes
-_(to be filled after task completion)_
+- Created 6 Statuspage providers (Okta, Stripe, DigitalOcean, Fastly, Vercel, Netlify) extending `BaseStatuspageProvider` with zero custom logic
+- Created 2 JSON providers (GCP, Google Workspace) extending `BaseJSONProvider` with custom parsing for Google's incident JSON format (severity mapping, status mapping, affected products)
+- All 8 providers registered in registry (total: 15 providers)
+- Build passes successfully
