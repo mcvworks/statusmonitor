@@ -36,6 +36,8 @@ export function CustomDashboard() {
     category: "",
     severity: "",
     status: "",
+    source: "",
+    sort: "",
   });
 
   // Resolve active view — use default if one exists and no explicit selection

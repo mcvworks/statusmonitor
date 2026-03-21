@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter, useSearchParams } from "next/navigation";
 import type { SerializedAlert } from "@/lib/alert-schema";
 import { PROVIDERS, SEVERITY_ORDER } from "@/lib/constants";
 import type { AlertSeverity } from "@/lib/alert-schema";
@@ -39,6 +40,20 @@ interface StatusOverviewProps {
 
 export function StatusOverview({ sourceFilter }: StatusOverviewProps = {}) {
   const { alerts, isLoading } = useAlerts();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeSource = searchParams.get("source") ?? "";
+
+  const handleProviderClick = (providerKey: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (activeSource === providerKey) {
+      params.delete("source");
+    } else {
+      params.set("source", providerKey);
+    }
+    const qs = params.toString();
+    router.replace(qs ? `/?${qs}` : "/", { scroll: false });
+  };
 
   // Group alerts by source
   const alertsBySource: Record<string, SerializedAlert[]> = {};
@@ -85,16 +100,25 @@ export function StatusOverview({ sourceFilter }: StatusOverviewProps = {}) {
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {providerEntries.map((p) => {
             const style = STATUS_STYLES[p.status];
+            const isActive = activeSource === p.key;
             return (
-              <div
+              <button
                 key={p.key}
-                className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-surface-hover"
+                onClick={() => handleProviderClick(p.key)}
+                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
+                  isActive
+                    ? "bg-primary/10 ring-1 ring-primary/30"
+                    : "hover:bg-surface-hover"
+                }`}
+                title={`${p.name} — ${style.label}. Click to filter.`}
               >
                 <span className={`status-dot ${style.dot}`} />
-                <span className="truncate text-xs text-text-secondary">
+                <span
+                  className={`truncate text-xs ${isActive ? "text-primary" : "text-text-secondary"}`}
+                >
                   {p.name}
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>

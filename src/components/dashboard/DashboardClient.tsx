@@ -15,6 +15,8 @@ export function DashboardClient() {
     category: "",
     severity: "",
     status: "",
+    source: "",
+    sort: "",
   });
 
   const handleFilterChange = useCallback((next: FilterValues) => {
@@ -46,6 +48,8 @@ export function DashboardClient() {
         severity={filters.severity}
         status={filters.status}
         search={filters.search}
+        source={filters.source}
+        sort={filters.sort}
       />
     </>
   );

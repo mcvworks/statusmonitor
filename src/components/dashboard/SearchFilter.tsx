@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, X, SlidersHorizontal } from "lucide-react";
-import { CATEGORY_LABELS } from "@/lib/constants";
+import { CATEGORY_LABELS, PROVIDERS } from "@/lib/constants";
 import type { AlertCategory, AlertSeverity, AlertStatus } from "@/lib/alert-schema";
 
 export interface FilterValues {
@@ -11,6 +11,8 @@ export interface FilterValues {
   category: string;
   severity: string;
   status: string;
+  source: string;
+  sort: string;
 }
 
 interface SearchFilterProps {
@@ -35,12 +37,24 @@ const CATEGORIES: { value: AlertCategory; label: string }[] = Object.entries(
   CATEGORY_LABELS,
 ).map(([value, label]) => ({ value: value as AlertCategory, label }));
 
+const SOURCES: { value: string; label: string }[] = Object.entries(PROVIDERS)
+  .map(([value, meta]) => ({ value, label: meta.name }))
+  .sort((a, b) => a.label.localeCompare(b.label));
+
+const SORTS: { value: string; label: string }[] = [
+  { value: "newest", label: "Newest first" },
+  { value: "severity", label: "Severity" },
+  { value: "provider", label: "Provider A-Z" },
+];
+
 function readParams(params: URLSearchParams): FilterValues {
   return {
     search: params.get("q") ?? "",
     category: params.get("category") ?? "",
     severity: params.get("severity") ?? "",
     status: params.get("status") ?? "",
+    source: params.get("source") ?? "",
+    sort: params.get("sort") ?? "",
   };
 }
 
@@ -68,6 +82,8 @@ export function SearchFilter({ onChange }: SearchFilterProps) {
       if (next.category) params.set("category", next.category);
       if (next.severity) params.set("severity", next.severity);
       if (next.status) params.set("status", next.status);
+      if (next.source) params.set("source", next.source);
+      if (next.sort) params.set("sort", next.sort);
       const qs = params.toString();
       router.replace(qs ? `/?${qs}` : "/", { scroll: false });
     },
@@ -100,6 +116,8 @@ export function SearchFilter({ onChange }: SearchFilterProps) {
       category: "",
       severity: "",
       status: "",
+      source: "",
+      sort: "",
     };
     setFilters(empty);
     onChange(empty);
@@ -113,6 +131,10 @@ export function SearchFilter({ onChange }: SearchFilterProps) {
     },
     filters.severity && { key: "severity", label: filters.severity },
     filters.status && { key: "status", label: filters.status },
+    filters.source && {
+      key: "source",
+      label: PROVIDERS[filters.source]?.name ?? filters.source,
+    },
   ].filter(Boolean) as { key: string; label: string }[];
 
   return (
@@ -177,6 +199,18 @@ export function SearchFilter({ onChange }: SearchFilterProps) {
             value={filters.status}
             options={STATUSES}
             onChange={(v) => update({ status: v })}
+          />
+          <FilterSelect
+            label="Provider"
+            value={filters.source}
+            options={SOURCES}
+            onChange={(v) => update({ source: v })}
+          />
+          <FilterSelect
+            label="Sort"
+            value={filters.sort}
+            options={SORTS}
+            onChange={(v) => update({ sort: v })}
           />
         </div>
       )}

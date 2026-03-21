@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { CheckCircle, Eye, EyeOff } from "lucide-react";
 import { useSession } from "next-auth/react";
-import type { AlertCategory, SerializedAlertWithState } from "@/lib/alert-schema";
+import type { AlertCategory, AlertSeverity, SerializedAlertWithState } from "@/lib/alert-schema";
+import { SEVERITY_ORDER } from "@/lib/constants";
 import { useAlerts } from "@/hooks/useAlerts";
 import { CategoryGroup } from "./CategoryGroup";
 
@@ -34,6 +35,8 @@ interface AlertListProps {
   severity?: string;
   status?: string;
   search?: string;
+  source?: string;
+  sort?: string;
   sourceFilter?: string[];
 }
 
@@ -42,6 +45,8 @@ export function AlertList({
   severity,
   status,
   search,
+  source,
+  sort,
   sourceFilter,
 }: AlertListProps = {}) {
   const { alerts, isLoading, isError, avgResolutionBySource } = useAlerts({
@@ -56,7 +61,9 @@ export function AlertList({
   const { visible, hiddenCount } = useMemo(() => {
     let result = alerts;
 
-    if (sourceFilter && sourceFilter.length > 0) {
+    if (source) {
+      result = result.filter((a) => a.source === source);
+    } else if (sourceFilter && sourceFilter.length > 0) {
       const allowed = new Set(sourceFilter);
       result = result.filter((a) => allowed.has(a.source));
     }
@@ -68,6 +75,18 @@ export function AlertList({
           (a.description && a.description.toLowerCase().includes(q)),
       );
     }
+
+    // Apply sorting
+    if (sort === "severity") {
+      result = [...result].sort(
+        (a, b) =>
+          (SEVERITY_ORDER[a.severity as AlertSeverity] ?? 3) -
+          (SEVERITY_ORDER[b.severity as AlertSeverity] ?? 3),
+      );
+    } else if (sort === "provider") {
+      result = [...result].sort((a, b) => a.source.localeCompare(b.source));
+    }
+    // "newest" is the default API order, no re-sort needed
 
     // Filter out snoozed/dismissed alerts for authenticated users
     if (session?.user) {
@@ -96,7 +115,7 @@ export function AlertList({
     }
 
     return { visible: result, hiddenCount: 0 };
-  }, [alerts, search, sourceFilter, session?.user, showDismissed]);
+  }, [alerts, search, source, sourceFilter, sort, session?.user, showDismissed]);
 
   if (isLoading) {
     return (
