@@ -17,6 +17,7 @@ const MAX_DELAY = 30_000;
 
 export function useSSE() {
   const [status, setStatus] = useState<SSEStatus>("disconnected");
+  const [lastEventAt, setLastEventAt] = useState<Date | null>(null);
   const retriesRef = useRef(0);
   const esRef = useRef<EventSource | null>(null);
   const { mutate } = useSWRConfig();
@@ -39,6 +40,7 @@ export function useSSE() {
       es.onmessage = (event) => {
         try {
           const data: SSEEvent = JSON.parse(event.data);
+          setLastEventAt(new Date());
           mutate(
             (key: string) => typeof key === "string" && key.startsWith("/api/alerts"),
             undefined,
@@ -76,5 +78,5 @@ export function useSSE() {
     };
   }, [mutate]);
 
-  return { status };
+  return { status, lastEventAt };
 }
