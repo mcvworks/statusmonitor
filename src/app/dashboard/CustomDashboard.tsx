@@ -155,7 +155,9 @@ export function CustomDashboard() {
       {hasStack ? <PersonalBlastRadius /> : <BlastRadiusSummary />}
 
       {/* Provider status grid — filtered by view */}
-      <StatusOverview sourceFilter={viewSourceFilter} />
+      <Suspense>
+        <StatusOverview sourceFilter={viewSourceFilter} />
+      </Suspense>
 
       {/* Alert feed — filtered by view + search/filters */}
       <AlertList

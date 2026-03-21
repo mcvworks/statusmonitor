@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, Suspense } from "react";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { Footer } from "./Footer";
@@ -16,10 +16,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Header onMenuToggle={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
       <div className="flex flex-1">
         {/* Desktop sidebar */}
-        <Sidebar
-          collapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        />
+        <Suspense>
+          <Sidebar
+            collapsed={sidebarCollapsed}
+            onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+          />
+        </Suspense>
 
         {/* Mobile sidebar overlay */}
         {mobileSidebarOpen && (
@@ -30,11 +32,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               aria-hidden="true"
             />
             <aside className="fixed inset-y-0 left-0 z-50 w-64 border-r border-border bg-[var(--sidebar-bg)] backdrop-blur-xl lg:hidden">
-              <Sidebar
-                collapsed={false}
-                onToggle={closeMobileSidebar}
-                mobile
-              />
+              <Suspense>
+                <Sidebar
+                  collapsed={false}
+                  onToggle={closeMobileSidebar}
+                  mobile
+                />
+              </Suspense>
             </aside>
           </>
         )}

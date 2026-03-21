@@ -40,7 +40,9 @@ export function DashboardClient() {
       <BlastRadiusSummary />
 
       {/* Provider status grid */}
-      <StatusOverview />
+      <Suspense>
+        <StatusOverview />
+      </Suspense>
 
       {/* Alert feed */}
       <AlertList
