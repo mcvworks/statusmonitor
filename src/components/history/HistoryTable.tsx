@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { SerializedAlert, AlertSeverity } from "@/lib/alert-schema";
 import { SeverityBadge } from "@/components/dashboard/SeverityBadge";
+import { ProviderIcon } from "@/components/dashboard/ProviderIcon";
 import { PROVIDERS } from "@/lib/constants";
 import type { HistorySort } from "@/hooks/useAlertHistory";
 
@@ -200,7 +201,11 @@ export function HistoryTable({
                       <span className="whitespace-nowrap px-3 py-3 font-[family-name:var(--font-mono)] text-xs text-text-muted">
                         {formatDateTime(alert.timestamp)}
                       </span>
-                      <span className="px-3 py-3 text-text-secondary">
+                      <span
+                        className="inline-flex items-center gap-1.5 px-3 py-3"
+                        style={{ color: PROVIDERS[alert.source]?.color }}
+                      >
+                        <ProviderIcon providerKey={alert.source} size={13} />
                         {providerName}
                       </span>
                       <span className="px-3 py-3">
@@ -249,17 +254,34 @@ export function HistoryTable({
                               </span>
                             )}
                           </div>
-                          {alert.url && (
-                            <a
-                              href={alert.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                            >
-                              View details{" "}
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                          )}
+                          <div className="mt-2 flex flex-wrap items-center gap-3">
+                            {alert.url && (
+                              <a
+                                href={alert.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                              >
+                                Incident details{" "}
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                            {PROVIDERS[alert.source]?.statusUrl && (
+                              <a
+                                href={
+                                  alert.status === "resolved" && PROVIDERS[alert.source]?.historyUrl
+                                    ? PROVIDERS[alert.source].historyUrl!
+                                    : PROVIDERS[alert.source].statusUrl
+                                }
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-primary hover:underline"
+                              >
+                                {alert.status === "resolved" ? "Status history" : `${providerName} status`}{" "}
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )}

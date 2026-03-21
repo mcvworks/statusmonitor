@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronRight, ExternalLink, Clock } from "lucide-react";
 import type { SerializedAlert } from "@/lib/alert-schema";
 import { SeverityBadge } from "@/components/dashboard/SeverityBadge";
+import { ProviderIcon } from "@/components/dashboard/ProviderIcon";
 import { PROVIDERS } from "@/lib/constants";
 import type { AlertSeverity } from "@/lib/alert-schema";
 import { SEVERITY_COLORS } from "@/lib/constants";
@@ -89,7 +90,13 @@ function TimelineNode({ alert }: { alert: SerializedAlert }) {
                 {formatTime(alert.timestamp)}
               </span>
               <SeverityBadge severity={alert.severity as AlertSeverity} />
-              <span className="text-xs text-text-muted">{providerName}</span>
+              <span
+                className="inline-flex items-center gap-1 text-xs"
+                style={{ color: PROVIDERS[alert.source]?.color }}
+              >
+                <ProviderIcon providerKey={alert.source} size={12} />
+                {providerName}
+              </span>
               {alert.status === "resolved" && (
                 <span className="rounded-full bg-[rgba(72,224,199,0.1)] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-severity-info">
                   Resolved
@@ -129,16 +136,33 @@ function TimelineNode({ alert }: { alert: SerializedAlert }) {
                 </span>
               )}
             </div>
-            {alert.url && (
-              <a
-                href={alert.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
-              >
-                View details <ExternalLink className="h-3 w-3" />
-              </a>
-            )}
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              {alert.url && (
+                <a
+                  href={alert.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  Incident details <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+              {PROVIDERS[alert.source]?.statusUrl && (
+                <a
+                  href={
+                    alert.status === "resolved" && PROVIDERS[alert.source]?.historyUrl
+                      ? PROVIDERS[alert.source].historyUrl!
+                      : PROVIDERS[alert.source].statusUrl
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-primary hover:underline"
+                >
+                  {alert.status === "resolved" ? "Status history" : `${providerName} status`}{" "}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
           </div>
         )}
       </div>

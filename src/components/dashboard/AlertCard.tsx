@@ -19,6 +19,7 @@ import { PROVIDERS } from "@/lib/constants";
 import { SEVERITY_ORDER } from "@/lib/constants";
 import type { AlertSeverity } from "@/lib/alert-schema";
 import { SeverityBadge } from "./SeverityBadge";
+import { ProviderIcon } from "./ProviderIcon";
 import {
   BlastRadiusPanel,
   hasBlastRadius,
@@ -84,7 +85,8 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
   const { acknowledge, snooze, dismiss, clear } = useAlertActions();
 
   const isResolved = alert.status === "resolved";
-  const providerName = PROVIDERS[alert.source]?.name ?? alert.source;
+  const provider = PROVIDERS[alert.source];
+  const providerName = provider?.name ?? alert.source;
   const isAuthenticated = !!session?.user;
   const userState = alert.userState;
   const isAcknowledged = userState?.state === "acknowledged";
@@ -129,7 +131,13 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
           </h3>
 
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-[family-name:var(--font-mono)] text-[11px] text-text-muted">
-            <span>{providerName}</span>
+            <span
+              className="inline-flex items-center gap-1.5"
+              style={{ color: provider?.color }}
+            >
+              <ProviderIcon providerKey={alert.source} size={13} />
+              {providerName}
+            </span>
             {alert.region && (
               <>
                 <span className="text-border">|</span>
@@ -155,6 +163,36 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
                 : truncate(alert.description, 140)}
             </p>
           )}
+
+          {/* Links section */}
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            {alert.url && (
+              <a
+                href={alert.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-[family-name:var(--font-mono)] text-[10px] text-text-muted transition-colors hover:text-text-primary"
+              >
+                <ExternalLink className="h-2.5 w-2.5" />
+                Incident details
+              </a>
+            )}
+            {provider?.statusUrl && (
+              <a
+                href={
+                  isResolved && provider.historyUrl
+                    ? provider.historyUrl
+                    : provider.statusUrl
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-[family-name:var(--font-mono)] text-[10px] text-text-muted transition-colors hover:text-text-primary"
+              >
+                <ExternalLink className="h-2.5 w-2.5" />
+                {isResolved ? "Status history" : `${providerName} status`}
+              </a>
+            )}
+          </div>
 
           {!isResolved && hasBlastRadius(alert.source) && (
             <BlastRadiusPanel provider={alert.source} />
@@ -220,17 +258,6 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
             </>
           )}
 
-          {alert.url && (
-            <a
-              href={alert.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary"
-              aria-label="View source"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          )}
           {alert.description && alert.description.length > 140 && (
             <button
               onClick={() => setExpanded(!expanded)}

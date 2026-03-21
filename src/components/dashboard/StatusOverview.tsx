@@ -5,6 +5,7 @@ import type { SerializedAlert } from "@/lib/alert-schema";
 import { PROVIDERS, SEVERITY_ORDER } from "@/lib/constants";
 import type { AlertSeverity } from "@/lib/alert-schema";
 import { useAlerts } from "@/hooks/useAlerts";
+import { ProviderIcon } from "./ProviderIcon";
 
 type ProviderStatus = "operational" | "degraded" | "outage" | "unknown";
 
@@ -113,6 +114,7 @@ export function StatusOverview({ sourceFilter }: StatusOverviewProps = {}) {
                 title={`${p.name} — ${style.label}. Click to filter.`}
               >
                 <span className={`status-dot ${style.dot}`} />
+                <ProviderIcon providerKey={p.key} size={14} />
                 <span
                   className={`truncate text-xs ${isActive ? "text-primary" : "text-text-secondary"}`}
                 >
