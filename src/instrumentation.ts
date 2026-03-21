@@ -1,15 +1,17 @@
 export async function register() {
   // Only run on the Node.js runtime (not edge)
   if (process.env.NEXT_RUNTIME === "nodejs") {
-    const { startScheduler, stopScheduler } = await import(
+    const { startScheduler, stopScheduler, registerProviders } = await import(
       "@/lib/polling/scheduler"
     );
+    const { getAllProviders } = await import("@/lib/providers/registry");
     const { alertEventBus } = await import("@/lib/polling/event-bus");
     const { prisma } = await import("@/lib/db");
     const { startCleanupJob, stopCleanupJob } = await import(
       "@/lib/cleanup"
     );
 
+    registerProviders(getAllProviders());
     startScheduler();
     startCleanupJob();
 
