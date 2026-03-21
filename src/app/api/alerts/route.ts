@@ -52,6 +52,33 @@ export async function GET(request: NextRequest) {
     prisma.alert.count({ where }),
   ]);
 
+  // Compute per-source average resolution time for active sources
+  const activeSources = [...new Set(alerts.map((a) => a.source))];
+  const resolutionStats =
+    activeSources.length > 0
+      ? await prisma.alert.findMany({
+          where: {
+            source: { in: activeSources },
+            status: "resolved",
+            resolvedAt: { not: null },
+          },
+          select: { source: true, timestamp: true, resolvedAt: true },
+        })
+      : [];
+
+  const avgResolutionBySource: Record<string, number> = {};
+  const grouped: Record<string, { total: number; count: number }> = {};
+  for (const r of resolutionStats) {
+    const ms =
+      new Date(r.resolvedAt!).getTime() - new Date(r.timestamp).getTime();
+    if (!grouped[r.source]) grouped[r.source] = { total: 0, count: 0 };
+    grouped[r.source].total += ms;
+    grouped[r.source].count += 1;
+  }
+  for (const [source, { total: totalMs, count }] of Object.entries(grouped)) {
+    avgResolutionBySource[source] = Math.round(totalMs / count / 60_000);
+  }
+
   // Flatten alertStates array into a single userState field
   const serialized = alerts.map((alert) => {
     const { alertStates, ...rest } = alert as typeof alert & {
@@ -75,5 +102,6 @@ export async function GET(request: NextRequest) {
     limit,
     offset,
     hasMore: offset + limit < total,
+    avgResolutionBySource,
   });
 }

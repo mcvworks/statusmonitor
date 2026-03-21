@@ -106,6 +106,24 @@ export async function pollAll(
 // ─── Helpers ────────────────────────────────────────────────────
 
 async function upsertAlert(alert: AlertInput) {
+  // Check existing alert to track severity changes
+  const existing = await prisma.alert.findUnique({
+    where: {
+      source_externalId: {
+        source: alert.source,
+        externalId: alert.externalId,
+      },
+    },
+    select: { severity: true },
+  });
+
+  const previousSeverity =
+    existing && existing.severity !== alert.severity
+      ? existing.severity
+      : existing
+        ? undefined // no change — don't overwrite existing previousSeverity
+        : null; // new alert — no previous severity
+
   return prisma.alert.upsert({
     where: {
       source_externalId: {
@@ -125,6 +143,7 @@ async function upsertAlert(alert: AlertInput) {
       timestamp: alert.timestamp,
       status: alert.status,
       resolvedAt: alert.resolvedAt,
+      previousSeverity: null,
     },
     update: {
       severity: alert.severity,
@@ -134,6 +153,9 @@ async function upsertAlert(alert: AlertInput) {
       region: alert.region,
       status: alert.status,
       resolvedAt: alert.resolvedAt,
+      ...(previousSeverity !== undefined
+        ? { previousSeverity }
+        : {}),
     },
   });
 }

@@ -10,10 +10,14 @@ import {
   Clock,
   X,
   Undo2,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import type { SerializedAlertWithState } from "@/lib/alert-schema";
 import { formatRelativeTime, truncate } from "@/lib/utils";
 import { PROVIDERS } from "@/lib/constants";
+import { SEVERITY_ORDER } from "@/lib/constants";
+import type { AlertSeverity } from "@/lib/alert-schema";
 import { SeverityBadge } from "./SeverityBadge";
 import {
   BlastRadiusPanel,
@@ -31,9 +35,49 @@ const SNOOZE_OPTIONS = [
 interface AlertCardProps {
   alert: SerializedAlertWithState;
   showActions?: boolean;
+  avgResolutionMin?: number;
 }
 
-export function AlertCard({ alert, showActions = true }: AlertCardProps) {
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
+function SeverityTrend({
+  current,
+  previous,
+}: {
+  current: string;
+  previous: string | null;
+}) {
+  if (!previous || previous === current) return null;
+
+  const currentRank = SEVERITY_ORDER[current as AlertSeverity] ?? 3;
+  const prevRank = SEVERITY_ORDER[previous as AlertSeverity] ?? 3;
+  const escalating = currentRank < prevRank; // lower rank = higher severity
+
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] ${
+        escalating
+          ? "bg-critical/10 text-critical"
+          : "bg-secondary/10 text-secondary"
+      }`}
+      title={`${escalating ? "Escalated" : "De-escalated"} from ${previous}`}
+    >
+      {escalating ? (
+        <TrendingUp className="h-2.5 w-2.5" />
+      ) : (
+        <TrendingDown className="h-2.5 w-2.5" />
+      )}
+      {escalating ? "Escalated" : "De-escalated"}
+    </span>
+  );
+}
+
+export function AlertCard({ alert, showActions = true, avgResolutionMin }: AlertCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [snoozeOpen, setSnoozeOpen] = useState(false);
   const { data: session } = useSession();
@@ -72,6 +116,12 @@ export function AlertCard({ alert, showActions = true }: AlertCardProps) {
                 Acknowledged
               </span>
             )}
+            {!isResolved && (
+              <SeverityTrend
+                current={alert.severity}
+                previous={alert.previousSeverity}
+              />
+            )}
           </div>
 
           <h3 className="text-sm font-medium text-text-primary">
@@ -88,6 +138,14 @@ export function AlertCard({ alert, showActions = true }: AlertCardProps) {
             )}
             <span className="text-border">|</span>
             <span>{formatRelativeTime(alert.timestamp)}</span>
+            {!isResolved && avgResolutionMin != null && (
+              <>
+                <span className="text-border">|</span>
+                <span className="text-text-secondary">
+                  ~{formatDuration(avgResolutionMin)} avg resolution
+                </span>
+              </>
+            )}
           </div>
 
           {alert.description && (

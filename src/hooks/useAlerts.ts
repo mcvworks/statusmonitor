@@ -16,6 +16,7 @@ interface AlertsResponse {
   limit: number;
   offset: number;
   hasMore: boolean;
+  avgResolutionBySource: Record<string, number>;
 }
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -43,6 +44,7 @@ export function useAlerts(filters: AlertFilters = {}) {
     alerts: data?.alerts ?? [],
     total: data?.total ?? 0,
     hasMore: data?.hasMore ?? false,
+    avgResolutionBySource: data?.avgResolutionBySource ?? {},
     isLoading,
     isError: !!error,
     mutate,

@@ -44,7 +44,7 @@ export function AlertList({
   search,
   sourceFilter,
 }: AlertListProps = {}) {
-  const { alerts, isLoading, isError } = useAlerts({
+  const { alerts, isLoading, isError, avgResolutionBySource } = useAlerts({
     category,
     severity,
     status,
@@ -149,6 +149,7 @@ export function AlertList({
             key={cat}
             category={cat}
             alerts={grouped[cat]}
+            avgResolutionBySource={avgResolutionBySource}
           />
         ) : null,
       )}

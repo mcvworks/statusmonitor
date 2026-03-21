@@ -42,6 +42,7 @@ export const SerializedAlertSchema = z.object({
   source: z.string(),
   category: AlertCategory,
   severity: AlertSeverity,
+  previousSeverity: AlertSeverity.nullable(),
   title: z.string(),
   description: z.string().nullable(),
   url: z.string().nullable(),
