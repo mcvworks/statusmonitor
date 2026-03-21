@@ -44,12 +44,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 # Copy generated Prisma client
 COPY --from=builder --chown=nextjs:nodejs /app/src/generated/prisma ./src/generated/prisma
 
-# Copy Prisma config (needed for migrate deploy)
-COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
-
 # Install Prisma CLI and dotenv for runtime migrations
 COPY --from=builder /app/package.json ./package.json
-RUN npm install prisma dotenv --save-dev --ignore-scripts 2>/dev/null && npx prisma version
+RUN npm install prisma dotenv --save-dev --ignore-scripts 2>/dev/null
+
+# Copy Prisma config (needed for migrate deploy)
+COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 
 # Copy entrypoint script
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./
