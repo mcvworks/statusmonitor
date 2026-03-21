@@ -51,6 +51,9 @@ RUN npm install prisma --save-dev --ignore-scripts 2>/dev/null
 # Create Prisma config without dotenv (Docker injects env vars directly)
 RUN echo 'import { defineConfig } from "prisma/config"; export default defineConfig({ schema: "prisma/schema.prisma", migrations: { path: "prisma/migrations" }, datasource: { url: process.env.DATABASE_URL } });' > prisma.config.ts
 
+# Fix ownership for nextjs user
+RUN chown -R nextjs:nodejs /app/node_modules /app/prisma.config.ts /app/package.json
+
 # Copy entrypoint script
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh
