@@ -20,6 +20,9 @@ RUN npx prisma generate
 # Build Next.js
 RUN npm run build
 
+# Ensure .prisma directory exists for the runner stage
+RUN ls node_modules/.prisma/client/index.js
+
 # Stage 3: Production runner
 FROM node:20-alpine AS runner
 RUN apk add --no-cache libc6-compat curl
@@ -33,12 +36,14 @@ RUN adduser --system --uid 1001 nextjs
 # Copy public assets
 COPY --from=builder /app/public ./public
 
-# Copy standalone build
+# Copy standalone build (includes its own node_modules)
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy Prisma schema and migrations for runtime migration
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+
+# Copy Prisma packages from builder (needed for runtime migrations + client)
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
