@@ -1,5 +1,6 @@
 import { PROVIDERS } from "@/lib/constants";
 import { PROVIDER_ICON_PATHS } from "@/lib/provider-icons";
+import { ensureReadable } from "@/lib/utils";
 
 interface ProviderIconProps {
   providerKey: string;
@@ -17,6 +18,7 @@ export function ProviderIcon({
 
   const iconSlug = meta.iconSlug;
   const path = iconSlug ? PROVIDER_ICON_PATHS[iconSlug] : null;
+  const color = ensureReadable(meta.color);
 
   if (path) {
     return (
@@ -25,7 +27,7 @@ export function ProviderIcon({
         viewBox="0 0 24 24"
         width={size}
         height={size}
-        fill={meta.color}
+        fill={color}
         className={`shrink-0 ${className}`}
         aria-label={meta.name}
       >
@@ -44,8 +46,8 @@ export function ProviderIcon({
       style={{
         width: size,
         height: size,
-        backgroundColor: `${meta.color}20`,
-        color: meta.color,
+        backgroundColor: `${color}20`,
+        color,
         fontSize,
         lineHeight: 1,
       }}

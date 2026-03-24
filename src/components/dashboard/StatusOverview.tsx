@@ -5,7 +5,9 @@ import type { SerializedAlert } from "@/lib/alert-schema";
 import { PROVIDERS, SEVERITY_ORDER } from "@/lib/constants";
 import type { AlertSeverity } from "@/lib/alert-schema";
 import { useAlerts } from "@/hooks/useAlerts";
+import { useActivity } from "@/hooks/useActivity";
 import { ProviderIcon } from "./ProviderIcon";
+import { Sparkline } from "./Sparkline";
 
 type ProviderStatus = "operational" | "degraded" | "outage" | "unknown";
 
@@ -41,6 +43,7 @@ interface StatusOverviewProps {
 
 export function StatusOverview({ sourceFilter }: StatusOverviewProps = {}) {
   const { alerts, isLoading } = useAlerts();
+  const { activity } = useActivity();
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeSource = searchParams.get("source") ?? "";
@@ -116,10 +119,16 @@ export function StatusOverview({ sourceFilter }: StatusOverviewProps = {}) {
                 <span className={`status-dot ${style.dot}`} />
                 <ProviderIcon providerKey={p.key} size={14} />
                 <span
-                  className={`truncate text-xs ${isActive ? "text-primary" : "text-text-secondary"}`}
+                  className={`min-w-0 flex-1 truncate text-xs ${isActive ? "text-primary" : "text-text-secondary"}`}
                 >
                   {p.name}
                 </span>
+                {activity[p.key] && (
+                  <Sparkline
+                    data={activity[p.key]}
+                    color={PROVIDERS[p.key]?.color ?? "#8892A0"}
+                  />
+                )}
               </button>
             );
           })}

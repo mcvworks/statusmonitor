@@ -30,6 +30,7 @@ export const AlertInputSchema = z.object({
   timestamp: z.date(),
   status: AlertStatus,
   resolvedAt: z.date().optional(),
+  metadata: z.any().optional(),
 });
 
 export type AlertInput = z.infer<typeof AlertInputSchema>;
@@ -49,6 +50,7 @@ export const SerializedAlertSchema = z.object({
   region: z.string().nullable(),
   timestamp: z.string(),
   status: AlertStatus,
+  metadata: z.any().nullable(),
   resolvedAt: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),

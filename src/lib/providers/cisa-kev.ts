@@ -88,6 +88,15 @@ export class CISAKEVProvider extends BaseJSONProvider<KEVCatalog> {
           url: `https://nvd.nist.gov/vuln/detail/${vuln.cveID}`,
           timestamp: new Date(vuln.dateAdded),
           status: daysUntilDue <= 0 ? 'active' : 'investigating',
+          metadata: {
+            vendor: vuln.vendorProject,
+            product: vuln.product,
+            requiredAction: vuln.requiredAction,
+            dueDate: vuln.dueDate,
+            daysUntilDue,
+            ransomware: vuln.knownRansomwareCampaignUse === 'Known',
+            notes: vuln.notes || null,
+          },
         };
       });
   }

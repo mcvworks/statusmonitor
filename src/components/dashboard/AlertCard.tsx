@@ -14,8 +14,8 @@ import {
   TrendingDown,
 } from "lucide-react";
 import type { SerializedAlertWithState } from "@/lib/alert-schema";
-import { formatRelativeTime, truncate } from "@/lib/utils";
-import { PROVIDERS } from "@/lib/constants";
+import { formatRelativeTime, truncate, ensureReadable } from "@/lib/utils";
+import { PROVIDERS, SEVERITY_COLORS } from "@/lib/constants";
 import { SEVERITY_ORDER } from "@/lib/constants";
 import type { AlertSeverity } from "@/lib/alert-schema";
 import { SeverityBadge } from "./SeverityBadge";
@@ -25,6 +25,9 @@ import {
   hasBlastRadius,
 } from "@/components/blast-radius/BlastRadiusPanel";
 import { useAlertActions } from "@/hooks/useAlertActions";
+import { IncidentTimeline } from "./IncidentTimeline";
+import { CvssBreakdown } from "./CvssBreakdown";
+import { ComponentChips } from "./ComponentChips";
 
 const SNOOZE_OPTIONS = [
   { label: "30 min", ms: 30 * 60 * 1000 },
@@ -90,6 +93,11 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
   const isAuthenticated = !!session?.user;
   const userState = alert.userState;
   const isAcknowledged = userState?.state === "acknowledged";
+  const severityColor = SEVERITY_COLORS[alert.severity as AlertSeverity];
+  const readableProviderColor = provider?.color
+    ? ensureReadable(provider.color)
+    : undefined;
+  const metadata = alert.metadata as Record<string, unknown> | null;
 
   const handleSnooze = async (ms: number) => {
     // eslint-disable-next-line react-hooks/purity -- Date.now() is in an event handler, not during render
@@ -102,7 +110,13 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
     <div
       className={`glass-card p-4 transition-all hover:-translate-y-0.5 hover:shadow-lg ${
         isResolved ? "opacity-50" : ""
-      } ${isAcknowledged ? "opacity-60" : ""}`}
+      } ${isAcknowledged ? "opacity-60" : ""} ${
+        !isResolved && alert.severity === "critical" ? "alert-pulse" : ""
+      }`}
+      style={{
+        borderLeftWidth: 3,
+        borderLeftColor: severityColor?.fg ?? "#232A35",
+      }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -133,7 +147,7 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-[family-name:var(--font-mono)] text-[11px] text-text-muted">
             <span
               className="inline-flex items-center gap-1.5"
-              style={{ color: provider?.color }}
+              style={{ color: readableProviderColor }}
             >
               <ProviderIcon providerKey={alert.source} size={13} />
               {providerName}
@@ -193,6 +207,30 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
               </a>
             )}
           </div>
+
+          {/* Structured metadata: components, CVSS, incident updates */}
+          {Array.isArray(metadata?.components) && (
+            <ComponentChips components={metadata.components as string[]} />
+          )}
+          {!!metadata?.cvss && (
+            <CvssBreakdown cvss={metadata.cvss as React.ComponentProps<typeof CvssBreakdown>["cvss"]} />
+          )}
+          {Array.isArray(metadata?.updates) && (
+            <IncidentTimeline
+              updates={metadata.updates as React.ComponentProps<typeof IncidentTimeline>["updates"]}
+            />
+          )}
+          {/* CISA KEV metadata */}
+          {metadata?.ransomware === true && (
+            <span className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-critical/10 px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-critical">
+              Known ransomware campaign
+            </span>
+          )}
+          {typeof metadata?.dueDate === "string" && (
+            <span className="mt-1 inline-flex items-center gap-1 font-[family-name:var(--font-mono)] text-[10px] text-text-muted">
+              Remediation due: <span className={Number(metadata.daysUntilDue) <= 0 ? "text-critical font-medium" : Number(metadata.daysUntilDue) <= 7 ? "text-major font-medium" : "text-text-secondary"}>{String(metadata.dueDate)}</span>
+            </span>
+          )}
 
           {!isResolved && hasBlastRadius(alert.source) && (
             <BlastRadiusPanel provider={alert.source} />

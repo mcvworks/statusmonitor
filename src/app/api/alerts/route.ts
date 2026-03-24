@@ -79,14 +79,23 @@ export async function GET(request: NextRequest) {
     avgResolutionBySource[source] = Math.round(totalMs / count / 60_000);
   }
 
-  // Flatten alertStates array into a single userState field
+  // Flatten alertStates array into a single userState field; parse metadata JSON
   const serialized = alerts.map((alert) => {
-    const { alertStates, ...rest } = alert as typeof alert & {
+    const { alertStates, metadata, ...rest } = alert as typeof alert & {
       alertStates?: { state: string; snoozedUntil: Date | null }[];
     };
     const userState = alertStates?.[0] ?? null;
+    let parsedMetadata: Record<string, unknown> | null = null;
+    if (metadata) {
+      try {
+        parsedMetadata = JSON.parse(metadata);
+      } catch {
+        // ignore malformed metadata
+      }
+    }
     return {
       ...rest,
+      metadata: parsedMetadata,
       userState: userState
         ? {
             state: userState.state as "acknowledged" | "snoozed" | "dismissed",

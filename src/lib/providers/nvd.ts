@@ -4,6 +4,15 @@ import type { AlertInput, ProviderMetadata } from './types';
 interface NVDCVSSData {
   baseScore: number;
   baseSeverity: string;
+  vectorString?: string;
+  attackVector?: string;
+  attackComplexity?: string;
+  privilegesRequired?: string;
+  userInteraction?: string;
+  scope?: string;
+  confidentialityImpact?: string;
+  integrityImpact?: string;
+  availabilityImpact?: string;
 }
 
 interface NVDMetric {
@@ -110,6 +119,7 @@ export class NVDProvider extends BaseJSONProvider<NVDResponse> {
         severity = 'minor';
       }
 
+      const cvssData = cvss?.cvssData;
       alerts.push({
         externalId: cve.id,
         source: this.name,
@@ -120,6 +130,21 @@ export class NVDProvider extends BaseJSONProvider<NVDResponse> {
         url: `https://nvd.nist.gov/vuln/detail/${cve.id}`,
         timestamp: new Date(cve.published),
         status: 'active',
+        metadata: {
+          cvss: {
+            score,
+            severity: cvssData?.baseSeverity ?? null,
+            vector: cvssData?.vectorString ?? null,
+            attackVector: cvssData?.attackVector ?? null,
+            attackComplexity: cvssData?.attackComplexity ?? null,
+            privilegesRequired: cvssData?.privilegesRequired ?? null,
+            userInteraction: cvssData?.userInteraction ?? null,
+            scope: cvssData?.scope ?? null,
+            confidentialityImpact: cvssData?.confidentialityImpact ?? null,
+            integrityImpact: cvssData?.integrityImpact ?? null,
+            availabilityImpact: cvssData?.availabilityImpact ?? null,
+          },
+        },
       });
     }
 

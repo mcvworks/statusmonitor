@@ -79,6 +79,7 @@ model Alert {
   timestamp   DateTime
   status           String    // active, resolved, investigating, monitoring
   previousSeverity String?   // tracks escalation/de-escalation
+  metadata         String?   // JSON: incident updates, CVSS vectors, components, etc.
   resolvedAt       DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

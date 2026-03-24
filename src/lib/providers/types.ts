@@ -10,6 +10,7 @@ export interface AlertInput {
   timestamp: Date;
   status: 'active' | 'resolved' | 'investigating' | 'monitoring';
   resolvedAt?: Date;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ProviderMetadata {

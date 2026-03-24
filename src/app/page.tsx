@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import { Activity, AlertTriangle, Clock, Shield } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
 import { HealthBanner } from "@/components/dashboard/HealthBanner";
+import { SeveritySummaryBar } from "@/components/dashboard/SeveritySummaryBar";
 
 async function getStats() {
   const [activeCount, securityCount, lastPoll] = await Promise.all([
@@ -76,6 +78,11 @@ export default async function Home() {
 
       {/* Aggregate health banner */}
       <HealthBanner />
+
+      {/* Severity distribution bar */}
+      <Suspense>
+        <SeveritySummaryBar />
+      </Suspense>
 
       {/* SSE-connected search/filter + provider grid + alert feed */}
       <DashboardClient />

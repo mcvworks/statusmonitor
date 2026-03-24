@@ -124,6 +124,10 @@ async function upsertAlert(alert: AlertInput) {
         ? undefined // no change — don't overwrite existing previousSeverity
         : null; // new alert — no previous severity
 
+  const metadataJson = alert.metadata
+    ? JSON.stringify(alert.metadata)
+    : null;
+
   return prisma.alert.upsert({
     where: {
       source_externalId: {
@@ -144,6 +148,7 @@ async function upsertAlert(alert: AlertInput) {
       status: alert.status,
       resolvedAt: alert.resolvedAt,
       previousSeverity: null,
+      metadata: metadataJson,
     },
     update: {
       severity: alert.severity,
@@ -153,6 +158,7 @@ async function upsertAlert(alert: AlertInput) {
       region: alert.region,
       status: alert.status,
       resolvedAt: alert.resolvedAt,
+      metadata: metadataJson,
       ...(previousSeverity !== undefined
         ? { previousSeverity }
         : {}),

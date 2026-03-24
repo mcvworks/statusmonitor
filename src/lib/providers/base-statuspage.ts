@@ -93,6 +93,14 @@ export abstract class BaseStatuspageProvider implements AlertProvider {
       resolvedAt: incident.resolved_at
         ? new Date(incident.resolved_at)
         : undefined,
+      metadata: {
+        components: incident.components.map((c) => c.name),
+        updates: incident.incident_updates.map((u) => ({
+          body: u.body,
+          status: u.status,
+          timestamp: u.updated_at,
+        })),
+      },
     };
   }
 }
