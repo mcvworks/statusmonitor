@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { MyStackPage } from "./MyStackPage";
 
 export const metadata = {
-  title: "My Stack — StatusMonitor",
+  title: "My Stack — DTMonitor",
   description: "Define your infrastructure stack for personalized blast radius analysis",
 };
 

@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-// StatusMonitor Service Worker — Push Notifications
+// DTMonitor Service Worker — Push Notifications
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;
@@ -9,7 +9,7 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data.json();
   } catch {
-    data = { title: "StatusMonitor", body: event.data.text() };
+    data = { title: "DTMonitor", body: event.data.text() };
   }
 
   const options = {
@@ -18,11 +18,11 @@ self.addEventListener("push", (event) => {
     badge: data.badge ?? "/icon-badge.png",
     data: data.data ?? {},
     vibrate: [100, 50, 100],
-    tag: data.data?.alertId ?? "statusmonitor",
+    tag: data.data?.alertId ?? "dtmonitor",
     renotify: true,
   };
 
-  event.waitUntil(self.registration.showNotification(data.title ?? "StatusMonitor", options));
+  event.waitUntil(self.registration.showNotification(data.title ?? "DTMonitor", options));
 });
 
 self.addEventListener("notificationclick", (event) => {

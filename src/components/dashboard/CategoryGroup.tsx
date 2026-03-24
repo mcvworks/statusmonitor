@@ -6,6 +6,7 @@ import type { AlertCategory, SerializedAlertWithState } from "@/lib/alert-schema
 import { CATEGORY_LABELS } from "@/lib/constants";
 import { PROVIDERS } from "@/lib/constants";
 import { AlertCard } from "./AlertCard";
+import { ProviderIcon } from "./ProviderIcon";
 
 interface CategoryGroupProps {
   category: AlertCategory;
@@ -72,6 +73,7 @@ function SourceGroup({
         ) : (
           <ChevronDown className="h-3.5 w-3.5 text-text-muted" />
         )}
+        <ProviderIcon providerKey={cluster.source} size={14} />
         <span className="text-xs font-medium text-text-primary">
           {cluster.name}
         </span>

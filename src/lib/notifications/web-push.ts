@@ -92,7 +92,7 @@ export async function sendTestPush(userId: string): Promise<void> {
   }
 
   const payload = JSON.stringify({
-    title: "StatusMonitor — Test",
+    title: "DTMonitor — Test",
     body: "Your browser push notifications are configured correctly!",
     icon: "/icon-192.png",
     badge: "/icon-badge.png",

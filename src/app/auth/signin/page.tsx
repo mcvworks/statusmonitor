@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import { Mail, Github, Shield, BarChart3, Bell, Layers } from "lucide-react";
 
 export const metadata = {
-  title: "Sign In — StatusMonitor",
-  description: "Sign in to StatusMonitor for custom dashboards, alerts, and dependency mapping.",
+  title: "Sign In — DTMonitor",
+  description: "Sign in to DTMonitor for custom dashboards, alerts, and dependency mapping.",
 };
 
 export default async function SignInPage({
@@ -42,7 +42,7 @@ export default async function SignInPage({
           {/* Header */}
           <div className="mb-8 text-center">
             <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-wider text-[#E9EEF5]">
-              StatusMonitor
+              DTMonitor
             </h1>
             <p className="mt-2 font-[family-name:var(--font-body)] text-sm text-[#8892A0]">
               Sign in to your account

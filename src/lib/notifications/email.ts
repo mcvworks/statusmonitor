@@ -18,7 +18,7 @@ export async function sendEmailNotification(
   _config: Record<string, unknown>,
 ): Promise<void> {
   const severitySummary = buildSeveritySummary(alerts);
-  const subject = `[StatusMonitor] ${alerts.length} new alert${alerts.length > 1 ? "s" : ""} — ${severitySummary}`;
+  const subject = `[DTMonitor] ${alerts.length} new alert${alerts.length > 1 ? "s" : ""} — ${severitySummary}`;
   const html = buildEmailHTML(alerts);
 
   if (process.env.RESEND_API_KEY) {
@@ -32,7 +32,7 @@ export async function sendEmailNotification(
  * Send a test notification email to verify configuration.
  */
 export async function sendTestEmail(email: string): Promise<void> {
-  const subject = "[StatusMonitor] Test notification";
+  const subject = "[DTMonitor] Test notification";
   const html = buildTestEmailHTML();
 
   if (process.env.RESEND_API_KEY) {
@@ -133,7 +133,7 @@ function buildEmailHTML(alerts: Alert[]): string {
   <div style="max-width: 600px; margin: 0 auto; padding: 24px;">
     <div style="text-align: center; padding: 24px 0;">
       <h1 style="color: #F2C200; font-family: 'Orbitron', sans-serif; font-size: 20px; margin: 0;">
-        StatusMonitor
+        DTMonitor
       </h1>
       <p style="color: #8892A0; font-size: 13px; margin-top: 4px;">
         ${alerts.length} new alert${alerts.length > 1 ? "s" : ""} detected
@@ -165,7 +165,7 @@ function buildTestEmailHTML(): string {
   <div style="max-width: 600px; margin: 0 auto; padding: 24px;">
     <div style="text-align: center; padding: 24px 0;">
       <h1 style="color: #F2C200; font-family: 'Orbitron', sans-serif; font-size: 20px; margin: 0;">
-        StatusMonitor
+        DTMonitor
       </h1>
     </div>
 

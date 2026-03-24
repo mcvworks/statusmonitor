@@ -27,8 +27,8 @@ const BASE_URL = "https://monitor.ducktyped.com";
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
-    default: "StatusMonitor — IT Alert Dashboard",
-    template: "%s | StatusMonitor",
+    default: "DTMonitor — IT Alert Dashboard",
+    template: "%s | DTMonitor",
   },
   description:
     "Centralized IT alert dashboard for monitoring cloud service outages, SaaS incidents, security vulnerabilities, and ISP issues.",
@@ -38,8 +38,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    siteName: "StatusMonitor",
-    title: "StatusMonitor — IT Alert Dashboard",
+    siteName: "DTMonitor",
+    title: "DTMonitor — IT Alert Dashboard",
     description:
       "Monitor cloud service outages, SaaS incidents, security vulnerabilities, and ISP issues in real time.",
     url: BASE_URL,
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "StatusMonitor — IT Alert Dashboard",
+    title: "DTMonitor — IT Alert Dashboard",
     description:
       "Monitor cloud service outages, SaaS incidents, security vulnerabilities, and ISP issues in real time.",
   },
@@ -62,7 +62,7 @@ const jsonLd = {
   sameAs: [],
   subOrganization: {
     "@type": "WebApplication",
-    name: "StatusMonitor",
+    name: "DTMonitor",
     url: "https://monitor.ducktyped.com",
     applicationCategory: "MonitoringApplication",
     description:

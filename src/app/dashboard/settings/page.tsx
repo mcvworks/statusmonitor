@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { SettingsPage } from "./SettingsPage";
 
 export const metadata = {
-  title: "Notification Settings — StatusMonitor",
+  title: "Notification Settings — DTMonitor",
   description: "Configure your notification channels and alert preferences",
 };
 

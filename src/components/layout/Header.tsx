@@ -49,12 +49,12 @@ export function Header({ onMenuToggle }: HeaderProps) {
             >
               <Image
                 src="/dtlogo.svg"
-                alt="StatusMonitor"
+                alt="DTMonitor"
                 width={28}
                 height={28}
                 className="h-7 w-7"
               />
-              <span className="hidden sm:inline">StatusMonitor</span>
+              <span className="hidden sm:inline">DTMonitor</span>
             </Link>
 
             <div className="hidden items-center gap-0.5 md:flex">

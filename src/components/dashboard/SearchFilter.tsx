@@ -160,6 +160,14 @@ export function SearchFilter({ onChange }: SearchFilterProps) {
           )}
         </div>
 
+        {/* Sort select */}
+        <FilterSelect
+          label="Sort"
+          value={filters.sort}
+          options={SORTS}
+          onChange={(v) => update({ sort: v })}
+        />
+
         {/* Toggle filters */}
         <button
           onClick={() => setFiltersOpen(!filtersOpen)}
@@ -205,12 +213,6 @@ export function SearchFilter({ onChange }: SearchFilterProps) {
             value={filters.source}
             options={SOURCES}
             onChange={(v) => update({ source: v })}
-          />
-          <FilterSelect
-            label="Sort"
-            value={filters.sort}
-            options={SORTS}
-            onChange={(v) => update({ sort: v })}
           />
         </div>
       )}

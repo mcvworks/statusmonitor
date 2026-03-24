@@ -187,6 +187,55 @@ VAPID_PRIVATE_KEY=<private-key>
 VAPID_SUBJECT=mailto:admin@ducktyped.com
 ```
 
+## Co-Hosting on Existing VM (Recommended)
+
+StatusMonitor is lightweight enough to share the Ducktyped VM. Resource footprint:
+
+- **Memory**: ~200-300MB (standalone Next.js + SQLite, no separate DB server)
+- **CPU**: Minimal — polling is ~22 small HTTP requests every 2-5 min (I/O-bound)
+- **Disk**: SQLite grows ~1-10MB/month
+- **Network**: ~0.5 Mbps sustained, negligible
+
+### Memory Limits
+
+Add resource limits to `docker-compose.yml` to protect your main site:
+
+```yaml
+services:
+  statusmonitor:
+    # ...existing config...
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+```
+
+512MB is more than enough and guarantees Ducktyped stays healthy.
+
+### Port Conflicts
+
+StatusMonitor defaults to port 3000. If Ducktyped already uses 3000, change the port mapping in `docker-compose.yml`:
+
+```yaml
+ports:
+  - "3001:3000"  # Maps container port 3000 to host port 3001
+```
+
+Then update `nginx/monitor.conf` to proxy to the new host port.
+
+### Shared Nginx
+
+If nginx is already running for Ducktyped, just add the StatusMonitor server block alongside it:
+
+```bash
+sudo cp nginx/monitor.conf /etc/nginx/sites-available/monitor.ducktyped.com
+sudo ln -s /etc/nginx/sites-available/monitor.ducktyped.com /etc/nginx/sites-enabled/
+sudo certbot --nginx -d monitor.ducktyped.com
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+No changes needed to your existing Ducktyped nginx config.
+
 ## Docker Deployment
 
 ### Build and Run

@@ -45,7 +45,7 @@ export async function sendTestTeams(webhookUrl: string): Promise<void> {
           body: [
             {
               type: "TextBlock",
-              text: "StatusMonitor — Test notification",
+              text: "DTMonitor — Test notification",
               weight: "Bolder",
               size: "Medium",
               color: "Good",
@@ -145,7 +145,7 @@ function buildTeamsPayload(alerts: Alert[]) {
   // Footer
   body.push({
     type: "TextBlock",
-    text: "StatusMonitor · Built by [Ducktyped](https://ducktyped.com)",
+    text: "DTMonitor · Built by [Ducktyped](https://ducktyped.com)",
     size: "Small",
     isSubtle: true,
     wrap: true,

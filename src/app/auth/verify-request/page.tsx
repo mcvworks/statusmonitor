@@ -2,7 +2,7 @@ import { Mail } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = {
-  title: "Check Your Email — StatusMonitor",
+  title: "Check Your Email — DTMonitor",
 };
 
 export default function VerifyRequestPage() {

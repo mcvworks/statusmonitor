@@ -4,5 +4,5 @@ set -e
 echo "Running Prisma migrations..."
 npx prisma migrate deploy
 
-echo "Starting StatusMonitor..."
+echo "Starting DTMonitor..."
 exec node server.js

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 
 export const metadata = {
-  title: "Auth Error — StatusMonitor",
+  title: "Auth Error — DTMonitor",
 };
 
 const ERROR_MESSAGES: Record<string, string> = {

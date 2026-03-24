@@ -1,4 +1,4 @@
-# StatusMonitor
+# DTMonitor
 
 A centralized IT alert dashboard for monitoring cloud service outages, SaaS incidents, security vulnerabilities, and ISP issues. Deployed at [monitor.ducktyped.com](https://monitor.ducktyped.com).
 

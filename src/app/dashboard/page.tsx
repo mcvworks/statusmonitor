@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { CustomDashboard } from "./CustomDashboard";
 
 export const metadata = {
-  title: "My Dashboard — StatusMonitor",
+  title: "My Dashboard — DTMonitor",
   description: "Your personalized service monitoring dashboard",
 };
 

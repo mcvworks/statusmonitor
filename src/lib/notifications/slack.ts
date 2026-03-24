@@ -52,7 +52,7 @@ export async function sendTestSlack(webhookUrl: string): Promise<void> {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: ":white_check_mark: *StatusMonitor — Test notification*\nYour Slack webhook is configured correctly. You will receive alerts based on your severity and source filter settings.",
+          text: ":white_check_mark: *DTMonitor — Test notification*\nYour Slack webhook is configured correctly. You will receive alerts based on your severity and source filter settings.",
         },
       },
       {
@@ -129,7 +129,7 @@ function buildSlackPayload(alerts: Alert[]) {
     elements: [
       {
         type: "mrkdwn",
-        text: `${emoji} StatusMonitor · Built by <https://ducktyped.com|Ducktyped>`,
+        text: `${emoji} DTMonitor · Built by <https://ducktyped.com|Ducktyped>`,
       },
     ],
   });
