@@ -126,7 +126,11 @@ export function Header({ onMenuToggle }: HeaderProps) {
         <div className="flex items-center gap-1 text-text-muted">
           <Clock className="h-3 w-3" />
           <span className="font-[family-name:var(--font-mono)] text-[10px]">
-            {lastEventAt ? `Updated ${formatTime(lastEventAt)}` : "Awaiting data"}
+            {lastEventAt
+              ? `Updated ${formatTime(lastEventAt)}`
+              : status === "connected"
+                ? "Monitoring"
+                : "Awaiting data"}
           </span>
         </div>
       </div>
