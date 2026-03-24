@@ -52,3 +52,11 @@
 - [x] [027 — Git Cleanup & Final Push](027-git-final-push.md)
 - [x] [028 — Handoff Documentation](028-handoff-docs.md)
 - [ ] [029 — Add StatusMonitor Link to Ducktyped Toolbar](029-ducktyped-toolbar-link.md) _(deferred — URL-only access for now)_
+
+## Phase 13: Dashboard Enrichment
+- [x] [030 — Aggregate Health Banner](030-health-banner.md)
+- [ ] [031 — Activity Sparklines per Provider](031-activity-sparklines.md)
+- [ ] [032 — Hacker News & Reddit Thread Links](032-hn-reddit-threads.md)
+- [ ] [033 — Live Event Feed (State Changes)](033-event-feed.md)
+- [ ] [034 — Severity Summary Bar](034-severity-summary-bar.md)
+- [ ] [035 — Downdetector Crowdsourced Signals](035-downdetector-provider.md)

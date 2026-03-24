@@ -45,6 +45,7 @@ export function DashboardClient() {
       </Suspense>
 
       {/* Alert feed */}
+      <div id="alert-feed" />
       <AlertList
         category={filters.category}
         severity={filters.severity}

@@ -1,6 +1,7 @@
 import { Activity, AlertTriangle, Clock, Shield } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
+import { HealthBanner } from "@/components/dashboard/HealthBanner";
 
 async function getStats() {
   const [activeCount, securityCount, lastPoll] = await Promise.all([
@@ -72,6 +73,9 @@ export default async function Home() {
           value={String(securityCount)}
         />
       </div>
+
+      {/* Aggregate health banner */}
+      <HealthBanner />
 
       {/* SSE-connected search/filter + provider grid + alert feed */}
       <DashboardClient />

@@ -206,6 +206,26 @@ body::before {
   box-shadow: 0 0 6px rgba(255, 107, 107, 0.4);
 }
 
+/* ─── Critical Alert Pulse ─────────────────────────────── */
+@keyframes alert-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
+  50% { box-shadow: 0 0 12px 2px rgba(255, 107, 107, 0.15); }
+}
+
+.alert-pulse {
+  animation: alert-pulse 3s ease-in-out infinite;
+}
+
+/* ─── Health Banner Pulse ──────────────────────────────── */
+@keyframes health-banner-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0), inset 0 0 30px rgba(255, 107, 107, 0.1); }
+  50% { box-shadow: 0 0 20px 4px rgba(255, 107, 107, 0.12), inset 0 0 30px rgba(255, 107, 107, 0.15); }
+}
+
+.health-banner-pulse {
+  animation: health-banner-pulse 2.5s ease-in-out infinite;
+}
+
 /* ─── Scrollbar ─────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;
