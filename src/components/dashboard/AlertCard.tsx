@@ -28,6 +28,7 @@ import { useAlertActions } from "@/hooks/useAlertActions";
 import { IncidentTimeline } from "./IncidentTimeline";
 import { CvssBreakdown } from "./CvssBreakdown";
 import { ComponentChips } from "./ComponentChips";
+import { CommunityThreads } from "./CommunityThreads";
 
 const SNOOZE_OPTIONS = [
   { label: "30 min", ms: 30 * 60 * 1000 },
@@ -206,6 +207,17 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
                 {isResolved ? "Status history" : `${providerName} status`}
               </a>
             )}
+            {provider?.downdetectorSlug && (
+              <a
+                href={`https://downdetector.com/status/${provider.downdetectorSlug}/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-[family-name:var(--font-mono)] text-[10px] text-text-muted transition-colors hover:text-text-primary"
+              >
+                <ExternalLink className="h-2.5 w-2.5" />
+                User reports
+              </a>
+            )}
           </div>
 
           {/* Structured metadata: components, CVSS, incident updates */}
@@ -231,6 +243,8 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
               Remediation due: <span className={Number(metadata.daysUntilDue) <= 0 ? "text-critical font-medium" : Number(metadata.daysUntilDue) <= 7 ? "text-major font-medium" : "text-text-secondary"}>{String(metadata.dueDate)}</span>
             </span>
           )}
+
+          <CommunityThreads provider={alert.source} isActive={!isResolved} />
 
           {!isResolved && hasBlastRadius(alert.source) && (
             <BlastRadiusPanel provider={alert.source} />

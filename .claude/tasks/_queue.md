@@ -56,7 +56,7 @@
 ## Phase 13: Dashboard Enrichment
 - [x] [030 — Aggregate Health Banner](030-health-banner.md)
 - [x] [031 — Activity Sparklines per Provider](031-activity-sparklines.md)
-- [ ] [032 — Hacker News & Reddit Thread Links](032-hn-reddit-threads.md)
-- [ ] [033 — Live Event Feed (State Changes)](033-event-feed.md)
+- [x] [032 — Hacker News & Reddit Thread Links](032-hn-reddit-threads.md)
+- [x] [033 — Live Event Feed (State Changes)](033-event-feed.md)
 - [x] [034 — Severity Summary Bar](034-severity-summary-bar.md)
-- [ ] [035 — Downdetector Crowdsourced Signals](035-downdetector-provider.md)
+- [x] [035 — Downdetector Crowdsourced Signals](035-downdetector-provider.md)

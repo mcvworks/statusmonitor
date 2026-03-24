@@ -1,6 +1,6 @@
 # 035 — Downdetector Crowdsourced Signals
 
-## Status: queued
+## Status: done
 
 ## Objective
 Implement the Downdetector provider (currently a placeholder in the provider registry) to surface crowdsourced outage reports, adding a "what real users are seeing" dimension.
@@ -21,10 +21,19 @@ Implement the Downdetector provider (currently a placeholder in the provider reg
 - Add Downdetector URL mapping to PROVIDERS constant in `lib/constants.ts`
 
 ## Acceptance Criteria
-- [ ] Downdetector provider fetches crowdsourced data (or links)
-- [ ] Report spikes generate alerts with appropriate severity
-- [ ] Downdetector links appear in AlertCard for mapped providers
-- [ ] Provider registered in polling scheduler (slow tier)
-- [ ] Graceful handling when Downdetector is unreachable
+- [x] Downdetector provider fetches crowdsourced data (or links)
+- [x] Report spikes generate alerts with appropriate severity
+- [x] Downdetector links appear in AlertCard for mapped providers
+- [x] Provider registered in polling scheduler (slow tier)
+- [x] Graceful handling when Downdetector is unreachable
 
 ## Completion Notes
+- Created `src/lib/providers/downdetector.ts` with `DowndetectorProvider` class
+- Provider scrapes Downdetector public status pages for 17 mapped services (AWS, Azure, GCP, GitHub, Cloudflare, Slack, Okta, Stripe, etc.)
+- Fetches all services in parallel with 8s timeout per request; gracefully returns empty on failure
+- Parses HTML for "Possible problems" / "Problems at" indicators and report count patterns
+- Severity mapping: 1000+ reports = critical, 300+ = major, 50+ = minor, below = info (suppressed)
+- Alerts use daily-stamped externalId (`dd-{slug}-{YYYYMMDD}`) for dedup
+- Added `downdetectorSlug` field to `ProviderMeta` in constants.ts — each provider with a DD page gets its slug
+- AlertCard now shows "User reports" link for any provider with a `downdetectorSlug`
+- Provider registered in registry.ts under "Meta provider (crowdsourced)" in slow tier

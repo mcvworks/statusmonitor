@@ -50,6 +50,8 @@ export interface ProviderMeta {
   iconSlug: string | null;
   statusUrl: string;
   historyUrl: string | null;
+  /** Downdetector slug for crowdsourced report link (null = no DD page) */
+  downdetectorSlug: string | null;
 }
 
 export const PROVIDERS: Record<string, ProviderMeta> = {
@@ -62,6 +64,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: null,
     statusUrl: "https://health.aws.amazon.com/health/status",
     historyUrl: "https://health.aws.amazon.com/health/status",
+    downdetectorSlug: "aws-amazon-web-services",
   },
   azure: {
     name: "Azure",
@@ -71,6 +74,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: null,
     statusUrl: "https://status.azure.com/en-us/status",
     historyUrl: "https://status.azure.com/en-us/status/history/",
+    downdetectorSlug: "windows-azure",
   },
   gcp: {
     name: "Google Cloud",
@@ -80,6 +84,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: "googlecloud",
     statusUrl: "https://status.cloud.google.com/",
     historyUrl: "https://status.cloud.google.com/summary",
+    downdetectorSlug: "google-cloud",
   },
   cloudflare: {
     name: "Cloudflare",
@@ -89,6 +94,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: "cloudflare",
     statusUrl: "https://www.cloudflarestatus.com/",
     historyUrl: "https://www.cloudflarestatus.com/history",
+    downdetectorSlug: "cloudflare",
   },
   github: {
     name: "GitHub",
@@ -98,6 +104,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: "github",
     statusUrl: "https://www.githubstatus.com/",
     historyUrl: "https://www.githubstatus.com/history",
+    downdetectorSlug: "github",
   },
   microsoft365: {
     name: "Microsoft 365",
@@ -107,6 +114,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: null,
     statusUrl: "https://status.office.com/",
     historyUrl: null,
+    downdetectorSlug: "office-365",
   },
   slack: {
     name: "Slack",
@@ -116,6 +124,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: null,
     statusUrl: "https://status.slack.com/",
     historyUrl: "https://status.slack.com/calendar",
+    downdetectorSlug: "slack",
   },
   atlassian: {
     name: "Atlassian",
@@ -125,6 +134,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: "atlassian",
     statusUrl: "https://status.atlassian.com/",
     historyUrl: "https://status.atlassian.com/history",
+    downdetectorSlug: "jira",
   },
   okta: {
     name: "Okta",
@@ -134,6 +144,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: "okta",
     statusUrl: "https://status.okta.com/",
     historyUrl: "https://status.okta.com/history",
+    downdetectorSlug: "okta",
   },
   stripe: {
     name: "Stripe",
@@ -143,6 +154,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: "stripe",
     statusUrl: "https://status.stripe.com/",
     historyUrl: "https://status.stripe.com/history",
+    downdetectorSlug: "stripe",
   },
   googleWorkspace: {
     name: "Google Workspace",
@@ -152,6 +164,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: "google",
     statusUrl: "https://www.google.com/appsstatus/dashboard/",
     historyUrl: "https://www.google.com/appsstatus/dashboard/summary",
+    downdetectorSlug: "google",
   },
   digitalocean: {
     name: "DigitalOcean",
@@ -161,6 +174,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: "digitalocean",
     statusUrl: "https://status.digitalocean.com/",
     historyUrl: "https://status.digitalocean.com/history",
+    downdetectorSlug: "digitalocean",
   },
   fastly: {
     name: "Fastly",
@@ -170,6 +184,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: "fastly",
     statusUrl: "https://status.fastly.com/",
     historyUrl: "https://status.fastly.com/history",
+    downdetectorSlug: "fastly",
   },
   vercelNetlify: {
     name: "Vercel / Netlify",
@@ -179,6 +194,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: "vercel",
     statusUrl: "https://www.vercel-status.com/",
     historyUrl: "https://www.vercel-status.com/history",
+    downdetectorSlug: null,
   },
 
   // DevOps (slow tier)
@@ -190,6 +206,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: "datadog",
     statusUrl: "https://status.datadoghq.com/",
     historyUrl: "https://status.datadoghq.com/history",
+    downdetectorSlug: "datadog",
   },
   pagerduty: {
     name: "PagerDuty",
@@ -199,6 +216,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: "pagerduty",
     statusUrl: "https://status.pagerduty.com/",
     historyUrl: "https://status.pagerduty.com/history",
+    downdetectorSlug: "pagerduty",
   },
   dockerHub: {
     name: "Docker Hub",
@@ -208,6 +226,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: "docker",
     statusUrl: "https://www.dockerstatus.com/",
     historyUrl: "https://www.dockerstatus.com/history",
+    downdetectorSlug: "docker",
   },
   npmRegistry: {
     name: "npm Registry",
@@ -217,6 +236,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: "npm",
     statusUrl: "https://status.npmjs.org/",
     historyUrl: "https://status.npmjs.org/history",
+    downdetectorSlug: "npm",
   },
 
   // Security (slow tier)
@@ -228,6 +248,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: null,
     statusUrl: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
     historyUrl: null,
+    downdetectorSlug: null,
   },
   nvd: {
     name: "NVD",
@@ -237,6 +258,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: null,
     statusUrl: "https://nvd.nist.gov/",
     historyUrl: null,
+    downdetectorSlug: null,
   },
 
   // ISP (slow tier)
@@ -248,6 +270,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: "cloudflare",
     statusUrl: "https://radar.cloudflare.com/",
     historyUrl: null,
+    downdetectorSlug: null,
   },
 
   // Meta (slow tier)
@@ -259,5 +282,6 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     iconSlug: "downdetector",
     statusUrl: "https://downdetector.com/",
     historyUrl: null,
+    downdetectorSlug: null,
   },
 };

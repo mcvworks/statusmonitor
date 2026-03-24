@@ -21,6 +21,7 @@ import { NpmRegistryProvider } from './npm-registry';
 import { CISAKEVProvider } from './cisa-kev';
 import { NVDProvider } from './nvd';
 import { CloudflareRadarProvider } from './cloudflare-radar';
+import { DowndetectorProvider } from './downdetector';
 
 const providerRegistry = new Map<string, AlertProvider>();
 
@@ -61,6 +62,9 @@ registerProvider(new NVDProvider());
 
 // Register ISP provider
 registerProvider(new CloudflareRadarProvider());
+
+// Register Meta provider (crowdsourced)
+registerProvider(new DowndetectorProvider());
 
 export function getProvider(name: string): AlertProvider | undefined {
   return providerRegistry.get(name);
