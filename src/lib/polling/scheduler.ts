@@ -2,6 +2,7 @@ import { schedule, type ScheduledTask } from "node-cron";
 import type { AlertProvider } from "@/lib/providers/types";
 import { pollAll } from "./engine";
 import { initNotifications } from "@/lib/notifications/integration";
+import { wireEventRingBuffer } from "./event-ring-buffer";
 
 let fastTask: ScheduledTask | null = null;
 let slowTask: ScheduledTask | null = null;
@@ -39,6 +40,9 @@ export function startScheduler() {
 
   // Initialize notification dispatcher (listens to event bus)
   initNotifications();
+
+  // Wire ring buffer to capture events for the live feed
+  wireEventRingBuffer();
 
   // Initial poll on startup
   pollAll("fast", providers).then((results) => {

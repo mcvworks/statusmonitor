@@ -1,6 +1,6 @@
 # 032 — Hacker News & Reddit Thread Links
 
-## Status: queued
+## Status: done
 
 ## Objective
 When a major provider has an active incident, surface relevant Hacker News and Reddit discussion threads inside the alert card, giving community context and social proof.
@@ -20,11 +20,17 @@ When a major provider has an active incident, surface relevant Hacker News and R
 - Add a new API route `GET /api/enrichment/threads?provider={key}` that calls the utility
 
 ## Acceptance Criteria
-- [ ] API route fetches and returns HN + Reddit threads for a provider
-- [ ] Results cached in-memory (5 min TTL)
-- [ ] CommunityThreads component renders inside AlertCard for qualifying providers
-- [ ] Component is collapsible and matches design system
-- [ ] External links open in new tab
-- [ ] Graceful fallback when no threads found or APIs fail
+- [x] API route fetches and returns HN + Reddit threads for a provider
+- [x] Results cached in-memory (5 min TTL)
+- [x] CommunityThreads component renders inside AlertCard for qualifying providers
+- [x] Component is collapsible and matches design system
+- [x] External links open in new tab
+- [x] Graceful fallback when no threads found or APIs fail
 
 ## Completion Notes
+- Created `src/lib/enrichment/community-threads.ts` — server-side utility that queries HN Algolia API and Reddit search JSON for `{provider} outage` threads from the last 24 hours, with 5-minute in-memory cache
+- Created `src/app/api/enrichment/threads/route.ts` — GET endpoint accepting `?provider=` query param
+- Created `src/components/dashboard/CommunityThreads.tsx` — collapsible component (follows IncidentTimeline pattern) with HN orange Y / Reddit icons, title, score, comment count, and external links
+- Integrated into AlertCard for major providers (AWS, Azure, GCP, Cloudflare, GitHub) on active incidents only
+- Client-side fetch on render, not during polling cycle
+- Graceful: returns empty on API errors or timeouts (5s abort), renders nothing when no threads found

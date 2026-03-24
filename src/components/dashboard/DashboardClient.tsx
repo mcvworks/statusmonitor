@@ -7,6 +7,7 @@ import { SearchFilter, type FilterValues } from "./SearchFilter";
 import { AlertList } from "./AlertList";
 import { StatusOverview } from "./StatusOverview";
 import { BlastRadiusSummary } from "@/components/blast-radius/BlastRadiusSummary";
+import { EventFeed } from "./EventFeed";
 
 export function DashboardClient() {
   const { status } = useSSE();
@@ -43,6 +44,9 @@ export function DashboardClient() {
       <Suspense>
         <StatusOverview />
       </Suspense>
+
+      {/* Live event feed */}
+      <EventFeed />
 
       {/* Alert feed */}
       <div id="alert-feed" />
