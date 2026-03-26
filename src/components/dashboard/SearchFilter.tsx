@@ -67,13 +67,13 @@ export function SearchFilter({ onChange }: SearchFilterProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Sync URL → state on mount
+  // Sync URL → state whenever search params change (e.g. provider icon click)
   useEffect(() => {
     const vals = readParams(searchParams);
     setFilters(vals);
     onChange(vals);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   const pushToUrl = useCallback(
     (next: FilterValues) => {
