@@ -32,22 +32,21 @@ function classifySSEEvent(
 }
 
 export function useEventFeed(limit = 50) {
-  const { data } = useSWR<EventsResponse>(
-    `/api/alerts/events?limit=${limit}`,
-    fetcher,
-    { refreshInterval: 30_000 },
-  );
-
   const [events, setEvents] = useState<AlertEvent[]>([]);
   const initializedRef = useRef(false);
 
-  // Seed from SWR data on first load
-  useEffect(() => {
-    if (data?.events && !initializedRef.current) {
-      setEvents(data.events);
-      initializedRef.current = true;
-    }
-  }, [data]);
+  // Seed from the ring-buffer API on first load; afterwards SSE keeps
+  // the list current (seeding via onSuccess rather than an effect so
+  // the initial data doesn't trigger a cascading re-render)
+  useSWR<EventsResponse>(`/api/alerts/events?limit=${limit}`, fetcher, {
+    refreshInterval: 30_000,
+    onSuccess: (data) => {
+      if (data?.events && !initializedRef.current) {
+        initializedRef.current = true;
+        setEvents(data.events);
+      }
+    },
+  });
 
   // Listen for real-time SSE events
   const handleSSE = useCallback((e: Event) => {

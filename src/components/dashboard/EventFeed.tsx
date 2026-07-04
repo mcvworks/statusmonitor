@@ -52,8 +52,16 @@ function buildDescription(event: {
   }
 }
 
-export function EventFeed() {
-  const { events } = useEventFeed(50);
+interface EventFeedProps {
+  /** When set, only show events from this provider */
+  source?: string;
+}
+
+export function EventFeed({ source }: EventFeedProps = {}) {
+  const { events: allEvents } = useEventFeed(50);
+  const events = source
+    ? allEvents.filter((e) => e.source === source)
+    : allEvents;
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
 
@@ -71,12 +79,17 @@ export function EventFeed() {
         <div className="flex h-5 w-5 items-center justify-center">
           <Radio className="h-3.5 w-3.5 text-primary" />
         </div>
-        <h2 className="section-label !mb-0">Live Event Feed</h2>
+        <h2 className="section-label !mb-0">
+          Live Event Feed
+          {source && ` — ${PROVIDERS[source]?.name ?? source}`}
+        </h2>
       </div>
 
       {events.length === 0 ? (
         <p className="py-6 text-center font-[family-name:var(--font-mono)] text-[11px] text-text-muted">
-          No recent activity
+          {source
+            ? `No recent activity from ${PROVIDERS[source]?.name ?? source}`
+            : "No recent activity"}
         </p>
       ) : (
         <div

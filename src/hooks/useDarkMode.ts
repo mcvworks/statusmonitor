@@ -63,7 +63,15 @@ if (typeof window !== "undefined") {
 
 export function useDarkMode() {
   const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const resolved = resolveTheme(theme);
+  // Resolve through the external store so hydration renders with the
+  // server's assumption ("dark") and React re-syncs to the real client
+  // preference afterwards — resolving inline here caused a hydration
+  // mismatch for light-mode users
+  const resolved = useSyncExternalStore(
+    subscribe,
+    () => resolveTheme(currentTheme),
+    () => "dark" as const,
+  );
 
   // Apply theme on mount and listen for system preference changes
   useEffect(() => {
