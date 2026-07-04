@@ -35,6 +35,14 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.ico" },
   alternates: {
     canonical: "/",
+    types: {
+      "application/rss+xml": [
+        { url: "/feed.xml", title: "DTMonitor Alerts (RSS)" },
+      ],
+      "application/feed+json": [
+        { url: "/feed.json", title: "DTMonitor Alerts (JSON Feed)" },
+      ],
+    },
   },
   openGraph: {
     type: "website",

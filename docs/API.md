@@ -417,6 +417,31 @@ Application health check.
 
 Returns HTTP 503 if the database is unreachable (`status: "degraded"`).
 
+## Public Feeds
+
+Machine-readable alert feeds, no authentication required. Both accept the
+same optional filters:
+
+| Param | Values | Example |
+|---|---|---|
+| `source` | any provider key (`aws`, `cloudflare`, `cisa-kev`, …) | `/feed.xml?source=aws` |
+| `category` | `cloud`, `devops`, `security`, `isp` | `/feed.json?category=cloud` |
+| `severity` | `critical`, `major`, `minor`, `info` | `/feed.xml?severity=critical` |
+
+Filters combine (`/feed.xml?category=cloud&severity=critical`). Unknown
+values are ignored. Feeds return the 50 newest matching alerts; each item
+links to the incident page on DTMonitor and carries the official source
+URL when available.
+
+### `GET /feed.xml`
+
+RSS 2.0. Autodiscoverable from every page via `<link rel="alternate">`.
+
+### `GET /feed.json`
+
+[JSON Feed 1.1](https://jsonfeed.org/version/1.1). Items include
+`tags: [source, category, severity]` for client-side filtering.
+
 ## Error Responses
 
 All error responses follow this format:

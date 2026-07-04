@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ExternalLink, History, Users, X } from "lucide-react";
+import { ExternalLink, History, Rss, Users, X } from "lucide-react";
 import { PROVIDERS, CATEGORY_LABELS } from "@/lib/constants";
 import {
   deriveProviderStatus,
@@ -184,6 +184,12 @@ export function ProviderDetailPanel({ source }: ProviderDetailPanelProps) {
             User reports
           </PanelLink>
         )}
+        <PanelLink
+          href={`/feed.xml?source=${encodeURIComponent(source)}`}
+          icon={<Rss className="h-3 w-3" />}
+        >
+          RSS feed
+        </PanelLink>
       </div>
     </div>
   );

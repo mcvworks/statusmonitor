@@ -9,6 +9,8 @@ const publicRoutes = [
   "/incident",
   "/sitemap.xml",
   "/robots.txt",
+  "/feed.xml",
+  "/feed.json",
   "/api/alerts",
   "/api/alerts/sse",
   "/api/alerts/history",

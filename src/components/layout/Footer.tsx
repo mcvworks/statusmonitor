@@ -1,4 +1,4 @@
-import { Activity } from "lucide-react";
+import { Activity, Rss } from "lucide-react";
 
 export function Footer() {
   return (
@@ -17,8 +17,16 @@ export function Footer() {
           </span>
         </div>
 
-        <div className="font-[family-name:var(--font-mono)] text-[11px]">
-          Data sourced from official status pages & feeds
+        <div className="flex items-center gap-3 font-[family-name:var(--font-mono)] text-[11px]">
+          <span>Data sourced from official status pages & feeds</span>
+          <a
+            href="/feed.xml"
+            className="inline-flex items-center gap-1 text-text-secondary transition-colors hover:text-primary"
+            title="Subscribe to alerts (RSS)"
+          >
+            <Rss className="h-3 w-3" />
+            RSS
+          </a>
         </div>
       </div>
     </footer>
