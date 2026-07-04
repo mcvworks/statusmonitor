@@ -7,6 +7,10 @@ import { HealthBanner } from "@/components/dashboard/HealthBanner";
 import { NewsTicker } from "@/components/dashboard/NewsTicker";
 import { SeveritySummaryBar } from "@/components/dashboard/SeveritySummaryBar";
 
+// Rendered per-request: stats/incident lists must be live, not frozen
+// into static HTML at build time
+export const dynamic = "force-dynamic";
+
 async function getStats() {
   const [activeCount, securityCount, lastPoll] = await Promise.all([
     prisma.alert.count({

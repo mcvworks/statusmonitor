@@ -1,6 +1,10 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/db";
 
+// Rendered per-request: stats/incident lists must be live, not frozen
+// into static HTML at build time
+export const dynamic = "force-dynamic";
+
 const BASE_URL = "https://monitor.ducktyped.xyz";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
