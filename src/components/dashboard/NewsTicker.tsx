@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink, Radio } from "lucide-react";
+import { ExternalLink, Radio, Rss } from "lucide-react";
 import type { SerializedAlert, AlertSeverity } from "@/lib/alert-schema";
 import { PROVIDERS, SEVERITY_COLORS } from "@/lib/constants";
 import { formatRelativeTime, ensureReadable, truncate } from "@/lib/utils";
@@ -133,6 +133,16 @@ export function NewsTicker() {
         <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[var(--background)] to-transparent opacity-60" />
         <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[var(--background)] to-transparent opacity-60" />
       </div>
+
+      {/* Subscribe */}
+      <a
+        href="/feed.xml"
+        title="Subscribe to this feed (RSS) — add ?source=aws or ?severity=critical to filter"
+        className="z-10 flex shrink-0 items-center gap-1.5 self-stretch border-l border-border px-3 py-2.5 font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-widest text-text-muted transition-colors hover:bg-[rgba(242,194,0,0.06)] hover:text-primary"
+      >
+        <Rss className="h-3.5 w-3.5" />
+        <span className="hidden md:inline">Subscribe</span>
+      </a>
     </div>
   );
 }

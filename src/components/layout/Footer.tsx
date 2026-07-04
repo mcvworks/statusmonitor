@@ -1,4 +1,5 @@
 import { Activity, Rss } from "lucide-react";
+import { FeedbackButton } from "./FeedbackButton";
 
 export function Footer() {
   return (
@@ -27,6 +28,7 @@ export function Footer() {
             <Rss className="h-3 w-3" />
             RSS
           </a>
+          <FeedbackButton />
         </div>
       </div>
     </footer>

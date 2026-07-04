@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useState } from "react";
+import { Rss } from "lucide-react";
 import { useSSE } from "@/hooks/useSSE";
 import { LiveIndicator } from "./LiveIndicator";
 import { SearchFilter, type FilterValues } from "./SearchFilter";
@@ -31,7 +32,21 @@ export function DashboardClient() {
       <div className="glass-card space-y-3 p-4">
         <div className="flex items-center justify-between">
           <h2 className="section-label">Alert Feed</h2>
-          <LiveIndicator status={status} />
+          <div className="flex items-center gap-3">
+            <a
+              href={
+                filters.source
+                  ? `/feed.xml?source=${encodeURIComponent(filters.source)}`
+                  : "/feed.xml"
+              }
+              title="Subscribe to these alerts (RSS)"
+              className="inline-flex items-center gap-1 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-text-muted transition-colors hover:text-primary"
+            >
+              <Rss className="h-3 w-3" />
+              RSS
+            </a>
+            <LiveIndicator status={status} />
+          </div>
         </div>
         <Suspense>
           <SearchFilter onChange={handleFilterChange} />

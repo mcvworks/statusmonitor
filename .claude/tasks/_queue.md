@@ -72,3 +72,4 @@
 - [x] 043 — Fix silent no-op deploys: PM2 ran on :3001 while nginx proxies :3000 (public site served a stale March 24 build for 102 days); deploy now clears :3000 safely and verifies the PUBLIC health endpoint serves the new process
 - [x] 044 — Fix domain: monitor.ducktyped.com → monitor.ducktyped.xyz repo-wide (ducktyped.com is a parked GoDaddy domain; real parent site is ducktyped.xyz)
 - [x] 045 — Public alert feeds: RSS 2.0 (/feed.xml) + JSON Feed 1.1 (/feed.json) with source/category/severity filters, autodiscovery link tags, footer RSS link, per-provider RSS on the detail panel
+- [x] 046 — Feedback intake: footer button + minimal popover → POST /api/feedback (zod, honeypot, per-IP rate limit) → stored in Feedback table + best-effort email to admin@ducktyped.xyz; RSS made prominent (ticker Subscribe chip, Alert Feed header RSS link with active source filter)

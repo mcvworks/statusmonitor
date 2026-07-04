@@ -11,6 +11,7 @@ const publicRoutes = [
   "/robots.txt",
   "/feed.xml",
   "/feed.json",
+  "/api/feedback",
   "/api/alerts",
   "/api/alerts/sse",
   "/api/alerts/history",
