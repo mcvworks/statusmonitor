@@ -1,6 +1,6 @@
 # DTMonitor
 
-A centralized IT alert dashboard for monitoring cloud service outages, SaaS incidents, security vulnerabilities, and ISP issues. Deployed at [monitor.ducktyped.com](https://monitor.ducktyped.com).
+A centralized IT alert dashboard for monitoring cloud service outages, SaaS incidents, security vulnerabilities, and ISP issues. Deployed at [monitor.ducktyped.xyz](https://monitor.ducktyped.xyz).
 
 ## Features
 
@@ -83,4 +83,4 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for full production setup.
 
 ---
 
-Built by [Ducktyped](https://ducktyped.com)
+Built by [Ducktyped](https://ducktyped.xyz)

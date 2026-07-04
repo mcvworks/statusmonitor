@@ -12,8 +12,8 @@ DTMonitor is deployed as a subdomain of duckTyped:
 
 | Site | URL | Purpose |
 |---|---|---|
-| duckTyped | `https://ducktyped.com` | Parent site — 55+ free browser-based developer/IT tools plus learning content (Utility, Learn, Troubleshoot) |
-| DTMonitor | `https://monitor.ducktyped.com` | IT alert dashboard |
+| duckTyped | `https://ducktyped.xyz` | Parent site — 55+ free browser-based developer/IT tools plus learning content (Utility, Learn, Troubleshoot) |
+| DTMonitor | `https://monitor.ducktyped.xyz` | IT alert dashboard |
 
 Both sites are first-party properties under the same domain, which means cross-links pass full link equity and don't need `nofollow` attributes.
 
@@ -34,10 +34,10 @@ the SEO-descriptive anchor text in duckTyped's footer instead:
 
 ```html
 <!-- unified-nav-links (all pages) -->
-<li><a href="https://monitor.ducktyped.com" title="Service Status Monitor — cloud outages and incidents">Status</a></li>
+<li><a href="https://monitor.ducktyped.xyz" title="Service Status Monitor — cloud outages and incidents">Status</a></li>
 
 <!-- footer (descriptive anchor text for SEO) -->
-<a href="https://monitor.ducktyped.com">Service Status Monitor</a>
+<a href="https://monitor.ducktyped.xyz">Service Status Monitor</a>
 ```
 
 Guidelines:
@@ -50,14 +50,14 @@ Guidelines:
 DTMonitor's footer (`src/components/layout/Footer.tsx`) and sign-in page link back to duckTyped:
 
 ```html
-Built by <a href="https://ducktyped.com">duckTyped</a>
+Built by <a href="https://ducktyped.xyz">duckTyped</a>
 ```
 
 ## SEO Checklist
 
 ### Sitemaps
-- [ ] duckTyped submits its sitemap (`ducktyped.com/sitemap.xml`) to Google Search Console
-- [ ] DTMonitor submits its own sitemap (`monitor.ducktyped.com/sitemap.xml`) to Google Search Console
+- [ ] duckTyped submits its sitemap (`ducktyped.xyz/sitemap.xml`) to Google Search Console
+- [ ] DTMonitor submits its own sitemap (`monitor.ducktyped.xyz/sitemap.xml`) to Google Search Console
 - [ ] Both sitemaps contain only their own URLs (no cross-listing)
 
 ### Structured Data
@@ -71,12 +71,12 @@ Current state (keep these consistent when either changes):
 
 Alignment rules:
 - The Organization `name` must be `duckTyped` (exact casing) on both sites
-- When duckTyped adds the nav link, also add `"https://monitor.ducktyped.com"` to its
-  Organization/author `sameAs` (and DTMonitor already points at `https://ducktyped.com`)
+- When duckTyped adds the nav link, also add `"https://monitor.ducktyped.xyz"` to its
+  Organization/author `sameAs` (and DTMonitor already points at `https://ducktyped.xyz`)
 
 ### Canonical URLs
-- duckTyped pages: `<link rel="canonical" href="https://ducktyped.com/{path}" />`
-- DTMonitor pages: `<link rel="canonical" href="https://monitor.ducktyped.com/{path}" />`
+- duckTyped pages: `<link rel="canonical" href="https://ducktyped.xyz/{path}" />`
+- DTMonitor pages: `<link rel="canonical" href="https://monitor.ducktyped.xyz/{path}" />`
 - Each site's canonical URLs point to itself, never to the other site
 
 ### Cross-Links
@@ -85,19 +85,19 @@ Alignment rules:
 - DTMonitor footer links back to duckTyped
 
 ### Google Search Console
-- Add `monitor.ducktyped.com` as a separate property in Google Search Console
+- Add `monitor.ducktyped.xyz` as a separate property in Google Search Console
 - Verify via DNS TXT record or HTML file upload
-- Submit `monitor.ducktyped.com/sitemap.xml`
+- Submit `monitor.ducktyped.xyz/sitemap.xml`
 - Both properties should show under the same Search Console account
 
 ### robots.txt
-DTMonitor serves its own `robots.txt` at `monitor.ducktyped.com/robots.txt` (see `src/app/robots.ts`):
+DTMonitor serves its own `robots.txt` at `monitor.ducktyped.xyz/robots.txt` (see `src/app/robots.ts`):
 
 ```
 User-agent: *
 Allow: /
 
-Sitemap: https://monitor.ducktyped.com/sitemap.xml
+Sitemap: https://monitor.ducktyped.xyz/sitemap.xml
 ```
 
 ## Design Alignment (moving forward)

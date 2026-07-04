@@ -9,7 +9,7 @@ export function Footer() {
           <span>
             Built by{" "}
             <a
-              href="https://ducktyped.com"
+              href="https://ducktyped.xyz"
               className="font-medium text-text-secondary transition-colors hover:text-primary"
             >
               duckTyped

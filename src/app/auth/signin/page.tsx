@@ -176,7 +176,7 @@ export default async function SignInPage({
         <p className="mt-6 text-center font-[family-name:var(--font-body)] text-xs text-[#8892A0]">
           Built by{" "}
           <a
-            href="https://ducktyped.com"
+            href="https://ducktyped.xyz"
             className="text-[#F2C200] transition-colors hover:text-[#FFD020]"
           >
             duckTyped

@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/api/", "/dashboard/", "/auth/"],
       },
     ],
-    sitemap: "https://monitor.ducktyped.com/sitemap.xml",
+    sitemap: "https://monitor.ducktyped.xyz/sitemap.xml",
   };
 }

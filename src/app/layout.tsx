@@ -22,7 +22,7 @@ const firaCode = Fira_Code({
   weight: ["400", "500", "600", "700"],
 });
 
-const BASE_URL = "https://monitor.ducktyped.com";
+const BASE_URL = "https://monitor.ducktyped.xyz";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
@@ -57,13 +57,13 @@ const jsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "duckTyped",
-  url: "https://ducktyped.com",
-  logo: "https://ducktyped.com/logo.png",
+  url: "https://ducktyped.xyz",
+  logo: "https://ducktyped.xyz/logo.png",
   sameAs: [],
   subOrganization: {
     "@type": "WebApplication",
     name: "DTMonitor",
-    url: "https://monitor.ducktyped.com",
+    url: "https://monitor.ducktyped.xyz",
     applicationCategory: "MonitoringApplication",
     description:
       "Centralized IT alert dashboard for monitoring cloud service outages, SaaS incidents, security vulnerabilities, and ISP issues.",
