@@ -61,3 +61,19 @@ jobs:
             echo "== Public health for comparison =="
             curl -s --max-time 10 https://monitor.ducktyped.xyz/api/health | head -c 300
             echo ""
+
+            echo ""
+            echo "== Feedback pipeline =="
+            cd /home/dt_lower/monitor-repo 2>/dev/null || cd "$HOME/monitor-repo" || true
+            echo "--- email env vars PRESENT in .env (names only):"
+            grep -oE '^(RESEND_API_KEY|EMAIL_FROM|SMTP_HOST|SMTP_PORT|SMTP_USER|SMTP_PASS|SMTP_FROM)=' .env 2>/dev/null || echo "(none of the email vars are set)"
+            echo "--- feedback rows in DB:"
+            node -e "
+              const path = require('fs').existsSync('db/monitor.db') ? 'db/monitor.db' : 'data/monitor.db';
+              const db = require('better-sqlite3')(path, { readonly: true });
+              const rows = db.prepare('SELECT id, substr(message,1,80) AS msg, email, page, createdAt FROM Feedback ORDER BY createdAt DESC LIMIT 5').all();
+              console.log('db file:', path); console.log(JSON.stringify(rows, null, 1));
+            " 2>&1 || echo "(feedback table query failed)"
+            echo "--- recent feedback/email errors in app log:"
+            grep -i -E "feedback|resend|smtp|email" "$HOME/.pm2/logs/statusmonitor-error.log" 2>/dev/null | tail -15 || echo "(no matches)"
+            grep -i "feedback" "$HOME/.pm2/logs/statusmonitor-out.log" 2>/dev/null | tail -5 || echo "(no matches)"
