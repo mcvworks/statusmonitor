@@ -4,10 +4,10 @@ module.exports = {
     script: '.next/standalone/server.js',
     env: {
       NODE_ENV: 'production',
-      // 3000 is owned by another app on the VPS (EADDRINUSE on 2026-07-04
-      // deploy). The real nginx upstream port for monitor.ducktyped.xyz is
-      // still being determined — see .github/workflows/diagnose.yml
-      PORT: 3001
+      // nginx (/etc/nginx/sites-enabled/monitor.ducktyped.xyz) proxies the
+      // public site to 127.0.0.1:3002. 3000 is the duckTyped API — do not
+      // use it. Verified via the Diagnose VPS Routing workflow, 2026-07-04.
+      PORT: 3002
     }
   }]
 };
