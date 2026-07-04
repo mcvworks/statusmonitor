@@ -52,7 +52,7 @@ async function sendViaResend(
   const { Resend } = await import("resend");
   const resend = new Resend(process.env.RESEND_API_KEY);
 
-  const from = process.env.EMAIL_FROM ?? "alerts@monitor.ducktyped.com";
+  const from = process.env.EMAIL_FROM ?? "alerts@monitor.ducktyped.xyz";
 
   const { error } = await resend.emails.send({ from, to, subject, html });
   if (error) {
@@ -76,7 +76,7 @@ async function sendViaSMTP(
       : undefined,
   });
 
-  const from = process.env.EMAIL_FROM ?? "alerts@monitor.ducktyped.com";
+  const from = process.env.EMAIL_FROM ?? "alerts@monitor.ducktyped.xyz";
 
   await transport.sendMail({ from, to, subject, html });
 }
@@ -145,11 +145,11 @@ function buildEmailHTML(alerts: Alert[]): string {
     </table>
 
     <div style="text-align: center; padding: 24px 0; color: #8892A0; font-size: 12px;">
-      <a href="${process.env.AUTH_URL ?? "https://monitor.ducktyped.com"}/dashboard/settings" style="color: #F2C200; text-decoration: none;">
+      <a href="${process.env.AUTH_URL ?? "https://monitor.ducktyped.xyz"}/dashboard/settings" style="color: #F2C200; text-decoration: none;">
         Manage notification preferences
       </a>
       <br><br>
-      Built by <a href="https://ducktyped.com" style="color: #48E0C7; text-decoration: none;">Ducktyped</a>
+      Built by <a href="https://ducktyped.xyz" style="color: #48E0C7; text-decoration: none;">Ducktyped</a>
     </div>
   </div>
 </body>
@@ -178,7 +178,7 @@ function buildTestEmailHTML(): string {
     </div>
 
     <div style="text-align: center; padding: 24px 0; color: #8892A0; font-size: 12px;">
-      Built by <a href="https://ducktyped.com" style="color: #48E0C7; text-decoration: none;">Ducktyped</a>
+      Built by <a href="https://ducktyped.xyz" style="color: #48E0C7; text-decoration: none;">Ducktyped</a>
     </div>
   </div>
 </body>

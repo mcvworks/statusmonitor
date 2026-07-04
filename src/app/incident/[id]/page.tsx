@@ -15,7 +15,7 @@ import { CommunityThreads } from "@/components/dashboard/CommunityThreads";
 import { BlastRadiusPanel } from "@/components/blast-radius/BlastRadiusPanel";
 import { hasBlastRadius } from "@/lib/blast-radius";
 
-const BASE_URL = "https://monitor.ducktyped.com";
+const BASE_URL = "https://monitor.ducktyped.xyz";
 
 const getAlert = cache(async (id: string) => {
   return prisma.alert.findUnique({ where: { id } });

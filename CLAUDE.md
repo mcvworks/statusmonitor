@@ -10,14 +10,14 @@ A centralized IT alert dashboard for monitoring cloud service outages, SaaS inci
 - **Auth**: Auth.js (NextAuth v5) — Email (magic link), Google, Microsoft, Apple, GitHub OAuth
 - **Real-time**: Server-Sent Events (SSE) with in-memory EventEmitter
 - **Notifications**: Resend (email), Slack/Teams webhooks, web-push (browser)
-- **Deployment**: Docker on cloud VM, served at `monitor.ducktyped.com` (subdomain of Ducktyped)
+- **Deployment**: Docker on cloud VM, served at `monitor.ducktyped.xyz` (subdomain of Ducktyped)
 
 ## Cross-Linking with duckTyped
 - **Sibling repo**: `mcvworks/ducktyped` — the parent site this project must stay aligned with. When working on visual or cross-linking changes, clone/add that repo and check its current state; do not rely on this file's snapshot of it.
 - **Brand casing**: the parent brand is written `duckTyped` (lowercase d, capital T) in all user-facing text and structured data. This product is `DTMonitor`.
-- **Deployment URL**: `https://monitor.ducktyped.com`
-- **Parent site**: `https://ducktyped.com` — free developer/IT tools (55+ browser-based) plus a substantial learning/education section; nav sections: Utility, Learn, Troubleshoot
-- **Footer backlink**: "Built by [duckTyped](https://ducktyped.com)" in DTMonitor footer (`src/components/layout/Footer.tsx`), also on the sign-in page
+- **Deployment URL**: `https://monitor.ducktyped.xyz`
+- **Parent site**: `https://ducktyped.xyz` — free developer/IT tools (55+ browser-based) plus a substantial learning/education section; nav sections: Utility, Learn, Troubleshoot
+- **Footer backlink**: "Built by [duckTyped](https://ducktyped.xyz)" in DTMonitor footer (`src/components/layout/Footer.tsx`), also on the sign-in page
 - **SEO**: DTMonitor emits `Organization` (duckTyped) + `subOrganization` (DTMonitor WebApplication) JSON-LD in `src/app/layout.tsx`; each site has its own sitemap submitted to Search Console
 - **duckTyped → DTMonitor link**: not yet added (task 029, deferred). When added, it goes in duckTyped's `unified-nav-links` list in `frontend/index.html` (and shared nav on tool pages); see `docs/CROSS-LINKING.md` for the markup. Standard `<a>`, no `nofollow`.
 

@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Docker and Docker Compose
-- A domain with DNS access (for `monitor.ducktyped.com`)
+- A domain with DNS access (for `monitor.ducktyped.xyz`)
 - A cloud VM (DigitalOcean, AWS EC2, Linode, etc.)
 - OAuth app credentials for desired providers
 
@@ -11,7 +11,7 @@
 
 ### 1. DNS
 
-Add a DNS record for `monitor.ducktyped.com` pointing to your VM:
+Add a DNS record for `monitor.ducktyped.xyz` pointing to your VM:
 
 - **A record:** `monitor` → `<VM_IP_ADDRESS>`
 - Or **CNAME:** `monitor` → `<VM_HOSTNAME>`
@@ -22,8 +22,8 @@ An nginx config is provided at `nginx/monitor.conf`. Install and configure:
 
 ```bash
 sudo apt install nginx
-sudo cp nginx/monitor.conf /etc/nginx/sites-available/monitor.ducktyped.com
-sudo ln -s /etc/nginx/sites-available/monitor.ducktyped.com /etc/nginx/sites-enabled/
+sudo cp nginx/monitor.conf /etc/nginx/sites-available/monitor.ducktyped.xyz
+sudo ln -s /etc/nginx/sites-available/monitor.ducktyped.xyz /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
@@ -38,7 +38,7 @@ Key features of the nginx config:
 
 ```bash
 sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d monitor.ducktyped.com
+sudo certbot --nginx -d monitor.ducktyped.xyz
 ```
 
 Certbot auto-renews via systemd timer.
@@ -47,21 +47,21 @@ Certbot auto-renews via systemd timer.
 
 In your `.env`:
 ```
-AUTH_URL=https://monitor.ducktyped.com
+AUTH_URL=https://monitor.ducktyped.xyz
 ```
 
 ## OAuth Provider Setup
 
 All OAuth callback URLs follow the pattern:
 ```
-https://monitor.ducktyped.com/api/auth/callback/{provider}
+https://monitor.ducktyped.xyz/api/auth/callback/{provider}
 ```
 
 ### Google
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials
 2. Create an OAuth 2.0 Client ID (Web application)
-3. Add authorized redirect URI: `https://monitor.ducktyped.com/api/auth/callback/google`
+3. Add authorized redirect URI: `https://monitor.ducktyped.xyz/api/auth/callback/google`
 4. Set in `.env`:
    ```
    AUTH_GOOGLE_ID=<client-id>
@@ -72,7 +72,7 @@ https://monitor.ducktyped.com/api/auth/callback/{provider}
 
 1. Go to [Azure Portal](https://portal.azure.com/) → Microsoft Entra ID → App registrations
 2. New registration → Web platform
-3. Add redirect URI: `https://monitor.ducktyped.com/api/auth/callback/microsoft-entra-id`
+3. Add redirect URI: `https://monitor.ducktyped.xyz/api/auth/callback/microsoft-entra-id`
 4. Under Certificates & secrets → New client secret
 5. Set in `.env`:
    ```
@@ -84,7 +84,7 @@ https://monitor.ducktyped.com/api/auth/callback/{provider}
 
 1. Go to [Apple Developer](https://developer.apple.com/) → Certificates, Identifiers & Profiles
 2. Register an App ID with "Sign In with Apple" capability
-3. Create a Services ID with the return URL: `https://monitor.ducktyped.com/api/auth/callback/apple`
+3. Create a Services ID with the return URL: `https://monitor.ducktyped.xyz/api/auth/callback/apple`
 4. Generate a private key for Sign In with Apple
 5. Set in `.env`:
    ```
@@ -95,7 +95,7 @@ https://monitor.ducktyped.com/api/auth/callback/{provider}
 ### GitHub
 
 1. Go to [GitHub Settings](https://github.com/settings/developers) → OAuth Apps → New OAuth App
-2. Set Authorization callback URL: `https://monitor.ducktyped.com/api/auth/callback/github`
+2. Set Authorization callback URL: `https://monitor.ducktyped.xyz/api/auth/callback/github`
 3. Set in `.env`:
    ```
    AUTH_GITHUB_ID=<client-id>
@@ -107,7 +107,7 @@ https://monitor.ducktyped.com/api/auth/callback/{provider}
 Uses Resend by default. Set:
 ```
 RESEND_API_KEY=<your-resend-api-key>
-EMAIL_FROM=alerts@monitor.ducktyped.com
+EMAIL_FROM=alerts@monitor.ducktyped.xyz
 ```
 
 Or use SMTP fallback:
@@ -117,7 +117,7 @@ SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=<username>
 SMTP_PASS=<password>
-EMAIL_FROM=alerts@monitor.ducktyped.com
+EMAIL_FROM=alerts@monitor.ducktyped.xyz
 ```
 
 ## Environment Variables Reference
@@ -128,7 +128,7 @@ EMAIL_FROM=alerts@monitor.ducktyped.com
 |---|---|
 | `DATABASE_URL` | SQLite connection string. Local: `file:./dev.db`. Docker: `file:/app/data/monitor.db` |
 | `AUTH_SECRET` | Auth.js encryption secret. Generate: `openssl rand -base64 32` |
-| `AUTH_URL` | Full application URL, e.g. `https://monitor.ducktyped.com` |
+| `AUTH_URL` | Full application URL, e.g. `https://monitor.ducktyped.xyz` |
 
 ### OAuth (optional — enable per provider)
 
@@ -148,7 +148,7 @@ EMAIL_FROM=alerts@monitor.ducktyped.com
 | Variable | Description |
 |---|---|
 | `RESEND_API_KEY` | Resend API key for email delivery |
-| `EMAIL_FROM` | From address for emails. Default: `alerts@monitor.ducktyped.com` |
+| `EMAIL_FROM` | From address for emails. Default: `alerts@monitor.ducktyped.xyz` |
 | `SMTP_HOST` | SMTP server hostname (fallback if no Resend key) |
 | `SMTP_PORT` | SMTP port (typically 587) |
 | `SMTP_SECURE` | Use TLS (`true`/`false`) |
@@ -156,7 +156,7 @@ EMAIL_FROM=alerts@monitor.ducktyped.com
 | `SMTP_PASS` | SMTP password |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | VAPID public key for browser push (client-side) |
 | `VAPID_PRIVATE_KEY` | VAPID private key for browser push (server-side) |
-| `VAPID_SUBJECT` | VAPID contact URI. Default: `mailto:admin@ducktyped.com` |
+| `VAPID_SUBJECT` | VAPID contact URI. Default: `mailto:admin@ducktyped.xyz` |
 
 ### Provider API Keys (optional)
 
@@ -184,7 +184,7 @@ Set the output in your `.env`:
 ```
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=<public-key>
 VAPID_PRIVATE_KEY=<private-key>
-VAPID_SUBJECT=mailto:admin@ducktyped.com
+VAPID_SUBJECT=mailto:admin@ducktyped.xyz
 ```
 
 ## Co-Hosting on Existing VM (Recommended)
@@ -228,9 +228,9 @@ Then update `nginx/monitor.conf` to proxy to the new host port.
 If nginx is already running for Ducktyped, just add the StatusMonitor server block alongside it:
 
 ```bash
-sudo cp nginx/monitor.conf /etc/nginx/sites-available/monitor.ducktyped.com
-sudo ln -s /etc/nginx/sites-available/monitor.ducktyped.com /etc/nginx/sites-enabled/
-sudo certbot --nginx -d monitor.ducktyped.com
+sudo cp nginx/monitor.conf /etc/nginx/sites-available/monitor.ducktyped.xyz
+sudo ln -s /etc/nginx/sites-available/monitor.ducktyped.xyz /etc/nginx/sites-enabled/
+sudo certbot --nginx -d monitor.ducktyped.xyz
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
@@ -277,13 +277,13 @@ docker compose up --build -d
 
 # 6. Install nginx and configure reverse proxy
 sudo apt install nginx
-sudo cp nginx/monitor.conf /etc/nginx/sites-available/monitor.ducktyped.com
-sudo ln -s /etc/nginx/sites-available/monitor.ducktyped.com /etc/nginx/sites-enabled/
-sudo certbot --nginx -d monitor.ducktyped.com
+sudo cp nginx/monitor.conf /etc/nginx/sites-available/monitor.ducktyped.xyz
+sudo ln -s /etc/nginx/sites-available/monitor.ducktyped.xyz /etc/nginx/sites-enabled/
+sudo certbot --nginx -d monitor.ducktyped.xyz
 sudo systemctl reload nginx
 
 # 7. Verify
-curl https://monitor.ducktyped.com/api/health
+curl https://monitor.ducktyped.xyz/api/health
 ```
 
 ### Auto-Updates with Watchtower (optional)
@@ -293,11 +293,11 @@ Uncomment the Watchtower service in `docker-compose.yml` to enable automatic con
 ## First Run Checklist
 
 - [ ] `.env` configured with all required variables
-- [ ] DNS record created for `monitor.ducktyped.com`
+- [ ] DNS record created for `monitor.ducktyped.xyz`
 - [ ] Docker container running and healthy (`docker compose ps`)
 - [ ] Nginx reverse proxy configured
 - [ ] SSL certificate installed
-- [ ] Health endpoint returns OK: `curl https://monitor.ducktyped.com/api/health`
+- [ ] Health endpoint returns OK: `curl https://monitor.ducktyped.xyz/api/health`
 - [ ] At least one OAuth provider working (try signing in)
 - [ ] Alerts appearing on dashboard (wait 2 minutes for first poll)
 - [ ] Notifications configured (if desired)

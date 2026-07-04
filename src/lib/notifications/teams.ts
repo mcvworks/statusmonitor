@@ -57,7 +57,7 @@ export async function sendTestTeams(webhookUrl: string): Promise<void> {
             },
             {
               type: "TextBlock",
-              text: "Built by [Ducktyped](https://ducktyped.com)",
+              text: "Built by [Ducktyped](https://ducktyped.xyz)",
               size: "Small",
               isSubtle: true,
               wrap: true,
@@ -145,7 +145,7 @@ function buildTeamsPayload(alerts: Alert[]) {
   // Footer
   body.push({
     type: "TextBlock",
-    text: "DTMonitor · Built by [Ducktyped](https://ducktyped.com)",
+    text: "DTMonitor · Built by [Ducktyped](https://ducktyped.xyz)",
     size: "Small",
     isSubtle: true,
     wrap: true,

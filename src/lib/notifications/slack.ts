@@ -60,7 +60,7 @@ export async function sendTestSlack(webhookUrl: string): Promise<void> {
         elements: [
           {
             type: "mrkdwn",
-            text: "Built by <https://ducktyped.com|Ducktyped>",
+            text: "Built by <https://ducktyped.xyz|Ducktyped>",
           },
         ],
       },
@@ -129,7 +129,7 @@ function buildSlackPayload(alerts: Alert[]) {
     elements: [
       {
         type: "mrkdwn",
-        text: `${emoji} DTMonitor · Built by <https://ducktyped.com|Ducktyped>`,
+        text: `${emoji} DTMonitor · Built by <https://ducktyped.xyz|Ducktyped>`,
       },
     ],
   });

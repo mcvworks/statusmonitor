@@ -81,7 +81,7 @@ export class DowndetectorProvider implements AlertProvider {
         signal: controller.signal,
         headers: {
           'User-Agent':
-            'Mozilla/5.0 (compatible; StatusMonitor/1.0; +https://monitor.ducktyped.com)',
+            'Mozilla/5.0 (compatible; StatusMonitor/1.0; +https://monitor.ducktyped.xyz)',
           Accept: 'text/html',
         },
       });

@@ -17,7 +17,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Apple,
     GitHub,
     Resend({
-      from: process.env.EMAIL_FROM ?? "alerts@monitor.ducktyped.com",
+      from: process.env.EMAIL_FROM ?? "alerts@monitor.ducktyped.xyz",
     }),
   ],
   pages: {

@@ -7,7 +7,7 @@ import { prisma } from "@/lib/db";
 function getVapid() {
   const publicKey = process.env.VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
-  const subject = process.env.VAPID_SUBJECT ?? "mailto:admin@monitor.ducktyped.com";
+  const subject = process.env.VAPID_SUBJECT ?? "mailto:admin@monitor.ducktyped.xyz";
 
   if (!publicKey || !privateKey) {
     throw new Error("VAPID keys not configured — set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY");

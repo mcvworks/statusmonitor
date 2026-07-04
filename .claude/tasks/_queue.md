@@ -69,3 +69,5 @@
 - [x] 040 — Middleware public-route fixes (sitemap.xml, robots.txt, /incident, /api/enrichment were behind auth)
 - [x] 041 — DB-derived event feed (was in-memory ring buffer that emptied on every deploy); source filter server-side
 - [x] 042 — Per-provider reliability stats (/api/alerts/stats): 30-day incidents, quiet days, worst severity, avg resolution, last incident; shown on provider detail panel
+- [x] 043 — Fix silent no-op deploys: PM2 ran on :3001 while nginx proxies :3000 (public site served a stale March 24 build for 102 days); deploy now clears :3000 safely and verifies the PUBLIC health endpoint serves the new process
+- [x] 044 — Fix domain: monitor.ducktyped.com → monitor.ducktyped.xyz repo-wide (ducktyped.com is a parked GoDaddy domain; real parent site is ducktyped.xyz)
