@@ -4,9 +4,10 @@ module.exports = {
     script: '.next/standalone/server.js',
     env: {
       NODE_ENV: 'production',
-      // MUST match the proxy_pass port in nginx/monitor.conf — a mismatch
-      // means deploys pass their health check but never receive traffic
-      PORT: 3000
+      // 3000 is owned by another app on the VPS (EADDRINUSE on 2026-07-04
+      // deploy). The real nginx upstream port for monitor.ducktyped.xyz is
+      // still being determined — see .github/workflows/diagnose.yml
+      PORT: 3001
     }
   }]
 };

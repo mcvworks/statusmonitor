@@ -1,0 +1,63 @@
+name: Diagnose VPS Routing
+
+# Read-only diagnostics: figures out which port nginx actually routes
+# monitor.ducktyped.xyz to, and what process serves it. Makes NO changes.
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+            echo "== Listening TCP ports =="
+            ss -ltnp 2>/dev/null || ss -ltn || netstat -ltnp 2>/dev/null || true
+
+            echo ""
+            echo "== Docker containers =="
+            docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}\t{{.Status}}' 2>/dev/null || echo "(no docker access)"
+
+            echo ""
+            echo "== PM2 processes =="
+            pm2 ls || true
+
+            echo ""
+            echo "== nginx configs mentioning monitor =="
+            for f in /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*.conf; do
+              [ -r "$f" ] || continue
+              if grep -ql "monitor" "$f" 2>/dev/null; then
+                echo "--- $f"
+                grep -E "server_name|proxy_pass|listen|upstream" "$f" || true
+              fi
+            done
+            sudo -n nginx -T 2>/dev/null | grep -B2 -A8 "monitor" || echo "(no sudo nginx -T access)"
+
+            echo ""
+            echo "== Cloudflare tunnel? =="
+            pgrep -a cloudflared 2>/dev/null || echo "(no cloudflared process visible)"
+            ls ~/.cloudflared 2>/dev/null || true
+            cat ~/.cloudflared/config.yml 2>/dev/null || true
+            for f in /etc/cloudflared/config.yml /usr/local/etc/cloudflared/config.yml; do
+              [ -r "$f" ] && { echo "--- $f"; cat "$f"; }
+            done
+
+            echo ""
+            echo "== Port probes (/api/health) =="
+            for p in 3000 3001 3002 3003 3005 4000 8000 8080; do
+              RESP=$(curl -s --max-time 3 "http://127.0.0.1:$p/api/health" | head -c 200)
+              echo ":$p → ${RESP:-(no response)}"
+            done
+
+            echo ""
+            echo "== Public health for comparison =="
+            curl -s --max-time 10 https://monitor.ducktyped.xyz/api/health | head -c 300
+            echo ""
