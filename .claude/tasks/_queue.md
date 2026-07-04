@@ -71,3 +71,4 @@
 - [x] 042 — Per-provider reliability stats (/api/alerts/stats): 30-day incidents, quiet days, worst severity, avg resolution, last incident; shown on provider detail panel
 - [x] 043 — Fix silent no-op deploys: PM2 ran on :3001 while nginx proxies :3000 (public site served a stale March 24 build for 102 days); deploy now clears :3000 safely and verifies the PUBLIC health endpoint serves the new process
 - [x] 044 — Fix domain: monitor.ducktyped.com → monitor.ducktyped.xyz repo-wide (ducktyped.com is a parked GoDaddy domain; real parent site is ducktyped.xyz)
+- [x] 045 — Public alert feeds: RSS 2.0 (/feed.xml) + JSON Feed 1.1 (/feed.json) with source/category/severity filters, autodiscovery link tags, footer RSS link, per-provider RSS on the detail panel
