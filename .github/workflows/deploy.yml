@@ -98,6 +98,13 @@ jobs:
               fi
             fi
 
+            # EMAIL_FROM on the dead ducktyped.com domain breaks Resend
+            # ("domain is not verified") — magic links and feedback mail
+            if grep -q '^EMAIL_FROM=.*ducktyped\.com' .env 2>/dev/null; then
+              echo "Fixing EMAIL_FROM (was on the unverified ducktyped.com domain)"
+              sed -i 's|^EMAIL_FROM=.*|EMAIL_FROM="DTMonitor <alerts@ducktyped.xyz>"|' .env
+            fi
+
             echo "── Syncing database schema ──"
             npx prisma db push || {
               echo "db push failed — diagnostics:"
