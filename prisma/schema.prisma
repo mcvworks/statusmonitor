@@ -196,3 +196,14 @@ model DependencyMap {
   source           String
   updatedAt        DateTime @updatedAt
 }
+
+// ─── Feedback ───────────────────────────────────────────────────
+
+model Feedback {
+  id        String   @id @default(cuid())
+  message   String
+  email     String?
+  page      String?
+  userAgent String?
+  createdAt DateTime @default(now())
+}

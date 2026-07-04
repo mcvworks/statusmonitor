@@ -42,6 +42,22 @@ export async function sendTestEmail(email: string): Promise<void> {
   }
 }
 
+/**
+ * Send an arbitrary email (e.g. feedback forwarding) through the same
+ * Resend/SMTP plumbing as alert notifications.
+ */
+export async function sendRawEmail(
+  to: string,
+  subject: string,
+  html: string,
+): Promise<void> {
+  if (process.env.RESEND_API_KEY) {
+    await sendViaResend(to, subject, html);
+  } else {
+    await sendViaSMTP(to, subject, html);
+  }
+}
+
 // ─── Senders ────────────────────────────────────────────────────
 
 async function sendViaResend(
