@@ -8,6 +8,7 @@ import { AlertList } from "./AlertList";
 import { StatusOverview } from "./StatusOverview";
 import { BlastRadiusSummary } from "@/components/blast-radius/BlastRadiusSummary";
 import { EventFeed } from "./EventFeed";
+import { ProviderDetailPanel } from "./ProviderDetailPanel";
 
 export function DashboardClient() {
   const { status } = useSSE();
@@ -45,8 +46,16 @@ export function DashboardClient() {
         <StatusOverview />
       </Suspense>
 
+      {/* Provider detail — shown when a provider is selected in the
+          sidebar or status grid */}
+      {filters.source && (
+        <Suspense>
+          <ProviderDetailPanel source={filters.source} />
+        </Suspense>
+      )}
+
       {/* Live event feed */}
-      <EventFeed />
+      <EventFeed source={filters.source || undefined} />
 
       {/* Alert feed */}
       <div id="alert-feed" />

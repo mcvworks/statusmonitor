@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { CheckCircle, Eye, EyeOff } from "lucide-react";
 import { useSession } from "next-auth/react";
 import type { AlertCategory, AlertSeverity, SerializedAlertWithState } from "@/lib/alert-schema";
-import { SEVERITY_ORDER } from "@/lib/constants";
+import { MAX_ALERT_AGE_DAYS, PROVIDERS, SEVERITY_ORDER } from "@/lib/constants";
 import { useAlerts } from "@/hooks/useAlerts";
 import { CategoryGroup } from "./CategoryGroup";
 
@@ -49,10 +49,14 @@ export function AlertList({
   sort,
   sourceFilter,
 }: AlertListProps = {}) {
+  // source and search are filtered server-side — filtering the 50-alert
+  // window client-side made matches outside that window invisible
   const { alerts, isLoading, isError, avgResolutionBySource } = useAlerts({
     category,
     severity,
     status,
+    source,
+    q: search,
   });
   const { data: session } = useSession();
   const [showDismissed, setShowDismissed] = useState(false);
@@ -61,19 +65,9 @@ export function AlertList({
   const { visible, hiddenCount } = useMemo(() => {
     let result = alerts;
 
-    if (source) {
-      result = result.filter((a) => a.source === source);
-    } else if (sourceFilter && sourceFilter.length > 0) {
+    if (!source && sourceFilter && sourceFilter.length > 0) {
       const allowed = new Set(sourceFilter);
       result = result.filter((a) => allowed.has(a.source));
-    }
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (a) =>
-          a.title.toLowerCase().includes(q) ||
-          (a.description && a.description.toLowerCase().includes(q)),
-      );
     }
 
     // Apply sorting
@@ -115,7 +109,7 @@ export function AlertList({
     }
 
     return { visible: result, hiddenCount: 0 };
-  }, [alerts, search, source, sourceFilter, sort, session?.user, showDismissed]);
+  }, [alerts, source, sourceFilter, sort, session?.user, showDismissed]);
 
   if (isLoading) {
     return (
@@ -141,18 +135,28 @@ export function AlertList({
   }
 
   if (visible.length === 0 && hiddenCount === 0) {
+    const providerName = source
+      ? (PROVIDERS[source]?.name ?? source)
+      : undefined;
+    const hasOtherFilters = !!(search || category || severity || status);
     return (
       <div className="glass-card corner-brackets flex flex-col items-center justify-center p-12">
         <CheckCircle className="mb-3 h-8 w-8 text-secondary" />
         <p className="text-lg font-medium text-text-primary">
-          {search || category || severity || status
-            ? "No Matching Alerts"
-            : "All Systems Operational"}
+          {providerName
+            ? `No Recent Alerts from ${providerName}`
+            : hasOtherFilters
+              ? "No Matching Alerts"
+              : "All Systems Operational"}
         </p>
         <p className="mt-1 text-sm text-text-muted">
-          {search || category || severity || status
-            ? "Try adjusting your search or filters."
-            : "No active incidents detected across all monitored services."}
+          {providerName
+            ? hasOtherFilters
+              ? "Try adjusting your search or filters."
+              : `No incidents from ${providerName} in the retained history (${MAX_ALERT_AGE_DAYS} days).`
+            : hasOtherFilters
+              ? "Try adjusting your search or filters."
+              : "No active incidents detected across all monitored services."}
         </p>
       </div>
     );

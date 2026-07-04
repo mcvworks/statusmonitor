@@ -20,7 +20,13 @@ import {
   CATEGORY_LABELS,
   type ProviderMeta,
 } from "@/lib/constants";
-import type { AlertCategory } from "@/lib/alert-schema";
+import type { AlertCategory, SerializedAlert } from "@/lib/alert-schema";
+import { useAlerts } from "@/hooks/useAlerts";
+import {
+  deriveProviderStatus,
+  PROVIDER_STATUS_STYLES,
+  type ProviderStatus,
+} from "@/lib/provider-status";
 
 const CATEGORY_ICONS: Record<AlertCategory, React.ReactNode> = {
   cloud: <Cloud className="h-3.5 w-3.5" />,
@@ -37,6 +43,18 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle, mobile }: SidebarProps) {
   const { data: session } = useSession();
+
+  // Live per-provider status for the dots (SWR dedupes this fetch with
+  // the dashboard's own alert queries)
+  const { alerts } = useAlerts();
+  const statusBySource: Record<string, ProviderStatus> = {};
+  const alertsBySource: Record<string, SerializedAlert[]> = {};
+  for (const alert of alerts) {
+    (alertsBySource[alert.source] ??= []).push(alert);
+  }
+  for (const [key, sourceAlerts] of Object.entries(alertsBySource)) {
+    statusBySource[key] = deriveProviderStatus(sourceAlerts);
+  }
 
   // Group providers by category
   const grouped = Object.entries(PROVIDERS).reduce(
@@ -78,6 +96,7 @@ export function Sidebar({ collapsed, onToggle, mobile }: SidebarProps) {
               key={cat}
               category={cat}
               providers={grouped[cat] ?? []}
+              statusBySource={statusBySource}
             />
           ))}
         {collapsed && !mobile &&
@@ -119,9 +138,11 @@ export function Sidebar({ collapsed, onToggle, mobile }: SidebarProps) {
 function CategorySection({
   category,
   providers,
+  statusBySource,
 }: {
   category: AlertCategory;
   providers: (ProviderMeta & { id: string })[];
+  statusBySource: Record<string, ProviderStatus>;
 }) {
   const [expanded, setExpanded] = useState(true);
   const router = useRouter();
@@ -164,7 +185,12 @@ function CategorySection({
                     : "text-text-secondary hover:bg-surface-hover hover:text-text-primary"
                 }`}
               >
-                <span className="status-dot status-dot-operational" />
+                <span
+                  className={`status-dot ${
+                    PROVIDER_STATUS_STYLES[statusBySource[p.id] ?? "operational"]
+                      .dot
+                  }`}
+                />
                 {p.name}
               </button>
             </li>

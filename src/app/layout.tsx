@@ -56,7 +56,7 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "Ducktyped",
+  name: "duckTyped",
   url: "https://ducktyped.com",
   logo: "https://ducktyped.com/logo.png",
   sameAs: [],

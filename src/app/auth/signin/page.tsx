@@ -179,7 +179,7 @@ export default async function SignInPage({
             href="https://ducktyped.com"
             className="text-[#F2C200] transition-colors hover:text-[#FFD020]"
           >
-            Ducktyped
+            duckTyped
           </a>
         </p>
       </div>

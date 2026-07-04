@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Link from "next/link";
 import { Radio } from "lucide-react";
 import { useEventFeed } from "@/hooks/useEventFeed";
 import { ProviderIcon } from "./ProviderIcon";
@@ -52,8 +53,13 @@ function buildDescription(event: {
   }
 }
 
-export function EventFeed() {
-  const { events } = useEventFeed(50);
+interface EventFeedProps {
+  /** When set, only show events from this provider */
+  source?: string;
+}
+
+export function EventFeed({ source }: EventFeedProps = {}) {
+  const { events } = useEventFeed(50, source);
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
 
@@ -71,12 +77,17 @@ export function EventFeed() {
         <div className="flex h-5 w-5 items-center justify-center">
           <Radio className="h-3.5 w-3.5 text-primary" />
         </div>
-        <h2 className="section-label !mb-0">Live Event Feed</h2>
+        <h2 className="section-label !mb-0">
+          Live Event Feed
+          {source && ` — ${PROVIDERS[source]?.name ?? source}`}
+        </h2>
       </div>
 
       {events.length === 0 ? (
         <p className="py-6 text-center font-[family-name:var(--font-mono)] text-[11px] text-text-muted">
-          No recent activity
+          {source
+            ? `No recent activity from ${PROVIDERS[source]?.name ?? source}`
+            : "No recent activity"}
         </p>
       ) : (
         <div
@@ -90,7 +101,8 @@ export function EventFeed() {
           {events.map((event, i) => {
             const color = EVENT_COLORS[event.type];
             return (
-              <div
+              <Link
+                href={`/incident/${event.alertId}`}
                 key={`${event.alertId}-${event.timestamp}-${i}`}
                 className="flex items-start gap-2.5 rounded-md px-2 py-1.5 transition-colors hover:bg-surface-hover"
               >
@@ -121,7 +133,7 @@ export function EventFeed() {
                 <span className="mt-[1px] shrink-0 font-[family-name:var(--font-mono)] text-[10px] text-text-muted">
                   {formatRelativeTime(event.timestamp)}
                 </span>
-              </div>
+              </Link>
             );
           })}
         </div>

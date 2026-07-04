@@ -2,40 +2,15 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import type { SerializedAlert } from "@/lib/alert-schema";
-import { PROVIDERS, SEVERITY_ORDER } from "@/lib/constants";
-import type { AlertSeverity } from "@/lib/alert-schema";
+import { PROVIDERS } from "@/lib/constants";
+import {
+  deriveProviderStatus,
+  PROVIDER_STATUS_STYLES,
+} from "@/lib/provider-status";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useActivity } from "@/hooks/useActivity";
 import { ProviderIcon } from "./ProviderIcon";
 import { Sparkline } from "./Sparkline";
-
-type ProviderStatus = "operational" | "degraded" | "outage" | "unknown";
-
-function deriveStatus(alerts: SerializedAlert[]): ProviderStatus {
-  const active = alerts.filter((a) => a.status !== "resolved");
-  if (active.length === 0) return "operational";
-
-  const worst = active.reduce<AlertSeverity>(
-    (acc, a) =>
-      SEVERITY_ORDER[a.severity as AlertSeverity] < SEVERITY_ORDER[acc]
-        ? (a.severity as AlertSeverity)
-        : acc,
-    "info",
-  );
-
-  if (worst === "critical" || worst === "major") return "outage";
-  return "degraded";
-}
-
-const STATUS_STYLES: Record<
-  ProviderStatus,
-  { dot: string; label: string }
-> = {
-  operational: { dot: "status-dot-operational", label: "Operational" },
-  degraded: { dot: "status-dot-degraded", label: "Degraded" },
-  outage: { dot: "status-dot-outage", label: "Outage" },
-  unknown: { dot: "bg-text-muted", label: "Unknown" },
-};
 
 interface StatusOverviewProps {
   sourceFilter?: string[];
@@ -73,7 +48,7 @@ export function StatusOverview({ sourceFilter }: StatusOverviewProps = {}) {
     : entries;
   const providerEntries = filteredEntries.map(([key, meta]) => {
     const status = alertsBySource[key]
-      ? deriveStatus(alertsBySource[key])
+      ? deriveProviderStatus(alertsBySource[key])
       : "operational";
     return { key, name: meta.name, category: meta.category, status };
   });
@@ -103,7 +78,7 @@ export function StatusOverview({ sourceFilter }: StatusOverviewProps = {}) {
       ) : (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {providerEntries.map((p) => {
-            const style = STATUS_STYLES[p.status];
+            const style = PROVIDER_STATUS_STYLES[p.status];
             const isActive = activeSource === p.key;
             return (
               <button
