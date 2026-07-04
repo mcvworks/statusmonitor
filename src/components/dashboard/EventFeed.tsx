@@ -59,10 +59,7 @@ interface EventFeedProps {
 }
 
 export function EventFeed({ source }: EventFeedProps = {}) {
-  const { events: allEvents } = useEventFeed(50);
-  const events = source
-    ? allEvents.filter((e) => e.source === source)
-    : allEvents;
+  const { events } = useEventFeed(50, source);
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
 

@@ -10,6 +10,10 @@ import {
 } from "@/lib/provider-status";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useActivity } from "@/hooks/useActivity";
+import { useProviderStats } from "@/hooks/useProviderStats";
+import { formatRelativeTime } from "@/lib/utils";
+import { SEVERITY_COLORS } from "@/lib/constants";
+import type { AlertSeverity } from "@/lib/alert-schema";
 import { ProviderIcon } from "./ProviderIcon";
 import { Sparkline } from "./Sparkline";
 
@@ -31,6 +35,7 @@ export function ProviderDetailPanel({ source }: ProviderDetailPanelProps) {
 
   const { alerts, isLoading, avgResolutionBySource } = useAlerts({ source });
   const { activity } = useActivity();
+  const { stats } = useProviderStats(source);
 
   // Bring the panel into view when a provider is selected from the sidebar
   // (which may happen while scrolled elsewhere on the page)
@@ -45,7 +50,9 @@ export function ProviderDetailPanel({ source }: ProviderDetailPanelProps) {
   const activeCount = alerts.filter((a) => a.status !== "resolved").length;
   const weekActivity = activity[source] ?? [];
   const weekCount = weekActivity.reduce((sum, n) => sum + n, 0);
-  const avgResolution = avgResolutionBySource[source];
+  // avgResolutionBySource is only populated when this provider has
+  // alerts in the current response; the stats endpoint covers all time
+  const avgResolution = avgResolutionBySource[source] ?? stats?.avgResolutionMin;
 
   const clearFilter = () => {
     const params = new URLSearchParams(searchParams.toString());
@@ -114,6 +121,50 @@ export function ProviderDetailPanel({ source }: ProviderDetailPanelProps) {
           )}
         </div>
       </div>
+
+      {/* Reliability strip (30-day window) */}
+      {stats && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-surface-input px-3 py-2 font-[family-name:var(--font-mono)] text-[11px] text-text-secondary">
+          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+            Last {stats.windowDays} days
+          </span>
+          <span>
+            {stats.incidents} incident{stats.incidents !== 1 ? "s" : ""}
+          </span>
+          <span className="text-border">|</span>
+          <span
+            className={
+              stats.quietDays >= stats.windowDays - 3 ? "text-secondary" : ""
+            }
+          >
+            {stats.quietDays}/{stats.windowDays} quiet days
+          </span>
+          {stats.worstSeverity && (
+            <>
+              <span className="text-border">|</span>
+              <span>
+                worst:{" "}
+                <span
+                  style={{
+                    color:
+                      SEVERITY_COLORS[stats.worstSeverity as AlertSeverity]?.fg,
+                  }}
+                >
+                  {stats.worstSeverity}
+                </span>
+              </span>
+            </>
+          )}
+          {stats.lastIncidentAt && (
+            <>
+              <span className="text-border">|</span>
+              <span>
+                last incident {formatRelativeTime(stats.lastIncidentAt)}
+              </span>
+            </>
+          )}
+        </div>
+      )}
 
       {/* External links */}
       <div className="mt-3 flex flex-wrap items-center gap-2">

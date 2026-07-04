@@ -67,3 +67,5 @@
 - [x] 038 — News ticker ("Wire") on the public dashboard with verified source domain badges
 - [x] 039 — Provider registry key alignment (8 providers emitted kebab-case sources that never matched camelCase registry keys; Vercel/Netlify split into separate providers)
 - [x] 040 — Middleware public-route fixes (sitemap.xml, robots.txt, /incident, /api/enrichment were behind auth)
+- [x] 041 — DB-derived event feed (was in-memory ring buffer that emptied on every deploy); source filter server-side
+- [x] 042 — Per-provider reliability stats (/api/alerts/stats): 30-day incidents, quiet days, worst severity, avg resolution, last incident; shown on provider detail panel
