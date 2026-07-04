@@ -10,18 +10,18 @@ export const DOWNDETECTOR_SLUGS: Record<string, string> = {
   gcp: 'google-cloud',
   cloudflare: 'cloudflare',
   github: 'github',
-  microsoft365: 'office-365',
+  m365: 'office-365',
   slack: 'slack',
   atlassian: 'jira',
   okta: 'okta',
   stripe: 'stripe',
-  googleWorkspace: 'google',
+  'google-workspace': 'google',
   digitalocean: 'digitalocean',
   fastly: 'fastly',
   datadog: 'datadog',
   pagerduty: 'pagerduty',
-  dockerHub: 'docker',
-  npmRegistry: 'npm',
+  dockerhub: 'docker',
+  'npm-registry': 'npm',
 };
 
 /** Build the public Downdetector URL for a given slug */

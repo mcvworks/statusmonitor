@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Link from "next/link";
 import { Radio } from "lucide-react";
 import { useEventFeed } from "@/hooks/useEventFeed";
 import { ProviderIcon } from "./ProviderIcon";
@@ -103,7 +104,8 @@ export function EventFeed({ source }: EventFeedProps = {}) {
           {events.map((event, i) => {
             const color = EVENT_COLORS[event.type];
             return (
-              <div
+              <Link
+                href={`/incident/${event.alertId}`}
                 key={`${event.alertId}-${event.timestamp}-${i}`}
                 className="flex items-start gap-2.5 rounded-md px-2 py-1.5 transition-colors hover:bg-surface-hover"
               >
@@ -134,7 +136,7 @@ export function EventFeed({ source }: EventFeedProps = {}) {
                 <span className="mt-[1px] shrink-0 font-[family-name:var(--font-mono)] text-[10px] text-text-muted">
                   {formatRelativeTime(event.timestamp)}
                 </span>
-              </div>
+              </Link>
             );
           })}
         </div>

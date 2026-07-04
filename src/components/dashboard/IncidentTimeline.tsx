@@ -11,6 +11,7 @@ interface IncidentUpdate {
 
 interface IncidentTimelineProps {
   updates: IncidentUpdate[];
+  defaultExpanded?: boolean;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -41,8 +42,11 @@ function formatTime(iso: string): string {
   });
 }
 
-export function IncidentTimeline({ updates }: IncidentTimelineProps) {
-  const [expanded, setExpanded] = useState(false);
+export function IncidentTimeline({
+  updates,
+  defaultExpanded = false,
+}: IncidentTimelineProps) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
 
   if (!updates || updates.length <= 1) return null;
 

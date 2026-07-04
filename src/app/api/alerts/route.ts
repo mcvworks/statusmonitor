@@ -27,6 +27,14 @@ export async function GET(request: NextRequest) {
   if (status && AlertStatus.safeParse(status).success) {
     where.status = status;
   }
+  const q = params.get("q")?.trim();
+  if (q) {
+    // SQLite LIKE is case-insensitive for ASCII, so `contains` works here
+    where.OR = [
+      { title: { contains: q } },
+      { description: { contains: q } },
+    ];
+  }
 
   // Include user alert states when authenticated
   const session = await auth();

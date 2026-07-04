@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import {
   ChevronDown,
@@ -142,7 +143,12 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
           </div>
 
           <h3 className="text-sm font-medium text-text-primary">
-            {alert.title}
+            <Link
+              href={`/incident/${alert.id}`}
+              className="transition-colors hover:text-primary"
+            >
+              {alert.title}
+            </Link>
           </h3>
 
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-[family-name:var(--font-mono)] text-[11px] text-text-muted">

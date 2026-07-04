@@ -6,6 +6,7 @@ interface AlertFilters {
   severity?: string;
   source?: string;
   status?: string;
+  q?: string;
   limit?: number;
   offset?: number;
 }

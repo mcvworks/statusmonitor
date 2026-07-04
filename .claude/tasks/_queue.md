@@ -60,3 +60,10 @@
 - [x] [033 — Live Event Feed (State Changes)](033-event-feed.md)
 - [x] [034 — Severity Summary Bar](034-severity-summary-bar.md)
 - [x] [035 — Downdetector Crowdsourced Signals](035-downdetector-provider.md)
+
+## Phase 14: Usefulness — Incident Pages, Wire & Data Fixes
+- [x] 036 — Server-side search (`q` param on /api/alerts; was client-side over a 50-alert window)
+- [x] 037 — Incident detail pages (`/incident/[id]`) with SEO metadata, verified source links, timeline, community threads, blast radius; linked from alert titles, event feed, and ticker; included in sitemap
+- [x] 038 — News ticker ("Wire") on the public dashboard with verified source domain badges
+- [x] 039 — Provider registry key alignment (8 providers emitted kebab-case sources that never matched camelCase registry keys; Vercel/Netlify split into separate providers)
+- [x] 040 — Middleware public-route fixes (sitemap.xml, robots.txt, /incident, /api/enrichment were behind auth)

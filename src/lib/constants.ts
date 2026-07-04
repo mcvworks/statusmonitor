@@ -106,7 +106,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     historyUrl: "https://www.githubstatus.com/history",
     downdetectorSlug: "github",
   },
-  microsoft365: {
+  m365: {
     name: "Microsoft 365",
     category: "cloud",
     tier: "fast",
@@ -156,7 +156,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     historyUrl: "https://status.stripe.com/history",
     downdetectorSlug: "stripe",
   },
-  googleWorkspace: {
+  "google-workspace": {
     name: "Google Workspace",
     category: "cloud",
     tier: "fast",
@@ -186,14 +186,24 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     historyUrl: "https://status.fastly.com/history",
     downdetectorSlug: "fastly",
   },
-  vercelNetlify: {
-    name: "Vercel / Netlify",
+  vercel: {
+    name: "Vercel",
     category: "cloud",
     tier: "fast",
-    color: "#00C7B7",
+    color: "#000000",
     iconSlug: "vercel",
     statusUrl: "https://www.vercel-status.com/",
     historyUrl: "https://www.vercel-status.com/history",
+    downdetectorSlug: null,
+  },
+  netlify: {
+    name: "Netlify",
+    category: "cloud",
+    tier: "fast",
+    color: "#00C7B7",
+    iconSlug: "netlify",
+    statusUrl: "https://www.netlifystatus.com/",
+    historyUrl: "https://www.netlifystatus.com/history",
     downdetectorSlug: null,
   },
 
@@ -218,7 +228,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     historyUrl: "https://status.pagerduty.com/history",
     downdetectorSlug: "pagerduty",
   },
-  dockerHub: {
+  dockerhub: {
     name: "Docker Hub",
     category: "devops",
     tier: "slow",
@@ -228,7 +238,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     historyUrl: "https://www.dockerstatus.com/history",
     downdetectorSlug: "docker",
   },
-  npmRegistry: {
+  "npm-registry": {
     name: "npm Registry",
     category: "devops",
     tier: "slow",
@@ -240,7 +250,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
   },
 
   // Security (slow tier)
-  cisaKev: {
+  "cisa-kev": {
     name: "CISA KEV",
     category: "security",
     tier: "slow",
@@ -262,7 +272,7 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
   },
 
   // ISP (slow tier)
-  cloudflareRadar: {
+  "cloudflare-radar": {
     name: "Cloudflare Radar",
     category: "isp",
     tier: "slow",

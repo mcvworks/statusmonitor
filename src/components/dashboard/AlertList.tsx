@@ -49,13 +49,14 @@ export function AlertList({
   sort,
   sourceFilter,
 }: AlertListProps = {}) {
-  // source is filtered server-side — filtering the 50-alert window
-  // client-side made selected providers appear to have no alerts
+  // source and search are filtered server-side — filtering the 50-alert
+  // window client-side made matches outside that window invisible
   const { alerts, isLoading, isError, avgResolutionBySource } = useAlerts({
     category,
     severity,
     status,
     source,
+    q: search,
   });
   const { data: session } = useSession();
   const [showDismissed, setShowDismissed] = useState(false);
@@ -67,14 +68,6 @@ export function AlertList({
     if (!source && sourceFilter && sourceFilter.length > 0) {
       const allowed = new Set(sourceFilter);
       result = result.filter((a) => allowed.has(a.source));
-    }
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (a) =>
-          a.title.toLowerCase().includes(q) ||
-          (a.description && a.description.toLowerCase().includes(q)),
-      );
     }
 
     // Apply sorting
@@ -116,7 +109,7 @@ export function AlertList({
     }
 
     return { visible: result, hiddenCount: 0 };
-  }, [alerts, search, source, sourceFilter, sort, session?.user, showDismissed]);
+  }, [alerts, source, sourceFilter, sort, session?.user, showDismissed]);
 
   if (isLoading) {
     return (

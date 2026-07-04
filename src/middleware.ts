@@ -6,10 +6,14 @@ export const runtime = "nodejs";
 const publicRoutes = [
   "/",
   "/history",
+  "/incident",
+  "/sitemap.xml",
+  "/robots.txt",
   "/api/alerts",
   "/api/alerts/sse",
   "/api/alerts/history",
   "/api/dependencies",
+  "/api/enrichment",
   "/api/health",
 ];
 

@@ -5,12 +5,7 @@ import { Zap, ChevronDown, ChevronUp } from "lucide-react";
 import { useProviderDependencies } from "@/hooks/useDependencies";
 import { DependencyList } from "./DependencyList";
 
-// Providers that have entries in the static dependency map
-const BLAST_RADIUS_PROVIDERS = new Set(["aws", "azure", "gcp", "cloudflare", "fastly"]);
-
-export function hasBlastRadius(source: string): boolean {
-  return BLAST_RADIUS_PROVIDERS.has(source);
-}
+export { hasBlastRadius } from "@/lib/blast-radius";
 
 export function BlastRadiusPanel({ provider }: { provider: string }) {
   const [expanded, setExpanded] = useState(false);

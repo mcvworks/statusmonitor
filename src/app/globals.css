@@ -252,3 +252,33 @@ html.theme-transitioning *::before,
 html.theme-transitioning *::after {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
 }
+
+/* ─── News Ticker ───────────────────────────────────────── */
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker-scroll linear infinite;
+}
+
+.ticker-viewport:hover .ticker-track,
+.ticker-viewport:focus-within .ticker-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+  .ticker-viewport {
+    overflow-x: auto;
+  }
+}

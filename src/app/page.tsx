@@ -1,8 +1,10 @@
 import { Suspense } from "react";
 import { Activity, AlertTriangle, Clock, Shield } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { PROVIDERS } from "@/lib/constants";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
 import { HealthBanner } from "@/components/dashboard/HealthBanner";
+import { NewsTicker } from "@/components/dashboard/NewsTicker";
 import { SeveritySummaryBar } from "@/components/dashboard/SeveritySummaryBar";
 
 async function getStats() {
@@ -37,6 +39,9 @@ export default async function Home() {
 
   return (
     <div className="space-y-6">
+      {/* Live incident wire */}
+      <NewsTicker />
+
       {/* Hero */}
       <div className="glass-card corner-brackets relative overflow-hidden rounded-2xl p-6 lg:p-8">
         <div className="relative z-10">
@@ -57,7 +62,7 @@ export default async function Home() {
         <SummaryCard
           icon={<Activity className="h-5 w-5 text-secondary" />}
           label="Services Monitored"
-          value="22"
+          value={String(Object.keys(PROVIDERS).length)}
         />
         <SummaryCard
           icon={<AlertTriangle className="h-5 w-5 text-critical" />}
