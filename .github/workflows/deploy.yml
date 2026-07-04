@@ -51,9 +51,8 @@ jobs:
             cp -r public .next/standalone/public
 
             echo "── Cutting over from the legacy Docker instance on :3002 ──"
-            # nginx proxies monitor.ducktyped.xyz to 127.0.0.1:3002, which a
-            # docker-compose container has held since March 2026. Downtime
-            # starts here, so everything below stays fast.
+            # Idempotent — the container was removed on 2026-07-04; this
+            # only matters if it ever comes back
             CID=$(docker ps -q --filter "publish=3002" 2>/dev/null || true)
             if [ -n "$CID" ]; then
               echo "Stopping legacy container $CID"
@@ -61,23 +60,53 @@ jobs:
               docker rm -f "$CID" || true
             fi
 
-            # The container bind-mounted ./data — reuse its database so
-            # alert history and user accounts carry over
-            if [ -f "$REPO_DIR/data/monitor.db" ]; then
-              echo "Reusing existing database: data/monitor.db"
-              export DATABASE_URL="file:$REPO_DIR/data/monitor.db"
-              if grep -q '^DATABASE_URL=' .env 2>/dev/null; then
-                sed -i "s|^DATABASE_URL=.*|DATABASE_URL=\"file:$REPO_DIR/data/monitor.db\"|" .env
+            echo "── Preparing database ──"
+            # Stop the app before touching the DB so any relocation copies
+            # a consistent snapshot. Downtime starts here.
+            pm2 delete statusmonitor 2>/dev/null || true
+
+            # The docker-era data/ directory can be root-owned: the existing
+            # DB stays writable through its WAL, but nothing new can be
+            # created there — schema changes then fail with SQLITE_READONLY.
+            # In that case relocate the DB set into a directory we own.
+            DB_FILE=""
+            if [ -f "$REPO_DIR/db/monitor.db" ]; then
+              DB_FILE="$REPO_DIR/db/monitor.db"
+              echo "Using relocated database: db/monitor.db"
+            elif [ -f "$REPO_DIR/data/monitor.db" ]; then
+              DB_FILE="$REPO_DIR/data/monitor.db"
+              if touch "$REPO_DIR/data/.writetest" 2>/dev/null; then
+                rm -f "$REPO_DIR/data/.writetest"
+                echo "Reusing existing database: data/monitor.db"
               else
-                echo "DATABASE_URL=\"file:$REPO_DIR/data/monitor.db\"" >> .env
+                echo "data/ is not writable by $(id -un) — relocating DB to db/"
+                ls -la "$REPO_DIR/data" || true
+                mkdir -p "$REPO_DIR/db"
+                cp "$DB_FILE" "$REPO_DIR/db/monitor.db"
+                for ext in "-wal" "-shm"; do
+                  [ -f "$DB_FILE$ext" ] && cp "$DB_FILE$ext" "$REPO_DIR/db/monitor.db$ext" || true
+                done
+                DB_FILE="$REPO_DIR/db/monitor.db"
+              fi
+            fi
+            if [ -n "$DB_FILE" ]; then
+              export DATABASE_URL="file:$DB_FILE"
+              if grep -q '^DATABASE_URL=' .env 2>/dev/null; then
+                sed -i "s|^DATABASE_URL=.*|DATABASE_URL=\"file:$DB_FILE\"|" .env
+              else
+                echo "DATABASE_URL=\"file:$DB_FILE\"" >> .env
               fi
             fi
 
             echo "── Syncing database schema ──"
-            npx prisma db push
+            npx prisma db push || {
+              echo "db push failed — diagnostics:"
+              id
+              [ -n "$DB_FILE" ] && ls -la "$(dirname "$DB_FILE")" || true
+              exit 1
+            }
 
-            echo "── Reloading PM2 ──"
-            pm2 delete statusmonitor 2>/dev/null || true
+            echo "── Starting PM2 ──"
             pm2 start ecosystem.config.js
             pm2 save
 
