@@ -12,7 +12,7 @@ export function Footer() {
               href="https://ducktyped.com"
               className="font-medium text-text-secondary transition-colors hover:text-primary"
             >
-              Ducktyped
+              duckTyped
             </a>
           </span>
         </div>

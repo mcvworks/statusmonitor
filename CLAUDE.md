@@ -12,12 +12,14 @@ A centralized IT alert dashboard for monitoring cloud service outages, SaaS inci
 - **Notifications**: Resend (email), Slack/Teams webhooks, web-push (browser)
 - **Deployment**: Docker on cloud VM, served at `monitor.ducktyped.com` (subdomain of Ducktyped)
 
-## Cross-Linking with Ducktyped
+## Cross-Linking with duckTyped
+- **Sibling repo**: `mcvworks/ducktyped` — the parent site this project must stay aligned with. When working on visual or cross-linking changes, clone/add that repo and check its current state; do not rely on this file's snapshot of it.
+- **Brand casing**: the parent brand is written `duckTyped` (lowercase d, capital T) in all user-facing text and structured data. This product is `DTMonitor`.
 - **Deployment URL**: `https://monitor.ducktyped.com`
-- **Parent site**: `https://ducktyped.com` — StatusMonitor is linked from Ducktyped's toolbar
-- **Footer backlink**: "Built by [Ducktyped](https://ducktyped.com)" in StatusMonitor footer
-- **SEO**: Both sites share `Organization` structured data; each has its own sitemap submitted to Search Console
-- **Ducktyped toolbar**: Links to StatusMonitor with anchor text "Service Status Monitor" (standard `<a>`, no `nofollow`)
+- **Parent site**: `https://ducktyped.com` — free developer/IT tools (55+ browser-based) plus a substantial learning/education section; nav sections: Utility, Learn, Troubleshoot
+- **Footer backlink**: "Built by [duckTyped](https://ducktyped.com)" in DTMonitor footer (`src/components/layout/Footer.tsx`), also on the sign-in page
+- **SEO**: DTMonitor emits `Organization` (duckTyped) + `subOrganization` (DTMonitor WebApplication) JSON-LD in `src/app/layout.tsx`; each site has its own sitemap submitted to Search Console
+- **duckTyped → DTMonitor link**: not yet added (task 029, deferred). When added, it goes in duckTyped's `unified-nav-links` list in `frontend/index.html` (and shared nav on tool pages); see `docs/CROSS-LINKING.md` for the markup. Standard `<a>`, no `nofollow`.
 
 ## Key Commands
 ```bash
@@ -108,7 +110,13 @@ src/
 
 ## Design System — Lunar-Tech Theme (matches Ducktyped)
 
-This project MUST match the visual style of the Ducktyped project (`c:\Users\vigdev\ducktyped\frontend`).
+This project MUST match the visual style of the duckTyped project (repo `mcvworks/ducktyped`, `frontend/` directory).
+
+**Source of truth**: the token values below are a snapshot. When in doubt — or before any restyle — verify against duckTyped's live token definitions:
+- `frontend/utility/styles.css` (`:root` custom properties: colors, fonts, shadows, radii)
+- `frontend/index.html` (`:root` vars, `unified-nav` navbar markup/styles, hero patterns)
+
+If duckTyped's tokens have drifted from the values below, duckTyped wins — update this file and the Tailwind theme in `src/app/globals.css` to match.
 
 ### Fonts (Google Fonts)
 - **Display/Headers:** `'Orbitron'` (weights: 400, 500, 600, 700) — used for brand, section headers, category labels
