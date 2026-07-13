@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import {
   ChevronDown,
   ChevronUp,
@@ -25,7 +24,8 @@ import {
   BlastRadiusPanel,
   hasBlastRadius,
 } from "@/components/blast-radius/BlastRadiusPanel";
-import { useAlertActions } from "@/hooks/useAlertActions";
+import { useAlertActions, useLocalAlertStates } from "@/hooks/useAlertActions";
+import { ShareMenu } from "@/components/sharing/ShareMenu";
 import { IncidentTimeline } from "./IncidentTimeline";
 import { CvssBreakdown } from "./CvssBreakdown";
 import { ComponentChips } from "./ComponentChips";
@@ -94,14 +94,13 @@ function SeverityTrend({
 export function AlertCard({ alert, showActions = true, avgResolutionMin }: AlertCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [snoozeOpen, setSnoozeOpen] = useState(false);
-  const { data: session } = useSession();
   const { acknowledge, snooze, dismiss, clear } = useAlertActions();
+  const { states } = useLocalAlertStates();
 
   const isResolved = alert.status === "resolved";
   const provider = PROVIDERS[alert.source];
   const providerName = provider?.name ?? alert.source;
-  const isAuthenticated = !!session?.user;
-  const userState = alert.userState;
+  const userState = states[alert.id] ?? alert.userState;
   const isAcknowledged = userState?.state === "acknowledged";
   const severityColor = SEVERITY_COLORS[alert.severity as AlertSeverity];
   const readableProviderColor = provider?.color
@@ -289,8 +288,15 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
-          {/* Alert action buttons (auth only) */}
-          {isAuthenticated && showActions && !isResolved && (
+          <ShareMenu
+            url={`/incident/${alert.id}`}
+            title={`${providerName}: ${alert.title}`}
+            text={`${alert.severity.toUpperCase()} ${alert.status} incident — ${providerName}: ${alert.title}`}
+            compact
+          />
+
+          {/* Personal browser-only alert actions */}
+          {showActions && !isResolved && (
             <>
               {userState ? (
                 <button

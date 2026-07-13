@@ -2,11 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { Activity, Clock, Menu, X, Sun, Moon } from "lucide-react";
-import { SignInButton } from "@/components/auth/SignInButton";
-import { UserMenu } from "@/components/auth/UserMenu";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useSSE } from "@/hooks/useSSE";
 
@@ -31,7 +28,6 @@ const SSE_LABEL: Record<string, string> = {
 };
 
 export function Header({ onMenuToggle }: HeaderProps) {
-  const { data: session } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { resolved, toggle } = useDarkMode();
   const { status, lastEventAt } = useSSE();
@@ -61,6 +57,7 @@ export function Header({ onMenuToggle }: HeaderProps) {
               <NavLink href="/">Dashboard</NavLink>
               <NavLink href="/status">Services</NavLink>
               <NavLink href="/history">History</NavLink>
+              <NavLink href="/dashboard">My View</NavLink>
               <NavLink href="/subscribe">Alerts</NavLink>
             </div>
           </div>
@@ -82,14 +79,6 @@ export function Header({ onMenuToggle }: HeaderProps) {
                 <Moon className="h-4 w-4" />
               )}
             </button>
-
-            <div className="hidden md:block">
-              {session?.user ? (
-                <UserMenu user={session.user} />
-              ) : (
-                <SignInButton />
-              )}
-            </div>
 
             <button
               onClick={() => {
@@ -153,14 +142,13 @@ export function Header({ onMenuToggle }: HeaderProps) {
             <MobileNavLink href="/subscribe" onClick={() => setMobileOpen(false)}>
               Get alerts
             </MobileNavLink>
+            <MobileNavLink href="/dashboard" onClick={() => setMobileOpen(false)}>
+              My view
+            </MobileNavLink>
+            <MobileNavLink href="/dashboard/my-stack" onClick={() => setMobileOpen(false)}>
+              My stack
+            </MobileNavLink>
           </nav>
-          <div className="mt-3 border-t border-border pt-3">
-            {session?.user ? (
-              <UserMenu user={session.user} />
-            ) : (
-              <SignInButton />
-            )}
-          </div>
         </div>
       )}
     </header>

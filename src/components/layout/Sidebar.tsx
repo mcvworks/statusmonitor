@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
 import {
   Cloud,
   Wrench,
@@ -42,8 +41,6 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed, onToggle, mobile }: SidebarProps) {
-  const { data: session } = useSession();
-
   // Live per-provider status for the dots (SWR dedupes this fetch with
   // the dashboard's own alert queries)
   const { alerts } = useAlerts();
@@ -107,9 +104,12 @@ export function Sidebar({ collapsed, onToggle, mobile }: SidebarProps) {
           ))}
       </nav>
 
-      {/* Auth-only links */}
-      {session?.user && (!collapsed || mobile) && (
+      {/* Personal browser-only tools */}
+      {(!collapsed || mobile) && (
         <div className="border-t border-border p-3">
+          <SidebarLink href="/dashboard" icon={<PanelLeft className="h-4 w-4" />}>
+            My View
+          </SidebarLink>
           <SidebarLink href="/dashboard/my-stack" icon={<Layers className="h-4 w-4" />}>
             My Stack
           </SidebarLink>

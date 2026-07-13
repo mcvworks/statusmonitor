@@ -1,5 +1,6 @@
 import useSWR from "swr";
 import { useCallback } from "react";
+import { BROWSER_STORAGE_KEYS, localId, readBrowserData, writeBrowserData } from "@/lib/browser-storage";
 
 export interface DashboardView {
   id: string;
@@ -12,17 +13,16 @@ export interface DashboardView {
   updatedAt: string;
 }
 
-interface DashboardViewsResponse {
-  dashboards: DashboardView[];
-}
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
-
 export function useDashboardViews() {
-  const { data, error, isLoading, mutate } = useSWR<DashboardViewsResponse>(
-    "/api/dashboard",
-    fetcher,
+  const { data, error, isLoading, mutate } = useSWR<DashboardView[]>(
+    BROWSER_STORAGE_KEYS.dashboards,
+    () => readBrowserData<DashboardView[]>(BROWSER_STORAGE_KEYS.dashboards, []),
   );
+
+  const persist = useCallback(async (views: DashboardView[]) => {
+    writeBrowserData(BROWSER_STORAGE_KEYS.dashboards, views);
+    await mutate(views, { revalidate: false });
+  }, [mutate]);
 
   const createView = useCallback(
     async (view: {
@@ -32,17 +32,25 @@ export function useDashboardViews() {
       filters?: { category?: string; severity?: string; status?: string };
       isDefault?: boolean;
     }) => {
-      const res = await fetch("/api/dashboard", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(view),
-      });
-      if (!res.ok) throw new Error("Failed to create view");
-      const json = await res.json();
-      await mutate();
-      return json.dashboard as DashboardView;
+      const now = new Date().toISOString();
+      const current = data ?? readBrowserData<DashboardView[]>(BROWSER_STORAGE_KEYS.dashboards, []);
+      const created: DashboardView = {
+        id: localId("view"),
+        name: view.name,
+        layout: { selectedServices: view.selectedServices ?? [] },
+        pinnedServices: view.pinnedServices ?? [],
+        filters: view.filters ?? {},
+        isDefault: view.isDefault ?? false,
+        createdAt: now,
+        updatedAt: now,
+      };
+      const next = created.isDefault
+        ? [...current.map((item) => ({ ...item, isDefault: false })), created]
+        : [...current, created];
+      await persist(next);
+      return created;
     },
-    [mutate],
+    [data, persist],
   );
 
   const updateView = useCallback(
@@ -56,34 +64,37 @@ export function useDashboardViews() {
         isDefault: boolean;
       }>,
     ) => {
-      const res = await fetch("/api/dashboard", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, ...updates }),
+      const current = data ?? readBrowserData<DashboardView[]>(BROWSER_STORAGE_KEYS.dashboards, []);
+      let updated: DashboardView | undefined;
+      const next = current.map((view) => {
+        if (view.id !== id) return updates.isDefault ? { ...view, isDefault: false } : view;
+        updated = {
+          ...view,
+          ...updates,
+          layout: updates.selectedServices
+            ? { selectedServices: updates.selectedServices }
+            : view.layout,
+          updatedAt: new Date().toISOString(),
+        };
+        return updated;
       });
-      if (!res.ok) throw new Error("Failed to update view");
-      const json = await res.json();
-      await mutate();
-      return json.dashboard as DashboardView;
+      if (!updated) throw new Error("Dashboard view not found");
+      await persist(next);
+      return updated;
     },
-    [mutate],
+    [data, persist],
   );
 
   const deleteView = useCallback(
     async (id: string) => {
-      const res = await fetch("/api/dashboard", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-      if (!res.ok) throw new Error("Failed to delete view");
-      await mutate();
+      const current = data ?? readBrowserData<DashboardView[]>(BROWSER_STORAGE_KEYS.dashboards, []);
+      await persist(current.filter((view) => view.id !== id));
     },
-    [mutate],
+    [data, persist],
   );
 
   return {
-    views: data?.dashboards ?? [],
+    views: data ?? [],
     isLoading,
     isError: !!error,
     createView,

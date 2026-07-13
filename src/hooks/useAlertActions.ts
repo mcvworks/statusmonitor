@@ -1,66 +1,48 @@
 import { useCallback } from "react";
-import { useSWRConfig } from "swr";
+import useSWR from "swr";
 import type { UserAlertStateValue } from "@/lib/alert-schema";
+import { BROWSER_STORAGE_KEYS, readBrowserData, writeBrowserData } from "@/lib/browser-storage";
 
-async function updateAlertState(
-  alertId: string,
-  state: UserAlertStateValue,
-  snoozedUntil?: string,
-) {
-  const res = await fetch(`/api/alerts/${alertId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ state, snoozedUntil }),
-  });
-  if (!res.ok) throw new Error("Failed to update alert state");
-  return res.json();
+export interface LocalAlertState {
+  state: UserAlertStateValue;
+  snoozedUntil: string | null;
+  updatedAt: string;
 }
 
-async function clearAlertState(alertId: string) {
-  const res = await fetch(`/api/alerts/${alertId}`, { method: "DELETE" });
-  if (!res.ok) throw new Error("Failed to clear alert state");
-  return res.json();
+export type LocalAlertStates = Record<string, LocalAlertState>;
+
+export function useLocalAlertStates() {
+  const { data, mutate } = useSWR<LocalAlertStates>(
+    BROWSER_STORAGE_KEYS.alertStates,
+    () => readBrowserData<LocalAlertStates>(BROWSER_STORAGE_KEYS.alertStates, {}),
+  );
+  return { states: data ?? {}, mutate };
 }
 
 export function useAlertActions() {
-  const { mutate } = useSWRConfig();
+  const { states, mutate } = useLocalAlertStates();
 
-  const revalidate = useCallback(() => {
-    // Revalidate all alert SWR keys
-    mutate((key: unknown) => typeof key === "string" && key.startsWith("/api/alerts"));
-  }, [mutate]);
+  const update = useCallback(async (
+    alertId: string,
+    state: UserAlertStateValue,
+    snoozedUntil: string | null = null,
+  ) => {
+    const current = readBrowserData<LocalAlertStates>(BROWSER_STORAGE_KEYS.alertStates, states);
+    const next = { ...current, [alertId]: { state, snoozedUntil, updatedAt: new Date().toISOString() } };
+    writeBrowserData(BROWSER_STORAGE_KEYS.alertStates, next);
+    await mutate(next, { revalidate: false });
+  }, [states, mutate]);
 
-  const acknowledge = useCallback(
-    async (alertId: string) => {
-      await updateAlertState(alertId, "acknowledged");
-      revalidate();
-    },
-    [revalidate],
-  );
-
-  const snooze = useCallback(
-    async (alertId: string, until: string) => {
-      await updateAlertState(alertId, "snoozed", until);
-      revalidate();
-    },
-    [revalidate],
-  );
-
-  const dismiss = useCallback(
-    async (alertId: string) => {
-      await updateAlertState(alertId, "dismissed");
-      revalidate();
-    },
-    [revalidate],
-  );
-
-  const clear = useCallback(
-    async (alertId: string) => {
-      await clearAlertState(alertId);
-      revalidate();
-    },
-    [revalidate],
-  );
+  const acknowledge = useCallback((alertId: string) => update(alertId, "acknowledged"), [update]);
+  const snooze = useCallback((alertId: string, until: string) => update(alertId, "snoozed", until), [update]);
+  const dismiss = useCallback((alertId: string) => update(alertId, "dismissed"), [update]);
+  const clear = useCallback(async (alertId: string) => {
+    const current = readBrowserData<LocalAlertStates>(BROWSER_STORAGE_KEYS.alertStates, states);
+    const next = { ...current };
+    delete next[alertId];
+    writeBrowserData(BROWSER_STORAGE_KEYS.alertStates, next);
+    await mutate(next, { revalidate: false });
+  }, [states, mutate]);
 
   return { acknowledge, snooze, dismiss, clear };
 }

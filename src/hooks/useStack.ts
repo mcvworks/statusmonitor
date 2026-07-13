@@ -1,5 +1,6 @@
 import useSWR from "swr";
 import { useCallback } from "react";
+import { BROWSER_STORAGE_KEYS, localId, readBrowserData, writeBrowserData } from "@/lib/browser-storage";
 
 export interface StackEntry {
   id: string;
@@ -10,17 +11,16 @@ export interface StackEntry {
   createdAt: string;
 }
 
-interface StackResponse {
-  stack: StackEntry[];
-}
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
-
 export function useStack() {
-  const { data, error, isLoading, mutate } = useSWR<StackResponse>(
-    "/api/stack",
-    fetcher
+  const { data, error, isLoading, mutate } = useSWR<StackEntry[]>(
+    BROWSER_STORAGE_KEYS.stack,
+    () => readBrowserData<StackEntry[]>(BROWSER_STORAGE_KEYS.stack, []),
   );
+
+  const persist = useCallback(async (stack: StackEntry[]) => {
+    writeBrowserData(BROWSER_STORAGE_KEYS.stack, stack);
+    await mutate(stack, { revalidate: false });
+  }, [mutate]);
 
   const addService = useCallback(
     async (service: {
@@ -29,15 +29,18 @@ export function useStack() {
       region?: string;
       notes?: string;
     }) => {
-      const res = await fetch("/api/stack", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(service),
-      });
-      if (!res.ok) throw new Error("Failed to add service");
-      await mutate();
+      const current = data ?? readBrowserData<StackEntry[]>(BROWSER_STORAGE_KEYS.stack, []);
+      const now = new Date().toISOString();
+      await persist([...current, {
+        id: localId("stack"),
+        serviceName: service.serviceName,
+        provider: service.provider,
+        region: service.region ?? null,
+        notes: service.notes ?? null,
+        createdAt: now,
+      }]);
     },
-    [mutate]
+    [data, persist]
   );
 
   const addBulk = useCallback(
@@ -49,32 +52,28 @@ export function useStack() {
         notes?: string;
       }>
     ) => {
-      const res = await fetch("/api/stack", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ services }),
-      });
-      if (!res.ok) throw new Error("Failed to add services");
-      await mutate();
+      const current = data ?? readBrowserData<StackEntry[]>(BROWSER_STORAGE_KEYS.stack, []);
+      const createdAt = new Date().toISOString();
+      const existing = new Set(current.map((item) => `${item.provider}:${item.serviceName}`));
+      const additions = services.filter((service) => !existing.has(`${service.provider}:${service.serviceName}`)).map((service) => ({
+        id: localId("stack"), serviceName: service.serviceName, provider: service.provider,
+        region: service.region ?? null, notes: service.notes ?? null, createdAt,
+      }));
+      await persist([...current, ...additions]);
     },
-    [mutate]
+    [data, persist]
   );
 
   const removeService = useCallback(
     async (id: string) => {
-      const res = await fetch("/api/stack", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-      if (!res.ok) throw new Error("Failed to remove service");
-      await mutate();
+      const current = data ?? readBrowserData<StackEntry[]>(BROWSER_STORAGE_KEYS.stack, []);
+      await persist(current.filter((entry) => entry.id !== id));
     },
-    [mutate]
+    [data, persist]
   );
 
   return {
-    stack: data?.stack ?? [],
+    stack: data ?? [],
     isLoading,
     isError: !!error,
     addService,

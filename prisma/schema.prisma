@@ -88,10 +88,11 @@ model Alert {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  alertStates           UserAlertState[]
-  notificationLogs      NotificationLog[]
-  emailSubscriptionLogs EmailSubscriptionLog[]
-  updates               AlertUpdate[]
+  alertStates             UserAlertState[]
+  notificationLogs        NotificationLog[]
+  emailSubscriptionLogs   EmailSubscriptionLog[]
+  webhookSubscriptionLogs WebhookSubscriptionLog[]
+  updates                 AlertUpdate[]
 
   @@unique([source, externalId])
 }
@@ -228,6 +229,34 @@ model EmailSubscriptionLog {
 
   @@unique([subscriptionId, alertId, eventKey])
   @@index([subscriptionId, sentAt])
+}
+
+model WebhookSubscription {
+  id             String   @id @default(cuid())
+  channel        String
+  webhookSecret  String
+  enabled        Boolean  @default(true)
+  severityFilter String   @default("[]")
+  sourceFilter   String   @default("[]")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  notificationLogs WebhookSubscriptionLog[]
+}
+
+model WebhookSubscriptionLog {
+  id             String   @id @default(cuid())
+  subscriptionId String
+  alertId        String
+  eventKey       String
+  sentAt         DateTime @default(now())
+  success        Boolean
+  error          String?
+
+  subscription WebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  alert        Alert               @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, alertId, eventKey])
 }
 
 model PollLog {

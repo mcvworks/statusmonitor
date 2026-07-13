@@ -1,18 +1,10 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
 import { SettingsPage } from "./SettingsPage";
 
 export const metadata = {
-  title: "Notification Settings — DTMonitor",
-  description: "Configure your notification channels and alert preferences",
+  title: "Local Settings — DTMonitor",
+  description: "Export or import your private browser-based DTMonitor preferences",
 };
 
-export default async function SettingsRoute() {
-  const session = await auth();
-
-  if (!session?.user) {
-    redirect("/auth/signin");
-  }
-
+export default function SettingsRoute() {
   return <SettingsPage />;
 }

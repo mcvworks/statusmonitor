@@ -3,6 +3,7 @@ import type { Alert } from "@/generated/prisma/client";
 import { sendEmailNotification } from "./email";
 import { sendSubscriberAlertEmail } from "./email";
 import { appUrl, createManageToken } from "@/lib/email-subscriptions";
+import { decryptWebhook } from "@/lib/webhook-subscriptions";
 import { sendSlackNotification } from "./slack";
 import { sendTeamsNotification } from "./teams";
 import { sendPushNotification } from "./web-push";
@@ -43,6 +44,7 @@ export async function dispatchNotifications(alerts: Alert[]): Promise<void> {
   await Promise.all([
     dispatchUserNotifications(uniqueAlerts),
     dispatchPublicEmailSubscriptions(uniqueAlerts),
+    dispatchWebhookSubscriptions(uniqueAlerts),
   ]);
 }
 
@@ -174,6 +176,41 @@ async function dispatchPublicEmailSubscriptions(alerts: Alert[]): Promise<void> 
   }
 }
 
+async function dispatchWebhookSubscriptions(alerts: Alert[]): Promise<void> {
+  const subscriptions = await prisma.webhookSubscription.findMany({ where: { enabled: true } });
+  for (const subscription of subscriptions) {
+    const severities = parseSeverityFilter(subscription.severityFilter);
+    const sources = parseSourceFilter(subscription.sourceFilter);
+    const matching = alerts.filter((alert) =>
+      (severities.length === 0 || severities.includes(alert.severity))
+      && (sources.length === 0 || sources.includes(alert.source)),
+    );
+    const events = matching.map((alert) => ({ alert, eventKey: `${alert.status}:${alert.severity}` }));
+    if (events.length === 0) continue;
+    const sent = await prisma.webhookSubscriptionLog.findMany({
+      where: {
+        subscriptionId: subscription.id,
+        success: true,
+        OR: events.map(({ alert, eventKey }) => ({ alertId: alert.id, eventKey })),
+      },
+      select: { alertId: true, eventKey: true },
+    });
+    const sentKeys = new Set(sent.map((item) => `${item.alertId}:${item.eventKey}`));
+    const pending = events.filter(({ alert, eventKey }) => !sentKeys.has(`${alert.id}:${eventKey}`));
+    if (pending.length === 0) continue;
+    try {
+      if (subscription.channel !== "slack") throw new Error("Unsupported webhook channel");
+      await sendSlackNotification("", "", pending.map(({ alert }) => alert), {
+        webhookUrl: decryptWebhook(subscription.webhookSecret),
+      });
+      await logWebhookNotifications(subscription.id, pending, true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await logWebhookNotifications(subscription.id, pending, false, message);
+    }
+  }
+}
+
 // ─── Helpers ────────────────────────────────────────────────────
 
 function parseSeverityFilter(raw: string): string[] {
@@ -235,6 +272,21 @@ async function logPublicNotifications(
       where: {
         subscriptionId_alertId_eventKey: { subscriptionId, alertId: alert.id, eventKey },
       },
+      create: { subscriptionId, alertId: alert.id, eventKey, success, error },
+      update: { success, error, sentAt: new Date() },
+    }),
+  ));
+}
+
+async function logWebhookNotifications(
+  subscriptionId: string,
+  events: Array<{ alert: Alert; eventKey: string }>,
+  success: boolean,
+  error?: string,
+) {
+  await Promise.allSettled(events.map(({ alert, eventKey }) =>
+    prisma.webhookSubscriptionLog.upsert({
+      where: { subscriptionId_alertId_eventKey: { subscriptionId, alertId: alert.id, eventKey } },
       create: { subscriptionId, alertId: alert.id, eventKey, success, error },
       update: { success, error, sentAt: new Date() },
     }),

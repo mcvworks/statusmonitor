@@ -22,7 +22,7 @@ export function MyStackPage() {
             My Stack
           </h1>
           <p className="text-xs text-text-muted">
-            Define your infrastructure to get personalized blast radius analysis
+            Define your infrastructure for personalized blast radius analysis. Saved only in this browser.
           </p>
         </div>
       </div>
