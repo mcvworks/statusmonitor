@@ -62,7 +62,7 @@ export default async function Home() {
       <div className="glass-card corner-brackets relative overflow-hidden rounded-2xl p-6 lg:p-8">
         <div className="relative z-10">
           <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-wide text-primary lg:text-3xl">
-            Service Status Overview
+            Live Cloud &amp; SaaS Service Status
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-text-secondary">
             Real-time monitoring of cloud platforms, DevOps tools, security
