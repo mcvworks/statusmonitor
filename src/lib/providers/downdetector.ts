@@ -53,6 +53,12 @@ export class DowndetectorProvider implements AlertProvider {
   };
 
   async fetchAlerts(): Promise<AlertInput[]> {
+    if (process.env.DOWNDETECTOR_ENABLED !== 'true') {
+      throw new Error(
+        'Downdetector is not configured: set DOWNDETECTOR_ENABLED=true to enable best-effort scraping',
+      );
+    }
+
     const alerts: AlertInput[] = [];
     const entries = Object.entries(DOWNDETECTOR_SLUGS);
 

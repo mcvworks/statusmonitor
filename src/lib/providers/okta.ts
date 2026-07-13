@@ -1,7 +1,7 @@
-import { BaseStatuspageProvider } from './base-statuspage';
+import { BaseStatusRSSProvider } from './base-status-rss';
 import type { ProviderMetadata } from './types';
 
-export class OktaProvider extends BaseStatuspageProvider {
+export class OktaProvider extends BaseStatusRSSProvider {
   name = 'okta';
   category = 'cloud';
   pollInterval = 'fast' as const;
@@ -13,6 +13,6 @@ export class OktaProvider extends BaseStatuspageProvider {
   };
 
   constructor() {
-    super('https://status.okta.com');
+    super('https://feeds.feedburner.com/OktaTrustRSS');
   }
 }
