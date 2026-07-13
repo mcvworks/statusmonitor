@@ -22,6 +22,10 @@ import { CISAKEVProvider } from './cisa-kev';
 import { NVDProvider } from './nvd';
 import { CloudflareRadarProvider } from './cloudflare-radar';
 import { DowndetectorProvider } from './downdetector';
+import {
+  ConfiguredStatuspageProvider,
+  CONFIGURED_STATUSPAGE_PROVIDERS,
+} from './configured-statuspage';
 
 const providerRegistry = new Map<string, AlertProvider>();
 
@@ -40,6 +44,9 @@ registerProvider(new DigitalOceanProvider());
 registerProvider(new FastlyProvider());
 registerProvider(new VercelProvider());
 registerProvider(new NetlifyProvider());
+for (const config of CONFIGURED_STATUSPAGE_PROVIDERS) {
+  registerProvider(new ConfiguredStatuspageProvider(config));
+}
 
 // Register RSS providers
 registerProvider(new AWSProvider());

@@ -11,6 +11,10 @@ export interface AlertInput {
   status: 'active' | 'resolved' | 'investigating' | 'monitoring';
   resolvedAt?: Date;
   metadata?: Record<string, unknown>;
+  signalKind?: 'incident' | 'advisory' | 'internet_outage' | 'community_signal' | 'maintenance';
+  confidence?: 'official' | 'corroborated' | 'observed' | 'crowdsourced';
+  /** For observations that have no explicit resolution update. */
+  expiresAt?: Date;
 }
 
 export interface ProviderMetadata {
@@ -26,5 +30,7 @@ export interface AlertProvider {
   category: string;
   pollInterval: 'fast' | 'slow';
   metadata: ProviderMetadata;
+  /** Prevent polling APIs more frequently than their published guidance. */
+  minimumIntervalMs?: number;
   fetchAlerts(): Promise<AlertInput[]>;
 }

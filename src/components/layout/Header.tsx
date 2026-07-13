@@ -59,6 +59,7 @@ export function Header({ onMenuToggle }: HeaderProps) {
 
             <div className="hidden items-center gap-0.5 md:flex">
               <NavLink href="/">Dashboard</NavLink>
+              <NavLink href="/status">Services</NavLink>
               <NavLink href="/history">History</NavLink>
             </div>
           </div>
@@ -144,6 +145,9 @@ export function Header({ onMenuToggle }: HeaderProps) {
             </MobileNavLink>
             <MobileNavLink href="/history" onClick={() => setMobileOpen(false)}>
               History
+            </MobileNavLink>
+            <MobileNavLink href="/status" onClick={() => setMobileOpen(false)}>
+              Services
             </MobileNavLink>
           </nav>
           <div className="mt-3 border-t border-border pt-3">

@@ -172,6 +172,17 @@ EMAIL_FROM=alerts@monitor.ducktyped.xyz
 | `NODE_ENV` | `development`, `production`, or `test`. Default: `development` |
 | `NEXT_PUBLIC_APP_URL` | Client-side application URL reference |
 
+### Search verification (optional)
+
+| Variable | Description |
+|---|---|
+| `GOOGLE_SITE_VERIFICATION` | Google Search Console HTML verification token |
+| `BING_SITE_VERIFICATION` | Bing Webmaster Tools `msvalidate.01` token |
+
+After setting either token, redeploy and use the corresponding webmaster tool's
+HTML tag verification method. Submit `https://monitor.ducktyped.xyz/sitemap.xml`
+after ownership is verified.
+
 ## VAPID Key Generation
 
 For browser push notifications:
@@ -192,7 +203,7 @@ VAPID_SUBJECT=mailto:admin@ducktyped.xyz
 StatusMonitor is lightweight enough to share the Ducktyped VM. Resource footprint:
 
 - **Memory**: ~200-300MB (standalone Next.js + SQLite, no separate DB server)
-- **CPU**: Minimal — polling is ~22 small HTTP requests every 2-5 min (I/O-bound)
+- **CPU**: Minimal — polling is ~26 small HTTP requests every 2-5 min (I/O-bound; NVD is rate-limited internally to every 2 hours)
 - **Disk**: SQLite grows ~1-10MB/month
 - **Network**: ~0.5 Mbps sustained, negligible
 

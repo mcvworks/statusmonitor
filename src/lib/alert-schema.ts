@@ -16,6 +16,23 @@ export const AlertStatus = z.enum([
 ]);
 export type AlertStatus = z.infer<typeof AlertStatus>;
 
+export const SignalKind = z.enum([
+  "incident",
+  "advisory",
+  "internet_outage",
+  "community_signal",
+  "maintenance",
+]);
+export type SignalKind = z.infer<typeof SignalKind>;
+
+export const SignalConfidence = z.enum([
+  "official",
+  "corroborated",
+  "observed",
+  "crowdsourced",
+]);
+export type SignalConfidence = z.infer<typeof SignalConfidence>;
+
 // ─── Provider Input ────────────────────────────────────────
 
 export const AlertInputSchema = z.object({
@@ -31,6 +48,9 @@ export const AlertInputSchema = z.object({
   status: AlertStatus,
   resolvedAt: z.date().optional(),
   metadata: z.any().optional(),
+  signalKind: SignalKind.optional(),
+  confidence: SignalConfidence.optional(),
+  expiresAt: z.date().optional(),
 });
 
 export type AlertInput = z.infer<typeof AlertInputSchema>;
@@ -50,8 +70,12 @@ export const SerializedAlertSchema = z.object({
   region: z.string().nullable(),
   timestamp: z.string(),
   status: AlertStatus,
+  signalKind: SignalKind,
+  confidence: SignalConfidence,
   metadata: z.any().nullable(),
   resolvedAt: z.string().nullable(),
+  expiresAt: z.string().nullable(),
+  lastObservedAt: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

@@ -11,6 +11,7 @@ import {
 import { useAlerts } from "@/hooks/useAlerts";
 import { useActivity } from "@/hooks/useActivity";
 import { useProviderStats } from "@/hooks/useProviderStats";
+import { useProviderHealth } from "@/hooks/useProviderHealth";
 import { formatRelativeTime } from "@/lib/utils";
 import { SEVERITY_COLORS } from "@/lib/constants";
 import type { AlertSeverity } from "@/lib/alert-schema";
@@ -36,6 +37,7 @@ export function ProviderDetailPanel({ source }: ProviderDetailPanelProps) {
   const { alerts, isLoading, avgResolutionBySource } = useAlerts({ source });
   const { activity } = useActivity();
   const { stats } = useProviderStats(source);
+  const { providers: providerHealth } = useProviderHealth();
 
   // Bring the panel into view when a provider is selected from the sidebar
   // (which may happen while scrolled elsewhere on the page)
@@ -53,6 +55,7 @@ export function ProviderDetailPanel({ source }: ProviderDetailPanelProps) {
   // avgResolutionBySource is only populated when this provider has
   // alerts in the current response; the stats endpoint covers all time
   const avgResolution = avgResolutionBySource[source] ?? stats?.avgResolutionMin;
+  const dataHealth = providerHealth[source];
 
   const clearFilter = () => {
     const params = new URLSearchParams(searchParams.toString());
@@ -96,6 +99,16 @@ export function ProviderDetailPanel({ source }: ProviderDetailPanelProps) {
       </div>
 
       {/* Stats */}
+      {dataHealth && dataHealth.state !== "healthy" && (
+        <div className="mt-3 rounded-lg border border-minor/30 bg-minor/5 px-3 py-2 font-[family-name:var(--font-mono)] text-[11px] text-minor">
+          Source {dataHealth.state.replace("_", " ")}
+          {dataHealth.lastSuccessAt &&
+            ` · last verified ${formatRelativeTime(dataHealth.lastSuccessAt)}`}
+          {dataHealth.lastError && ` · ${dataHealth.lastError}`}
+        </div>
+      )}
+
+      {/* Stats */}
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <StatTile
           label="Active incidents"
@@ -122,7 +135,7 @@ export function ProviderDetailPanel({ source }: ProviderDetailPanelProps) {
         </div>
       </div>
 
-      {/* Reliability strip (30-day window) */}
+      {/* Incident history strip (30-day window; not an uptime/SLA claim) */}
       {stats && (
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-surface-input px-3 py-2 font-[family-name:var(--font-mono)] text-[11px] text-text-secondary">
           <span className="text-[10px] uppercase tracking-wider text-text-muted">
@@ -137,7 +150,7 @@ export function ProviderDetailPanel({ source }: ProviderDetailPanelProps) {
               stats.quietDays >= stats.windowDays - 3 ? "text-secondary" : ""
             }
           >
-            {stats.quietDays}/{stats.windowDays} quiet days
+            {stats.quietDays}/{stats.windowDays} days without new incidents
           </span>
           {stats.worstSeverity && (
             <>

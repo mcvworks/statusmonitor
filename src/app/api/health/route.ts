@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getRegisteredProviders } from "@/lib/polling/scheduler";
+import { getAllProviders } from "@/lib/providers/registry";
 
 const startedAt = Date.now();
 
@@ -19,39 +19,56 @@ export async function GET() {
     // DB unreachable
   }
 
-  // Provider health from recent PollLog entries (last 10 minutes)
-  let providerHealth = { total: 0, healthy: 0, errored: 0 };
+  // Provider health from durable source state. This distinguishes a successful
+  // empty result from an unreachable or stale source.
+  const providerHealth = {
+    total: getAllProviders().length,
+    healthy: 0,
+    errored: 0,
+    stale: 0,
+    notConfigured: 0,
+  };
   let lastPoll: string | null = null;
   try {
-    const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000);
-    const recentPolls = await prisma.pollLog.findMany({
-      where: { startedAt: { gte: tenMinAgo } },
-      orderBy: { startedAt: "desc" },
-    });
+    const states = await prisma.providerState.findMany();
+    const byProvider = new Map(states.map((state) => [state.provider, state]));
+    const attempts = states
+      .map((state) => state.lastAttemptAt)
+      .sort((a, b) => b.getTime() - a.getTime());
+    lastPoll = attempts[0]?.toISOString() ?? null;
 
-    if (recentPolls.length > 0) {
-      lastPoll = recentPolls[0].startedAt.toISOString();
-      const byProvider = new Map<string, boolean>();
-      for (const poll of recentPolls) {
-        if (!byProvider.has(poll.provider)) {
-          byProvider.set(poll.provider, !poll.error);
-        }
+    for (const provider of getAllProviders()) {
+      const state = byProvider.get(provider.name);
+      if (!state) {
+        providerHealth.stale++;
+        continue;
       }
-      providerHealth = {
-        total: byProvider.size,
-        healthy: [...byProvider.values()].filter(Boolean).length,
-        errored: [...byProvider.values()].filter((v) => !v).length,
-      };
-    } else {
-      // Fallback to registered provider count
-      providerHealth.total = getRegisteredProviders().length;
+      if (state.lastError?.toLowerCase().includes("not configured")) {
+        providerHealth.notConfigured++;
+        continue;
+      }
+      const freshnessWindow = Math.max(
+        provider.pollInterval === "fast" ? 6 * 60_000 : 15 * 60_000,
+        (provider.minimumIntervalMs ?? 0) * 1.5,
+      );
+      if (
+        !state.lastSuccessAt ||
+        Date.now() - state.lastSuccessAt.getTime() > freshnessWindow
+      ) {
+        providerHealth.stale++;
+      } else if (state.consecutiveFailures > 0) {
+        providerHealth.errored++;
+      } else {
+        providerHealth.healthy++;
+      }
     }
   } catch {
-    // PollLog query failed
+    providerHealth.stale = providerHealth.total;
   }
 
-  const healthy = dbConnected;
-  const status = healthy ? "ok" : "degraded";
+  const sourcesHealthy =
+    providerHealth.errored === 0 && providerHealth.stale === 0;
+  const status = dbConnected && sourcesHealthy ? "ok" : "degraded";
 
   const body = {
     status,
@@ -62,5 +79,7 @@ export async function GET() {
     dbConnected,
   };
 
-  return NextResponse.json(body, { status: healthy ? 200 : 503 });
+  // Provider degradation is reported in the body but does not fail the
+  // liveness probe. Database failure does.
+  return NextResponse.json(body, { status: dbConnected ? 200 : 503 });
 }

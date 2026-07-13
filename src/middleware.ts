@@ -7,8 +7,11 @@ const publicRoutes = [
   "/",
   "/history",
   "/incident",
+  "/status",
   "/sitemap.xml",
   "/robots.txt",
+  "/manifest.webmanifest",
+  "/opengraph-image",
   "/feed.xml",
   "/feed.json",
   "/api/feedback",
@@ -18,6 +21,7 @@ const publicRoutes = [
   "/api/dependencies",
   "/api/enrichment",
   "/api/health",
+  "/api/providers/health",
 ];
 
 const authRoutes = ["/auth/signin", "/auth/verify-request", "/auth/error"];

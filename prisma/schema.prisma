@@ -78,16 +78,35 @@ model Alert {
   region      String?
   timestamp   DateTime
   status           String    // active, resolved, investigating, monitoring
+  signalKind       String    @default("incident") // incident, advisory, internet_outage, community_signal, maintenance
+  confidence       String    @default("official") // official, corroborated, observed, crowdsourced
   previousSeverity String?   // tracks escalation/de-escalation
   metadata         String?   // JSON: incident updates, CVSS vectors, components, etc.
   resolvedAt       DateTime?
+  expiresAt        DateTime? // observations without an explicit resolution expire here
+  lastObservedAt   DateTime  @default(now())
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   alertStates      UserAlertState[]
   notificationLogs NotificationLog[]
+  updates          AlertUpdate[]
 
   @@unique([source, externalId])
+}
+
+model AlertUpdate {
+  id              String   @id @default(cuid())
+  alertId         String
+  sourceTimestamp DateTime
+  status          String?
+  body            String
+  createdAt       DateTime @default(now())
+
+  alert Alert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@unique([alertId, sourceTimestamp, body])
+  @@index([alertId, sourceTimestamp])
 }
 
 // ─── User Dashboard & Preferences ──────────────────────────────
@@ -182,7 +201,20 @@ model PollLog {
   completedAt DateTime?
   alertsFound Int       @default(0)
   newAlerts   Int       @default(0)
+  updatedAlerts Int     @default(0)
   error       String?
+}
+
+model ProviderState {
+  id                  String   @id @default(cuid())
+  provider            String   @unique
+  lastAttemptAt       DateTime
+  lastSuccessAt       DateTime?
+  lastErrorAt         DateTime?
+  lastError           String?
+  consecutiveFailures Int      @default(0)
+  lastAlertCount      Int      @default(0)
+  updatedAt           DateTime @updatedAt
 }
 
 // ─── Dependency Map ─────────────────────────────────────────────

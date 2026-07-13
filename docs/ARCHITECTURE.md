@@ -13,7 +13,7 @@
 │                   Polling Engine                         │
 │  ┌─────────┐  ┌──────────┐  ┌────────┐  ┌──────────┐  │
 │  │Scheduler│→ │Providers │→ │ Dedup  │→ │  Upsert  │  │
-│  │(cron)   │  │(22 total)│  │Engine  │  │(Prisma)  │  │
+│  │(cron)   │  │(26 total)│  │Engine  │  │(Prisma)  │  │
 │  └─────────┘  └──────────┘  └────────┘  └────┬─────┘  │
 └──────────────────────────────────────────────┬──────────┘
                                                │ Events
@@ -55,9 +55,13 @@
    - `BaseRSSProvider` — RSS/Atom feeds via `rss-parser`
    - `BaseJSONProvider<T>` — arbitrary JSON APIs with optional Zod validation
 
-3. **Dedup Engine** (`lib/polling/dedup.ts`) batch-checks incoming alerts against existing DB rows by `[source, externalId]`. Categorizes as new, updated, or unchanged.
+3. **Dedup Engine** (`lib/polling/dedup.ts`) batch-checks incoming alerts against existing DB rows by `[source, externalId]`. It detects lifecycle, severity, content, component, region, and metadata changes; unchanged observations still refresh their last-observed heartbeat.
 
-4. **Upsert** (`lib/polling/engine.ts`) writes to database via `prisma.alert.upsert()` on the `@@unique([source, externalId])` constraint. Emits events to the event bus.
+4. **Upsert** (`lib/polling/engine.ts`) writes to database via `prisma.alert.upsert()` on the `@@unique([source, externalId])` constraint, normalizes incident updates, and records provider success/failure state. Expiring observations are automatically resolved. Emits events to the event bus.
+
+Provider fetch failures must throw. Returning an empty array means the source was reached successfully and authoritatively returned no matching records. The dashboard derives `unknown` from provider freshness and never treats missing data as operational.
+
+Alerts carry a `signalKind` (`incident`, `advisory`, `internet_outage`, `community_signal`, or `maintenance`) and a confidence level. Only operational incident kinds affect aggregate service health.
 
 5. **Event Bus** (`lib/polling/event-bus.ts`) is a singleton `EventEmitter` (max 200 listeners). Three event types: `alert:new`, `alert:updated`, `alert:resolved`.
 

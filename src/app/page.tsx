@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
+import Link from "next/link";
 import { Activity, AlertTriangle, Clock, Shield } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { PROVIDERS } from "@/lib/constants";
@@ -11,13 +13,23 @@ import { SeveritySummaryBar } from "@/components/dashboard/SeveritySummaryBar";
 // into static HTML at build time
 export const dynamic = "force-dynamic";
 
+export const metadata: Metadata = {
+  title: { absolute: "Cloud & SaaS Status Monitor — Live Outages | DTMonitor" },
+  description:
+    "Live status and outage monitoring for AWS, Azure, Google Cloud, OpenAI, Cloudflare, GitHub, Slack, and other cloud and SaaS providers.",
+  alternates: { canonical: "https://monitor.ducktyped.xyz" },
+};
+
 async function getStats() {
   const [activeCount, securityCount, lastPoll] = await Promise.all([
     prisma.alert.count({
-      where: { status: { not: "resolved" } },
+      where: {
+        status: { not: "resolved" },
+        signalKind: { in: ["incident", "internet_outage"] },
+      },
     }),
     prisma.alert.count({
-      where: { category: "security", status: { not: "resolved" } },
+      where: { signalKind: "advisory", status: { not: "resolved" } },
     }),
     prisma.pollLog.findFirst({
       orderBy: { completedAt: "desc" },
@@ -56,6 +68,12 @@ export default async function Home() {
             Real-time monitoring of cloud platforms, DevOps tools, security
             advisories, and ISP connectivity.
           </p>
+          <Link
+            href="/status"
+            className="mt-3 inline-flex font-[family-name:var(--font-mono)] text-xs text-primary hover:underline"
+          >
+            Browse all provider status pages →
+          </Link>
         </div>
         {/* Radial glow */}
         <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-[radial-gradient(circle,rgba(242,194,0,0.06),transparent_70%)]" />

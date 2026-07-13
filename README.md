@@ -6,7 +6,9 @@ A centralized IT alert dashboard for monitoring cloud service outages, SaaS inci
 
 ### Public (no account required)
 - Live dashboard with real-time updates via Server-Sent Events
-- 22 monitored providers across cloud, DevOps, security, and ISP categories
+- 26 monitored providers across cloud, DevOps, security, and ISP categories
+- Source freshness tracking — failed or stale feeds are never shown as operational
+- Distinct incident, advisory, internet, and crowdsourced signal semantics
 - Blast radius visualization — see which downstream services are affected by provider incidents
 - Alert history with timeline and table views
 - Search, filter by category/severity/source/status
@@ -53,9 +55,9 @@ Open [http://localhost:3000](http://localhost:3000).
 | Notifications | Resend/SMTP, Slack/Teams webhooks, web-push |
 | Deployment | Docker on cloud VM |
 
-## Monitored Providers (22)
+## Monitored Providers (26)
 
-**Cloud:** AWS, Azure, GCP, Cloudflare, GitHub, Slack, Atlassian, Okta, Stripe, Google Workspace, DigitalOcean, Fastly, Vercel, Netlify
+**Cloud:** AWS, Azure, GCP, Cloudflare, GitHub, Microsoft 365, Slack, Atlassian, Okta, Stripe, Google Workspace, DigitalOcean, Fastly, Vercel, Netlify, OpenAI, Twilio, Discord
 
 **DevOps:** Datadog, PagerDuty, Docker Hub, npm Registry
 
@@ -63,7 +65,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 **ISP:** Cloudflare Radar
 
-**Meta:** Downdetector
+**Meta:** Downdetector (crowdsourced and explicitly labeled)
 
 ## Documentation
 

@@ -2,6 +2,12 @@
 
 import { useAlerts } from "@/hooks/useAlerts";
 import type { SerializedAlertWithState } from "@/lib/alert-schema";
+import { PROVIDERS } from "@/lib/constants";
+import { useProviderHealth } from "@/hooks/useProviderHealth";
+import {
+  isOperationalSignal,
+  isSuspectedSignal,
+} from "@/lib/signal-kind";
 
 type BannerState = "clear" | "degraded" | "critical";
 
@@ -12,7 +18,7 @@ function deriveBannerState(alerts: SerializedAlertWithState[]): {
   affectedProviders: string[];
 } {
   const activeAlerts = alerts.filter(
-    (a) => a.status !== "resolved",
+    (a) => a.status !== "resolved" && isOperationalSignal(a),
   );
   const bySeverity: Record<string, number> = {};
   const providerSet = new Set<string>();
@@ -32,15 +38,21 @@ function deriveBannerState(alerts: SerializedAlertWithState[]): {
   return { state, activeAlerts, bySeverity, affectedProviders };
 }
 
-const PROVIDER_COUNT = 22;
-
 export function HealthBanner() {
   const { alerts, isLoading } = useAlerts();
+  const { providers: providerHealth, isLoading: healthLoading } = useProviderHealth();
 
-  if (isLoading) return null;
+  if (isLoading || healthLoading) return null;
 
   const { state, activeAlerts, bySeverity, affectedProviders } =
     deriveBannerState(alerts);
+  const providerCount = Object.keys(PROVIDERS).length;
+  const unknownCount = Object.values(providerHealth).filter(
+    (health) => health.state !== "healthy",
+  ).length;
+  const suspectedCount = alerts.filter(
+    (alert) => alert.status !== "resolved" && isSuspectedSignal(alert),
+  ).length;
 
   const handleClick = () => {
     if (state === "clear") return;
@@ -88,10 +100,16 @@ export function HealthBanner() {
 
         <div className="text-center sm:text-left">
           {state === "clear" ? (
-            <p className="font-[family-name:var(--font-body)] text-sm font-medium text-secondary">
-              All systems operational — {PROVIDER_COUNT}/{PROVIDER_COUNT}{" "}
-              providers clear
-            </p>
+            unknownCount === 0 ? (
+              <p className="font-[family-name:var(--font-body)] text-sm font-medium text-secondary">
+                All systems operational — {providerCount}/{providerCount}{" "}
+                providers clear
+              </p>
+            ) : (
+              <p className="font-[family-name:var(--font-body)] text-sm font-medium text-text-secondary">
+                No confirmed incidents — coverage is incomplete
+              </p>
+            )
           ) : state === "degraded" ? (
             <p className="font-[family-name:var(--font-body)] text-sm font-medium text-minor">
               {activeAlerts.length} incident{activeAlerts.length !== 1 ? "s" : ""}{" "}
@@ -115,6 +133,13 @@ export function HealthBanner() {
                   ? ` +${affectedProviders.length - 5} more`
                   : ""}
               </span>
+            </p>
+          )}
+          {(unknownCount > 0 || suspectedCount > 0) && (
+            <p className="mt-1 font-[family-name:var(--font-mono)] text-[10px] text-text-muted">
+              {unknownCount > 0 && `${unknownCount} source${unknownCount !== 1 ? "s" : ""} unknown or stale`}
+              {unknownCount > 0 && suspectedCount > 0 && " · "}
+              {suspectedCount > 0 && `${suspectedCount} unconfirmed signal${suspectedCount !== 1 ? "s" : ""}`}
             </p>
           )}
         </div>

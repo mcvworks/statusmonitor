@@ -27,14 +27,19 @@ const BASE_URL = "https://monitor.ducktyped.xyz";
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
-    default: "DTMonitor — IT Alert Dashboard",
+    default: "Cloud & SaaS Status Monitor — Live Outages | DTMonitor",
     template: "%s | DTMonitor",
   },
   description:
-    "Centralized IT alert dashboard for monitoring cloud service outages, SaaS incidents, security vulnerabilities, and ISP issues.",
+    "Track live AWS, Azure, Google Cloud, OpenAI, Cloudflare, SaaS, DevOps, and internet outages from official status sources.",
   icons: { icon: "/favicon.ico" },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+    other: process.env.BING_SITE_VERIFICATION
+      ? { "msvalidate.01": process.env.BING_SITE_VERIFICATION }
+      : undefined,
+  },
   alternates: {
-    canonical: "/",
     types: {
       "application/rss+xml": [
         { url: "/feed.xml", title: "DTMonitor Alerts (RSS)" },
@@ -47,7 +52,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "DTMonitor",
-    title: "DTMonitor — IT Alert Dashboard",
+    title: "Cloud & SaaS Status Monitor — Live Outages | DTMonitor",
     description:
       "Monitor cloud service outages, SaaS incidents, security vulnerabilities, and ISP issues in real time.",
     url: BASE_URL,
@@ -55,7 +60,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "DTMonitor — IT Alert Dashboard",
+    title: "Cloud & SaaS Status Monitor — Live Outages | DTMonitor",
     description:
       "Monitor cloud service outages, SaaS incidents, security vulnerabilities, and ISP issues in real time.",
   },
@@ -66,7 +71,7 @@ const jsonLd = {
   "@type": "Organization",
   name: "duckTyped",
   url: "https://ducktyped.xyz",
-  logo: "https://ducktyped.xyz/logo.png",
+  logo: "https://monitor.ducktyped.xyz/dtlogo.svg",
   sameAs: [],
   subOrganization: {
     "@type": "WebApplication",

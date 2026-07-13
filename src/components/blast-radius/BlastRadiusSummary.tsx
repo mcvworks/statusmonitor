@@ -4,6 +4,7 @@ import { Zap } from "lucide-react";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useDependencyMap } from "@/hooks/useDependencies";
 import { DEPENDENCY_MAP } from "@/lib/dependencies/static-map";
+import { isOperationalSignal } from "@/lib/signal-kind";
 
 export function BlastRadiusSummary() {
   const { alerts } = useAlerts();
@@ -12,7 +13,10 @@ export function BlastRadiusSummary() {
   // Find major providers with active incidents
   const blastRadiusProviders = new Set(DEPENDENCY_MAP.map((m) => m.provider));
   const activeProviderAlerts = alerts.filter(
-    (a) => a.status !== "resolved" && blastRadiusProviders.has(a.source),
+    (a) =>
+      a.status !== "resolved" &&
+      isOperationalSignal(a) &&
+      blastRadiusProviders.has(a.source),
   );
 
   // Unique providers with active incidents

@@ -33,8 +33,9 @@ export abstract class BaseRSSProvider implements AlertProvider {
 
       return alerts;
     } catch (error) {
-      console.error(`[${this.name}] Failed to fetch RSS feed:`, error);
-      return [];
+      throw new Error(
+        `Failed to fetch RSS feed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 }

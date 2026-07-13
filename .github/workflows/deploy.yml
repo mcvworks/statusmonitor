@@ -105,6 +105,13 @@ jobs:
               sed -i 's|^EMAIL_FROM=.*|EMAIL_FROM="DTMonitor <alerts@ducktyped.xyz>"|' .env
             fi
 
+            # Keep Auth.js redirects on the live .xyz domain. Older production
+            # environments may still contain the retired ducktyped.com URL.
+            if grep -q '^AUTH_URL=.*ducktyped\.com' .env 2>/dev/null; then
+              echo "Fixing AUTH_URL (was on the retired ducktyped.com domain)"
+              sed -i 's|^AUTH_URL=.*|AUTH_URL="https://monitor.ducktyped.xyz"|' .env
+            fi
+
             echo "── Syncing database schema ──"
             npx prisma db push || {
               echo "db push failed — diagnostics:"
@@ -112,6 +119,12 @@ jobs:
               [ -n "$DB_FILE" ] && ls -la "$(dirname "$DB_FILE")" || true
               exit 1
             }
+
+            # db push adds the new columns but does not execute the data
+            # backfill contained in the formal migration. Keep this separate
+            # and idempotent so databases created by older deploys are safe.
+            echo "── Backfilling legacy signal classifications ──"
+            npx prisma db execute --file prisma/backfill-signal-kinds.sql
 
             echo "── Starting PM2 ──"
             pm2 start ecosystem.config.js

@@ -16,6 +16,11 @@ import { BlastRadiusPanel } from "@/components/blast-radius/BlastRadiusPanel";
 import { hasBlastRadius } from "@/lib/blast-radius";
 
 const BASE_URL = "https://monitor.ducktyped.xyz";
+const INDEXABLE_SIGNAL_KINDS = new Set([
+  "incident",
+  "internet_outage",
+  "maintenance",
+]);
 
 const getAlert = cache(async (id: string) => {
   return prisma.alert.findUnique({ where: { id } });
@@ -81,6 +86,10 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical: `${BASE_URL}/incident/${alert.id}` },
+    robots: {
+      index: INDEXABLE_SIGNAL_KINDS.has(alert.signalKind),
+      follow: true,
+    },
     openGraph: {
       title,
       description,
@@ -108,6 +117,51 @@ export default async function IncidentPage({
     // eslint-disable-next-line react-hooks/purity -- server component rendered per-request; elapsed time is intentionally "as of now"
     (alert.resolvedAt ? alert.resolvedAt.getTime() : Date.now()) -
     alert.timestamp.getTime();
+  const pageUrl = `${BASE_URL}/incident/${alert.id}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Report",
+        name: `${providerName}: ${alert.title}`,
+        description:
+          alert.description ??
+          `${providerName} incident status: ${alert.status}.`,
+        url: pageUrl,
+        datePublished: alert.timestamp.toISOString(),
+        dateModified: alert.updatedAt.toISOString(),
+        about: {
+          "@type": "Organization",
+          name: providerName,
+          url: `${BASE_URL}/status/${alert.source}`,
+        },
+        isPartOf: {
+          "@type": "WebSite",
+          name: "DTMonitor",
+          url: BASE_URL,
+        },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "DTMonitor", item: BASE_URL },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Provider status",
+            item: `${BASE_URL}/status`,
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: providerName,
+            item: `${BASE_URL}/status/${alert.source}`,
+          },
+          { "@type": "ListItem", position: 4, name: alert.title, item: pageUrl },
+        ],
+      },
+    ],
+  };
 
   const sources: { label: string; url: string; icon: "external" | "users" }[] =
     [];
@@ -131,12 +185,16 @@ export default async function IncidentPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Link
-        href={`/?source=${alert.source}`}
+        href={`/status/${alert.source}`}
         className="inline-flex items-center gap-1.5 font-[family-name:var(--font-mono)] text-[11px] text-text-muted transition-colors hover:text-primary"
       >
         <ArrowLeft className="h-3 w-3" />
-        {providerName} on the dashboard
+        {providerName} service status
       </Link>
 
       {/* Incident header */}
@@ -166,7 +224,7 @@ export default async function IncidentPage({
 
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-[family-name:var(--font-mono)] text-[11px] text-text-muted">
           <Link
-            href={`/?source=${alert.source}`}
+            href={`/status/${alert.source}`}
             className="inline-flex items-center gap-1.5 transition-colors hover:text-primary"
           >
             <ProviderIcon providerKey={alert.source} size={14} />

@@ -38,11 +38,12 @@ docker compose up --build  # Build and run in Docker
 - **Public (no account)**: Live dashboard, all services, blast radius view, alert history, search/filtering
 - **Authenticated**: Custom dashboard layout, pinned services, saved filters, My Stack (dependency mapping), alert ack/snooze, all notification channels, multiple saved views
 
-### Providers (23 total)
+### Providers (26 total)
 Providers extend `BaseStatuspageProvider`, `BaseRSSProvider`, or `BaseJSONProvider`.
 
 **Cloud (6 original):** AWS, Azure, GCP, Cloudflare, GitHub, Microsoft 365
 **Cloud (9 additional):** Slack, Atlassian, Okta, Stripe, Google Workspace, DigitalOcean, Fastly, Vercel, Netlify
+**Cloud (3 configured Statuspage):** OpenAI, Twilio, Discord
 
 > Registry keys in `src/lib/constants.ts` MUST exactly match each provider's `name` field (the `alert.source` written to the DB) — e.g. `m365`, `cisa-kev`, `npm-registry`, `google-workspace`, `dockerhub`, `cloudflare-radar`. A mismatch silently breaks icons, status dots, and filtering for that provider.
 **DevOps (4):** Datadog, PagerDuty, Docker Hub, npm Registry

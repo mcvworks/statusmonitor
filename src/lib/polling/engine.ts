@@ -8,6 +8,7 @@ export interface PollResult {
   alertsFound: number;
   newAlerts: number;
   updatedAlerts: number;
+  skipped?: boolean;
   error?: string;
 }
 
@@ -23,11 +24,30 @@ export async function pollProvider(
   let updatedCount = 0;
   let error: string | undefined;
 
+  if (provider.minimumIntervalMs) {
+    const state = await prisma.providerState.findUnique({
+      where: { provider: provider.name },
+      select: { lastSuccessAt: true },
+    });
+    if (
+      state?.lastSuccessAt &&
+      Date.now() - state.lastSuccessAt.getTime() < provider.minimumIntervalMs
+    ) {
+      return {
+        provider: provider.name,
+        alertsFound: 0,
+        newAlerts: 0,
+        updatedAlerts: 0,
+        skipped: true,
+      };
+    }
+  }
+
   try {
     const incoming = await provider.fetchAlerts();
     alertsFound = incoming.length;
 
-    const { new: newAlerts, updated: updatedAlerts } =
+    const { new: newAlerts, updated: updatedAlerts, unchanged } =
       await deduplicateAlerts(incoming);
 
     // Upsert new alerts
@@ -47,8 +67,28 @@ export async function pollProvider(
       }
     }
     updatedCount = updatedAlerts.length;
+
+    // Even unchanged observations need a heartbeat so freshness and expiry
+    // represent the latest successful observation without emitting UI events.
+    for (const alert of unchanged) {
+      await prisma.alert.update({
+        where: {
+          source_externalId: {
+            source: alert.source,
+            externalId: alert.externalId,
+          },
+        },
+        data: {
+          lastObservedAt: new Date(),
+          expiresAt: alert.expiresAt,
+        },
+      });
+    }
+
+    await recordProviderSuccess(provider.name, alertsFound, startedAt);
   } catch (err) {
     error = err instanceof Error ? err.message : String(err);
+    await recordProviderFailure(provider.name, error, startedAt).catch(() => {});
   }
 
   // Log the poll cycle
@@ -60,6 +100,7 @@ export async function pollProvider(
         completedAt: new Date(),
         alertsFound,
         newAlerts: newCount,
+        updatedAlerts: updatedCount,
         error,
       },
     })
@@ -91,6 +132,8 @@ export async function pollAll(
     tierProviders.map((p) => pollProvider(p)),
   );
 
+  await expireStaleObservations();
+
   return results.map((r, i) => {
     if (r.status === "fulfilled") return r.value;
     return {
@@ -101,6 +144,23 @@ export async function pollAll(
       error: r.reason instanceof Error ? r.reason.message : String(r.reason),
     };
   });
+}
+
+async function expireStaleObservations() {
+  const now = new Date();
+  const expired = await prisma.alert.findMany({
+    where: {
+      status: { not: "resolved" },
+      expiresAt: { lte: now },
+    },
+  });
+  for (const alert of expired) {
+    const resolved = await prisma.alert.update({
+      where: { id: alert.id },
+      data: { status: "resolved", resolvedAt: now },
+    });
+    alertEventBus.emit("alert:resolved", resolved);
+  }
 }
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -128,7 +188,7 @@ async function upsertAlert(alert: AlertInput) {
     ? JSON.stringify(alert.metadata)
     : null;
 
-  return prisma.alert.upsert({
+  const saved = await prisma.alert.upsert({
     where: {
       source_externalId: {
         source: alert.source,
@@ -146,7 +206,11 @@ async function upsertAlert(alert: AlertInput) {
       region: alert.region,
       timestamp: alert.timestamp,
       status: alert.status,
+      signalKind: alert.signalKind ?? "incident",
+      confidence: alert.confidence ?? "official",
       resolvedAt: alert.resolvedAt,
+      expiresAt: alert.expiresAt,
+      lastObservedAt: new Date(),
       previousSeverity: null,
       metadata: metadataJson,
     },
@@ -157,11 +221,104 @@ async function upsertAlert(alert: AlertInput) {
       url: alert.url,
       region: alert.region,
       status: alert.status,
+      signalKind: alert.signalKind ?? "incident",
+      confidence: alert.confidence ?? "official",
       resolvedAt: alert.resolvedAt,
+      expiresAt: alert.expiresAt,
+      lastObservedAt: new Date(),
       metadata: metadataJson,
       ...(previousSeverity !== undefined
         ? { previousSeverity }
         : {}),
+    },
+  });
+
+  await syncAlertUpdates(saved.id, alert.metadata);
+  return saved;
+}
+
+async function syncAlertUpdates(
+  alertId: string,
+  metadata: Record<string, unknown> | undefined,
+) {
+  const updates = metadata?.updates;
+  if (!Array.isArray(updates)) return;
+
+  for (const value of updates) {
+    if (!value || typeof value !== "object") continue;
+    const update = value as Record<string, unknown>;
+    if (typeof update.body !== "string" || typeof update.timestamp !== "string") {
+      continue;
+    }
+    const sourceTimestamp = new Date(update.timestamp);
+    if (Number.isNaN(sourceTimestamp.getTime())) continue;
+    await prisma.alertUpdate.upsert({
+      where: {
+        alertId_sourceTimestamp_body: {
+          alertId,
+          sourceTimestamp,
+          body: update.body,
+        },
+      },
+      create: {
+        alertId,
+        sourceTimestamp,
+        body: update.body,
+        status: typeof update.status === "string" ? update.status : null,
+      },
+      update: {
+        status: typeof update.status === "string" ? update.status : null,
+      },
+    });
+  }
+}
+
+async function recordProviderSuccess(
+  provider: string,
+  alertCount: number,
+  attemptedAt: Date,
+) {
+  await prisma.providerState.upsert({
+    where: { provider },
+    create: {
+      provider,
+      lastAttemptAt: attemptedAt,
+      lastSuccessAt: new Date(),
+      lastAlertCount: alertCount,
+    },
+    update: {
+      lastAttemptAt: attemptedAt,
+      lastSuccessAt: new Date(),
+      lastError: null,
+      consecutiveFailures: 0,
+      lastAlertCount: alertCount,
+    },
+  });
+}
+
+async function recordProviderFailure(
+  provider: string,
+  error: string,
+  attemptedAt: Date,
+) {
+  const existing = await prisma.providerState.findUnique({
+    where: { provider },
+    select: { consecutiveFailures: true },
+  });
+  await prisma.providerState.upsert({
+    where: { provider },
+    create: {
+      provider,
+      lastAttemptAt: attemptedAt,
+      lastErrorAt: new Date(),
+      lastError: error,
+      consecutiveFailures: 1,
+    },
+    update: {
+      lastAttemptAt: attemptedAt,
+      lastErrorAt: new Date(),
+      lastError: error,
+      consecutiveFailures: (existing?.consecutiveFailures ?? 0) + 1,
     },
   });
 }

@@ -37,8 +37,7 @@ export class CloudflareRadarProvider extends BaseJSONProvider<RadarResponse> {
   async fetchAlerts(): Promise<AlertInput[]> {
     const apiKey = process.env.CLOUDFLARE_RADAR_API_KEY;
     if (!apiKey) {
-      console.warn(`[${this.name}] CLOUDFLARE_RADAR_API_KEY not set, skipping`);
-      return [];
+      throw new Error('CLOUDFLARE_RADAR_API_KEY is not configured');
     }
 
     try {
@@ -63,22 +62,19 @@ export class CloudflareRadarProvider extends BaseJSONProvider<RadarResponse> {
       clearTimeout(timeout);
 
       if (!response.ok) {
-        console.error(
-          `[${this.name}] HTTP ${response.status} from Cloudflare Radar`,
-        );
-        return [];
+        throw new Error(`HTTP ${response.status} from Cloudflare Radar`);
       }
 
       const data = (await response.json()) as RadarResponse;
       if (!data.success) {
-        console.error(`[${this.name}] Cloudflare Radar API returned failure`);
-        return [];
+        throw new Error('Cloudflare Radar API returned failure');
       }
 
       return this.mapResponse(data);
     } catch (error) {
-      console.error(`[${this.name}] Failed to fetch Radar data:`, error);
-      return [];
+      throw new Error(
+        `Failed to fetch Radar data: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -109,6 +105,8 @@ export class CloudflareRadarProvider extends BaseJSONProvider<RadarResponse> {
         region: outage.asnLocation,
         timestamp: new Date(outage.startDate),
         status: outage.endDate ? 'resolved' : 'active',
+        signalKind: 'internet_outage',
+        confidence: 'observed',
         resolvedAt: outage.endDate ? new Date(outage.endDate) : undefined,
       };
     });

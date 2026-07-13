@@ -22,6 +22,9 @@ export const DOWNDETECTOR_SLUGS: Record<string, string> = {
   pagerduty: 'pagerduty',
   dockerhub: 'docker',
   'npm-registry': 'npm',
+  openai: 'openai',
+  twilio: 'twilio',
+  discord: 'discord',
 };
 
 /** Build the public Downdetector URL for a given slug */
@@ -66,6 +69,13 @@ export class DowndetectorProvider implements AlertProvider {
       }
     }
 
+    const successfulChecks = results.filter(
+      (result) => result.status === 'fulfilled',
+    ).length;
+    if (successfulChecks === 0) {
+      throw new Error('All Downdetector service checks failed');
+    }
+
     return alerts;
   }
 
@@ -73,10 +83,10 @@ export class DowndetectorProvider implements AlertProvider {
     providerKey: string,
     slug: string,
   ): Promise<AlertInput | null> {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8_000);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8_000);
 
+    try {
       const response = await fetch(downdetectorUrl(slug), {
         signal: controller.signal,
         headers: {
@@ -88,14 +98,13 @@ export class DowndetectorProvider implements AlertProvider {
       clearTimeout(timeout);
 
       if (!response.ok) {
-        return null;
+        throw new Error(`HTTP ${response.status} for ${slug}`);
       }
 
       const html = await response.text();
       return this.parseSignal(providerKey, slug, html);
-    } catch {
-      // Network error, timeout, or blocked — silently skip
-      return null;
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -130,7 +139,7 @@ export class DowndetectorProvider implements AlertProvider {
     const url = downdetectorUrl(slug);
 
     return {
-      externalId: `dd-${slug}-${this.todayStamp()}`,
+      externalId: `dd-${slug}-${this.episodeStamp()}`,
       source: this.name,
       category: this.category,
       severity,
@@ -141,6 +150,9 @@ export class DowndetectorProvider implements AlertProvider {
       url,
       timestamp: new Date(),
       status: 'active',
+      signalKind: 'community_signal',
+      confidence: 'crowdsourced',
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
       metadata: {
         providerKey,
         downdetectorSlug: slug,
@@ -186,8 +198,10 @@ export class DowndetectorProvider implements AlertProvider {
     return 'info';
   }
 
-  private todayStamp(): string {
+  /** Six-hour buckets allow a new episode while keeping repeated polls together. */
+  private episodeStamp(): string {
     const d = new Date();
-    return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+    const bucket = Math.floor(d.getUTCHours() / 6);
+    return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}-${bucket}`;
   }
 }

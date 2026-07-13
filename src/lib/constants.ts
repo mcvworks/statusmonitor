@@ -206,6 +206,36 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     historyUrl: "https://www.netlifystatus.com/history",
     downdetectorSlug: null,
   },
+  openai: {
+    name: "OpenAI",
+    category: "cloud",
+    tier: "fast",
+    color: "#74AA9C",
+    iconSlug: "openai",
+    statusUrl: "https://status.openai.com/",
+    historyUrl: "https://status.openai.com/history",
+    downdetectorSlug: "openai",
+  },
+  twilio: {
+    name: "Twilio",
+    category: "cloud",
+    tier: "fast",
+    color: "#F22F46",
+    iconSlug: "twilio",
+    statusUrl: "https://status.twilio.com/",
+    historyUrl: "https://status.twilio.com/history",
+    downdetectorSlug: "twilio",
+  },
+  discord: {
+    name: "Discord",
+    category: "cloud",
+    tier: "fast",
+    color: "#5865F2",
+    iconSlug: "discord",
+    statusUrl: "https://discordstatus.com/",
+    historyUrl: "https://discordstatus.com/history",
+    downdetectorSlug: "discord",
+  },
 
   // DevOps (slow tier)
   datadog: {
