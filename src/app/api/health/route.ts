@@ -78,6 +78,10 @@ export async function GET() {
     lastPoll,
     dbConnected,
     emailConfigured: Boolean(process.env.RESEND_API_KEY || process.env.SMTP_HOST),
+    pushConfigured: Boolean(
+      (process.env.VAPID_PUBLIC_KEY || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY)
+      && process.env.VAPID_PRIVATE_KEY,
+    ),
   };
 
   // Provider degradation is reported in the body but does not fail the

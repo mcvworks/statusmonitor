@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 // ─── VAPID Setup ──────────────────────────────────────────────
 
 function getVapid() {
-  const publicKey = process.env.VAPID_PUBLIC_KEY;
+  const publicKey = process.env.VAPID_PUBLIC_KEY ?? process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
   const subject = process.env.VAPID_SUBJECT ?? "mailto:admin@monitor.ducktyped.xyz";
 
@@ -14,6 +14,60 @@ function getVapid() {
   }
 
   return { publicKey, privateKey, subject };
+}
+
+export async function sendAccountFreePushNotifications(alerts: Alert[]): Promise<void> {
+  if (!(process.env.VAPID_PUBLIC_KEY ?? process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) || !process.env.VAPID_PRIVATE_KEY) return;
+  const vapid = getVapid();
+  webpush.setVapidDetails(vapid.subject, vapid.publicKey, vapid.privateKey);
+  const subscriptions = await prisma.browserPushSubscription.findMany({ where: { enabled: true } });
+
+  for (const subscription of subscriptions) {
+    const severities = parseFilter(subscription.severityFilter);
+    const sources = parseFilter(subscription.sourceFilter);
+    for (const alert of alerts.slice(0, 5)) {
+      if (severities.length > 0 && !severities.includes(alert.severity)) continue;
+      if (sources.length > 0 && !sources.includes(alert.source)) continue;
+      const eventKey = `${alert.status}:${alert.severity}`;
+      const delivered = await prisma.browserPushLog.findUnique({
+        where: { subscriptionId_alertId_eventKey: { subscriptionId: subscription.id, alertId: alert.id, eventKey } },
+      });
+      if (delivered?.success) continue;
+      const payload = JSON.stringify({
+        title: `[${alert.severity.toUpperCase()}] ${alert.source}`,
+        body: alert.title + (alert.description ? ` — ${alert.description.slice(0, 120)}` : ""),
+        icon: "/icon-192.png",
+        badge: "/icon-badge.png",
+        data: { url: `/incident/${alert.id}`, alertId: alert.id },
+      });
+      try {
+        await webpush.sendNotification({
+          endpoint: subscription.endpoint,
+          keys: { p256dh: subscription.p256dh, auth: subscription.auth },
+        }, payload);
+        await logBrowserPush(subscription.id, alert.id, eventKey, true);
+      } catch (error) {
+        const statusCode = (error as { statusCode?: number }).statusCode;
+        if (statusCode === 404 || statusCode === 410) {
+          await prisma.browserPushSubscription.delete({ where: { id: subscription.id } }).catch(() => undefined);
+          break;
+        }
+        await logBrowserPush(subscription.id, alert.id, eventKey, false, error instanceof Error ? error.message : String(error));
+      }
+    }
+  }
+}
+
+function parseFilter(raw: string): string[] {
+  try { const value = JSON.parse(raw); return Array.isArray(value) ? value : []; } catch { return []; }
+}
+
+async function logBrowserPush(subscriptionId: string, alertId: string, eventKey: string, success: boolean, error?: string) {
+  await prisma.browserPushLog.upsert({
+    where: { subscriptionId_alertId_eventKey: { subscriptionId, alertId, eventKey } },
+    create: { subscriptionId, alertId, eventKey, success, error },
+    update: { success, error, sentAt: new Date() },
+  });
 }
 
 // ─── Channel Handler ──────────────────────────────────────────

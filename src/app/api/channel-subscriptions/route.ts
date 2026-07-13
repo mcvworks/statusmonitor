@@ -3,13 +3,14 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { validateFilters } from "@/lib/email-subscriptions";
 import { sendTestSlack } from "@/lib/notifications/slack";
+import { sendTestTeams } from "@/lib/notifications/teams";
 import { subscriptionRateLimited } from "@/lib/subscription-rate-limit";
-import { createWebhookManageToken, encryptWebhook, isSlackWebhook, verifyWebhookManageToken } from "@/lib/webhook-subscriptions";
+import { createWebhookManageToken, encryptWebhook, isSlackWebhook, isTeamsWebhook, verifyWebhookManageToken } from "@/lib/webhook-subscriptions";
 
 export const runtime = "nodejs";
 
 const schema = z.object({
-  channel: z.literal("slack"),
+  channel: z.enum(["slack", "teams"]),
   webhookUrl: z.string().url().max(600),
   severities: z.array(z.string()).max(4),
   sources: z.array(z.string()).max(100).default([]),
@@ -18,8 +19,11 @@ const schema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const input = schema.parse(await request.json());
-    if (!isSlackWebhook(input.webhookUrl)) {
-      return NextResponse.json({ error: "Enter a valid Slack incoming webhook URL." }, { status: 400 });
+    const validWebhook = input.channel === "slack"
+      ? isSlackWebhook(input.webhookUrl)
+      : isTeamsWebhook(input.webhookUrl);
+    if (!validWebhook) {
+      return NextResponse.json({ error: `Enter a valid ${input.channel === "slack" ? "Slack" : "Teams"} webhook URL.` }, { status: 400 });
     }
     const ip = request.headers.get("cf-connecting-ip")
       ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
@@ -28,7 +32,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Too many connection attempts. Try again later." }, { status: 429 });
     }
     const filters = validateFilters(input.severities, input.sources);
-    await sendTestSlack(input.webhookUrl);
+    if (input.channel === "slack") await sendTestSlack(input.webhookUrl);
+    else await sendTestTeams(input.webhookUrl);
     const subscription = await prisma.webhookSubscription.create({
       data: {
         channel: input.channel,

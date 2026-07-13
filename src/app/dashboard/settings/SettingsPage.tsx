@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, Bell, Settings } from "lucide-react";
 import { BrowserDataTools } from "@/components/settings/BrowserDataTools";
 import { SlackConnection } from "@/components/settings/SlackConnection";
+import { BrowserPushControl } from "@/components/settings/BrowserPushControl";
 
 export function SettingsPage() {
   return (
@@ -17,6 +18,7 @@ export function SettingsPage() {
         <Link href="/subscribe" className="shrink-0 rounded-lg bg-primary px-4 py-2 text-center text-xs font-semibold text-background">Manage email alerts</Link>
       </div>
       <SlackConnection />
+      <BrowserPushControl />
       <BrowserDataTools />
     </div>
   );
