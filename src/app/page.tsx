@@ -8,6 +8,7 @@ import { DashboardClient } from "@/components/dashboard/DashboardClient";
 import { HealthBanner } from "@/components/dashboard/HealthBanner";
 import { NewsTicker } from "@/components/dashboard/NewsTicker";
 import { SeveritySummaryBar } from "@/components/dashboard/SeveritySummaryBar";
+import { SubscriptionForm } from "@/components/subscriptions/SubscriptionForm";
 
 // Rendered per-request: stats/incident lists must be live, not frozen
 // into static HTML at build time
@@ -78,6 +79,18 @@ export default async function Home() {
         {/* Radial glow */}
         <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-[radial-gradient(circle,rgba(242,194,0,0.06),transparent_70%)]" />
       </div>
+
+      {/* Passwordless email alert signup */}
+      <section className="glass-card rounded-2xl p-5 lg:p-6" aria-labelledby="email-alerts-heading">
+        <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+          <div>
+            <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-widest text-secondary">Automated alerts</p>
+            <h2 id="email-alerts-heading" className="mt-2 text-xl font-semibold text-text-primary">Know when your services go down</h2>
+            <p className="mt-2 text-sm leading-6 text-text-secondary">Drop your email, choose providers and severity, then receive matching outage alerts automatically. No account required.</p>
+          </div>
+          <SubscriptionForm compact />
+        </div>
+      </section>
 
       {/* Summary cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

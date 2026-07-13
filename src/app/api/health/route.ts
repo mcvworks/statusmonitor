@@ -77,6 +77,7 @@ export async function GET() {
     providers: providerHealth,
     lastPoll,
     dbConnected,
+    emailConfigured: Boolean(process.env.RESEND_API_KEY || process.env.SMTP_HOST),
   };
 
   // Provider degradation is reported in the body but does not fail the

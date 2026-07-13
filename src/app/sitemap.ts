@@ -45,6 +45,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${BASE_URL}/status`,
       lastModified: latestUpdate,
     },
+    {
+      url: `${BASE_URL}/subscribe`,
+    },
   ];
 
   const providerPages: MetadataRoute.Sitemap = Object.keys(PROVIDERS).map(

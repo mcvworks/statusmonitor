@@ -67,30 +67,31 @@ model VerificationToken {
 // ─── Alert ──────────────────────────────────────────────────────
 
 model Alert {
-  id          String    @id @default(cuid())
-  externalId  String
-  source      String
-  category    String    // cloud, security, isp, devops
-  severity    String    // critical, major, minor, info
-  title       String
-  description String?
-  url         String?
-  region      String?
-  timestamp   DateTime
-  status           String    // active, resolved, investigating, monitoring
+  id               String    @id @default(cuid())
+  externalId       String
+  source           String
+  category         String // cloud, security, isp, devops
+  severity         String // critical, major, minor, info
+  title            String
+  description      String?
+  url              String?
+  region           String?
+  timestamp        DateTime
+  status           String // active, resolved, investigating, monitoring
   signalKind       String    @default("incident") // incident, advisory, internet_outage, community_signal, maintenance
   confidence       String    @default("official") // official, corroborated, observed, crowdsourced
-  previousSeverity String?   // tracks escalation/de-escalation
-  metadata         String?   // JSON: incident updates, CVSS vectors, components, etc.
+  previousSeverity String? // tracks escalation/de-escalation
+  metadata         String? // JSON: incident updates, CVSS vectors, components, etc.
   resolvedAt       DateTime?
   expiresAt        DateTime? // observations without an explicit resolution expire here
   lastObservedAt   DateTime  @default(now())
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  alertStates      UserAlertState[]
-  notificationLogs NotificationLog[]
-  updates          AlertUpdate[]
+  alertStates           UserAlertState[]
+  notificationLogs      NotificationLog[]
+  emailSubscriptionLogs EmailSubscriptionLog[]
+  updates               AlertUpdate[]
 
   @@unique([source, externalId])
 }
@@ -112,13 +113,13 @@ model AlertUpdate {
 // ─── User Dashboard & Preferences ──────────────────────────────
 
 model UserDashboard {
-  id             String  @id @default(cuid())
+  id             String   @id @default(cuid())
   userId         String
   name           String
-  layout         String  // JSON stored as text (SQLite)
-  pinnedServices String  // JSON stored as text
-  filters        String  // JSON stored as text
-  isDefault      Boolean @default(false)
+  layout         String // JSON stored as text (SQLite)
+  pinnedServices String // JSON stored as text
+  filters        String // JSON stored as text
+  isDefault      Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -126,7 +127,7 @@ model UserDashboard {
 }
 
 model UserStack {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
   userId      String
   serviceName String
   provider    String
@@ -138,13 +139,13 @@ model UserStack {
 }
 
 model UserNotificationPref {
-  id             String  @id @default(cuid())
+  id             String   @id @default(cuid())
   userId         String
-  channel        String  // email, slack, teams, push
-  enabled        Boolean @default(true)
-  config         String  // JSON stored as text (webhook URL, etc.)
-  severityFilter String  // JSON stored as text
-  sourceFilter   String  // JSON stored as text
+  channel        String // email, slack, teams, push
+  enabled        Boolean  @default(true)
+  config         String // JSON stored as text (webhook URL, etc.)
+  severityFilter String // JSON stored as text
+  sourceFilter   String // JSON stored as text
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -155,7 +156,7 @@ model UserAlertState {
   id           String    @id @default(cuid())
   userId       String
   alertId      String
-  state        String    // acknowledged, snoozed, dismissed
+  state        String // acknowledged, snoozed, dismissed
   snoozedUntil DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -169,11 +170,11 @@ model UserAlertState {
 // ─── Push Notifications ─────────────────────────────────────────
 
 model PushSubscription {
-  id       String   @id @default(cuid())
-  userId   String
-  endpoint String
-  p256dh   String
-  auth     String
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String
+  p256dh    String
+  auth      String
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -194,27 +195,62 @@ model NotificationLog {
   alert Alert @relation(fields: [alertId], references: [id], onDelete: Cascade)
 }
 
+// Public, passwordless email alerts. Kept separate from Auth.js users so a
+// visitor can subscribe without creating an account.
+model EmailSubscription {
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  enabled               Boolean   @default(false)
+  verifiedAt            DateTime?
+  severityFilter        String    @default("[]")
+  sourceFilter          String    @default("[]")
+  pendingSeverityFilter String?
+  pendingSourceFilter   String?
+  confirmationTokenHash String?   @unique
+  confirmationExpiresAt DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  notificationLogs EmailSubscriptionLog[]
+}
+
+model EmailSubscriptionLog {
+  id             String   @id @default(cuid())
+  subscriptionId String
+  alertId        String
+  eventKey       String
+  sentAt         DateTime @default(now())
+  success        Boolean
+  error          String?
+
+  subscription EmailSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  alert        Alert             @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, alertId, eventKey])
+  @@index([subscriptionId, sentAt])
+}
+
 model PollLog {
-  id          String    @id @default(cuid())
-  provider    String
-  startedAt   DateTime  @default(now())
-  completedAt DateTime?
-  alertsFound Int       @default(0)
-  newAlerts   Int       @default(0)
-  updatedAlerts Int     @default(0)
-  error       String?
+  id            String    @id @default(cuid())
+  provider      String
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  alertsFound   Int       @default(0)
+  newAlerts     Int       @default(0)
+  updatedAlerts Int       @default(0)
+  error         String?
 }
 
 model ProviderState {
-  id                  String   @id @default(cuid())
-  provider            String   @unique
+  id                  String    @id @default(cuid())
+  provider            String    @unique
   lastAttemptAt       DateTime
   lastSuccessAt       DateTime?
   lastErrorAt         DateTime?
   lastError           String?
-  consecutiveFailures Int      @default(0)
-  lastAlertCount      Int      @default(0)
-  updatedAt           DateTime @updatedAt
+  consecutiveFailures Int       @default(0)
+  lastAlertCount      Int       @default(0)
+  updatedAt           DateTime  @updatedAt
 }
 
 // ─── Dependency Map ─────────────────────────────────────────────
@@ -223,7 +259,7 @@ model DependencyMap {
   id               String   @id @default(cuid())
   provider         String
   dependentService String
-  confidence       String   // confirmed, likely, possible
+  confidence       String // confirmed, likely, possible
   region           String?
   source           String
   updatedAt        DateTime @updatedAt
