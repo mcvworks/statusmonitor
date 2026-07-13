@@ -8,7 +8,8 @@ export const dynamic = "force-dynamic";
 const WINDOW_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-// Per-provider reliability stats over the last 30 days
+// Per-provider incident-history stats over the last 30 days. This endpoint
+// intentionally does not claim availability; absence of incidents is not an SLA.
 export async function GET(request: NextRequest) {
   const source = request.nextUrl.searchParams.get("source");
   if (!source || !PROVIDERS[source]) {
@@ -20,16 +21,25 @@ export async function GET(request: NextRequest) {
 
   const [windowAlerts, lastAlert, resolvedAlerts] = await Promise.all([
     prisma.alert.findMany({
-      where: { source, timestamp: { gte: windowStart } },
+      where: {
+        source,
+        signalKind: { in: ["incident", "internet_outage"] },
+        timestamp: { gte: windowStart },
+      },
       select: { timestamp: true, severity: true },
     }),
     prisma.alert.findFirst({
-      where: { source },
+      where: { source, signalKind: { in: ["incident", "internet_outage"] } },
       orderBy: { timestamp: "desc" },
       select: { timestamp: true },
     }),
     prisma.alert.findMany({
-      where: { source, status: "resolved", resolvedAt: { not: null } },
+      where: {
+        source,
+        signalKind: { in: ["incident", "internet_outage"] },
+        status: "resolved",
+        resolvedAt: { not: null },
+      },
       select: { timestamp: true, resolvedAt: true },
     }),
   ]);

@@ -38,6 +38,14 @@ const SNOOZE_OPTIONS = [
   { label: "24 hr", ms: 24 * 60 * 60 * 1000 },
 ];
 
+const SIGNAL_LABELS: Record<SerializedAlertWithState["signalKind"], string> = {
+  incident: "Official incident",
+  advisory: "Security advisory",
+  internet_outage: "Internet observation",
+  community_signal: "Community signal",
+  maintenance: "Maintenance",
+};
+
 interface AlertCardProps {
   alert: SerializedAlertWithState;
   showActions?: boolean;
@@ -100,6 +108,9 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
     ? ensureReadable(provider.color)
     : undefined;
   const metadata = alert.metadata as Record<string, unknown> | null;
+  const epss = metadata?.epss as
+    | { probability?: number; percentile?: number }
+    | undefined;
 
   const handleSnooze = async (ms: number) => {
     // eslint-disable-next-line react-hooks/purity -- Date.now() is in an event handler, not during render
@@ -124,6 +135,14 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
             <SeverityBadge severity={alert.severity} />
+            <span className="rounded-full border border-border px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-text-muted">
+              {SIGNAL_LABELS[alert.signalKind]}
+            </span>
+            {alert.confidence !== "official" && (
+              <span className="rounded-full bg-surface-input px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-text-muted">
+                {alert.confidence}
+              </span>
+            )}
             {isResolved && (
               <span className="rounded-full bg-secondary/10 px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-secondary">
                 Resolved
@@ -167,6 +186,10 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
             )}
             <span className="text-border">|</span>
             <span>{formatRelativeTime(alert.timestamp)}</span>
+            <span className="text-border">|</span>
+            <span title={alert.lastObservedAt}>
+              verified {formatRelativeTime(alert.lastObservedAt)}
+            </span>
             {!isResolved && avgResolutionMin != null && (
               <>
                 <span className="text-border">|</span>
@@ -182,6 +205,14 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
               {expanded
                 ? alert.description
                 : truncate(alert.description, 140)}
+            </p>
+          )}
+
+          {epss && typeof epss.probability === "number" && (
+            <p className="mt-2 font-[family-name:var(--font-mono)] text-[10px] text-text-muted">
+              EPSS {(epss.probability * 100).toFixed(1)}% exploitation probability
+              {typeof epss.percentile === "number" &&
+                ` · ${Math.round(epss.percentile * 100)}th percentile`}
             </p>
           )}
 

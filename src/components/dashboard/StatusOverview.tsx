@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import type { SerializedAlert } from "@/lib/alert-schema";
 import { PROVIDERS } from "@/lib/constants";
 import {
@@ -9,6 +9,8 @@ import {
 } from "@/lib/provider-status";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useActivity } from "@/hooks/useActivity";
+import { useProviderHealth } from "@/hooks/useProviderHealth";
+import { isOperationalSignal } from "@/lib/signal-kind";
 import { ProviderIcon } from "./ProviderIcon";
 import { Sparkline } from "./Sparkline";
 
@@ -19,20 +21,7 @@ interface StatusOverviewProps {
 export function StatusOverview({ sourceFilter }: StatusOverviewProps = {}) {
   const { alerts, isLoading } = useAlerts();
   const { activity } = useActivity();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const activeSource = searchParams.get("source") ?? "";
-
-  const handleProviderClick = (providerKey: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (activeSource === providerKey) {
-      params.delete("source");
-    } else {
-      params.set("source", providerKey);
-    }
-    const qs = params.toString();
-    router.replace(qs ? `/?${qs}` : "/", { scroll: false });
-  };
+  const { providers: providerHealth } = useProviderHealth();
 
   // Group alerts by source
   const alertsBySource: Record<string, SerializedAlert[]> = {};
@@ -47,13 +36,18 @@ export function StatusOverview({ sourceFilter }: StatusOverviewProps = {}) {
     ? entries.filter(([key]) => sourceFilter.includes(key))
     : entries;
   const providerEntries = filteredEntries.map(([key, meta]) => {
-    const status = alertsBySource[key]
-      ? deriveProviderStatus(alertsBySource[key])
-      : "operational";
+    const dataHealth = providerHealth[key];
+    const operationalAlerts = (alertsBySource[key] ?? []).filter(isOperationalSignal);
+    const status =
+      !dataHealth || dataHealth.state !== "healthy"
+        ? "unknown"
+        : deriveProviderStatus(operationalAlerts);
     return { key, name: meta.name, category: meta.category, status };
   });
 
-  const activeCount = alerts.filter((a) => a.status !== "resolved").length;
+  const activeCount = alerts.filter(
+    (a) => a.status !== "resolved" && isOperationalSignal(a),
+  ).length;
 
   return (
     <div className="glass-card p-4">
@@ -79,22 +73,17 @@ export function StatusOverview({ sourceFilter }: StatusOverviewProps = {}) {
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {providerEntries.map((p) => {
             const style = PROVIDER_STATUS_STYLES[p.status];
-            const isActive = activeSource === p.key;
             return (
-              <button
+              <Link
                 key={p.key}
-                onClick={() => handleProviderClick(p.key)}
-                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
-                  isActive
-                    ? "bg-primary/10 ring-1 ring-primary/30"
-                    : "hover:bg-surface-hover"
-                }`}
-                title={`${p.name} — ${style.label}. Click to filter.`}
+                href={`/status/${p.key}`}
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-surface-hover"
+                title={`${p.name} — ${style.label}. View status and incident history.`}
               >
                 <span className={`status-dot ${style.dot}`} />
                 <ProviderIcon providerKey={p.key} size={14} />
                 <span
-                  className={`min-w-0 flex-1 truncate text-xs ${isActive ? "text-primary" : "text-text-secondary"}`}
+                  className="min-w-0 flex-1 truncate text-xs text-text-secondary"
                 >
                   {p.name}
                 </span>
@@ -104,7 +93,7 @@ export function StatusOverview({ sourceFilter }: StatusOverviewProps = {}) {
                     color={PROVIDERS[p.key]?.color ?? "#8892A0"}
                   />
                 )}
-              </button>
+              </Link>
             );
           })}
         </div>

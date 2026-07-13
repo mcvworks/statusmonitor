@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAlerts } from "@/hooks/useAlerts";
 import { SEVERITY_COLORS, SEVERITY_ORDER } from "@/lib/constants";
 import type { AlertSeverity } from "@/lib/alert-schema";
+import { isOperationalSignal } from "@/lib/signal-kind";
 
 const SEVERITIES = (
   Object.keys(SEVERITY_ORDER) as AlertSeverity[]
@@ -24,7 +25,9 @@ export function SeveritySummaryBar() {
   const searchParams = useSearchParams();
   const activeSeverity = searchParams.get("severity") ?? "";
 
-  const active = alerts.filter((a) => a.status !== "resolved");
+  const active = alerts.filter(
+    (a) => a.status !== "resolved" && isOperationalSignal(a),
+  );
 
   // Count by severity
   const counts: Record<AlertSeverity, number> = {

@@ -39,12 +39,14 @@ interface NVDResponse {
   vulnerabilities: Array<{ cve: NVDCVE }>;
   totalResults: number;
   resultsPerPage: number;
+  startIndex: number;
 }
 
 export class NVDProvider extends BaseJSONProvider<NVDResponse> {
   name = 'nvd';
   category = 'security';
   pollInterval = 'slow' as const;
+  minimumIntervalMs = 2 * 60 * 60 * 1000;
   metadata: ProviderMetadata = {
     name: 'nvd',
     displayName: 'NVD',
@@ -53,7 +55,7 @@ export class NVDProvider extends BaseJSONProvider<NVDResponse> {
   };
 
   constructor() {
-    // Fetch CVEs modified in the last 24 hours with CVSS >= 7.0
+    // Fetch CVEs modified in the last 24 hours and filter by CVSS locally.
     super('https://services.nvd.nist.gov/rest/json/cves/2.0');
   }
 
@@ -65,10 +67,10 @@ export class NVDProvider extends BaseJSONProvider<NVDResponse> {
       const now = new Date();
       const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       const params = new URLSearchParams({
-        pubStartDate: oneDayAgo.toISOString(),
-        pubEndDate: now.toISOString(),
-        cvssV3Severity: 'HIGH',
-        resultsPerPage: '50',
+        lastModStartDate: oneDayAgo.toISOString(),
+        lastModEndDate: now.toISOString(),
+        resultsPerPage: '2000',
+        noRejected: '',
       });
 
       const headers: Record<string, string> = {};
@@ -77,22 +79,37 @@ export class NVDProvider extends BaseJSONProvider<NVDResponse> {
         headers['apiKey'] = apiKey;
       }
 
-      const response = await fetch(`${this.apiUrl}?${params}`, {
-        signal: controller.signal,
-        headers,
-      });
+      const all: NVDResponse['vulnerabilities'] = [];
+      let startIndex = 0;
+      let totalResults = 0;
+      do {
+        params.set('startIndex', String(startIndex));
+        const response = await fetch(`${this.apiUrl}?${params}`, {
+          signal: controller.signal,
+          headers,
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status} from NVD API`);
+        }
+        const data = (await response.json()) as NVDResponse;
+        all.push(...data.vulnerabilities);
+        totalResults = data.totalResults;
+        startIndex += data.resultsPerPage;
+      } while (startIndex < totalResults);
       clearTimeout(timeout);
 
-      if (!response.ok) {
-        console.error(`[${this.name}] HTTP ${response.status} from NVD API`);
-        return [];
-      }
-
-      const data = (await response.json()) as NVDResponse;
-      return this.mapResponse(data);
+      const alerts = this.mapResponse({
+        vulnerabilities: all,
+        totalResults,
+        resultsPerPage: all.length,
+        startIndex: 0,
+      });
+      await this.enrichWithEpss(alerts);
+      return alerts;
     } catch (error) {
-      console.error(`[${this.name}] Failed to fetch NVD data:`, error);
-      return [];
+      throw new Error(
+        `Failed to fetch NVD data: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -130,6 +147,8 @@ export class NVDProvider extends BaseJSONProvider<NVDResponse> {
         url: `https://nvd.nist.gov/vuln/detail/${cve.id}`,
         timestamp: new Date(cve.published),
         status: 'active',
+        signalKind: 'advisory',
+        confidence: 'official',
         metadata: {
           cvss: {
             score,
@@ -149,5 +168,37 @@ export class NVDProvider extends BaseJSONProvider<NVDResponse> {
     }
 
     return alerts;
+  }
+
+  private async enrichWithEpss(alerts: AlertInput[]): Promise<void> {
+    const batchSize = 100;
+    for (let index = 0; index < alerts.length; index += batchSize) {
+      const batch = alerts.slice(index, index + batchSize);
+      try {
+        const cves = batch.map((alert) => alert.externalId).join(',');
+        const response = await fetch(
+          `https://api.first.org/data/v1/epss?cve=${encodeURIComponent(cves)}`,
+        );
+        if (!response.ok) continue;
+        const payload = (await response.json()) as {
+          data?: Array<{ cve: string; epss: string; percentile: string; date?: string }>;
+        };
+        const byCve = new Map(payload.data?.map((row) => [row.cve, row]) ?? []);
+        for (const alert of batch) {
+          const epss = byCve.get(alert.externalId);
+          if (!epss) continue;
+          alert.metadata = {
+            ...alert.metadata,
+            epss: {
+              probability: Number(epss.epss),
+              percentile: Number(epss.percentile),
+              date: epss.date ?? null,
+            },
+          };
+        }
+      } catch {
+        // EPSS is optional enrichment; the authoritative NVD result remains useful.
+      }
+    }
   }
 }

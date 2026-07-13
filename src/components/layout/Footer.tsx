@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Activity, Rss } from "lucide-react";
 import { FeedbackButton } from "./FeedbackButton";
 
@@ -19,6 +20,12 @@ export function Footer() {
         </div>
 
         <div className="flex items-center gap-3 font-[family-name:var(--font-mono)] text-[11px]">
+          <Link href="/status" className="text-text-secondary transition-colors hover:text-primary">
+            Service status
+          </Link>
+          <Link href="/history" className="text-text-secondary transition-colors hover:text-primary">
+            Incident history
+          </Link>
           <span>Data sourced from official status pages & feeds</span>
           <a
             href="/feed.xml"

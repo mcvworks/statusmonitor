@@ -1,12 +1,15 @@
 import type { AlertSeverity, SerializedAlert } from "./alert-schema";
 import { SEVERITY_ORDER } from "./constants";
+import { isOperationalSignal } from "./signal-kind";
 
 export type ProviderStatus = "operational" | "degraded" | "outage" | "unknown";
 
 export function deriveProviderStatus(
   alerts: SerializedAlert[],
 ): ProviderStatus {
-  const active = alerts.filter((a) => a.status !== "resolved");
+  const active = alerts.filter(
+    (a) => a.status !== "resolved" && isOperationalSignal(a),
+  );
   if (active.length === 0) return "operational";
 
   const worst = active.reduce<AlertSeverity>(

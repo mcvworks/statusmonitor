@@ -406,16 +406,26 @@ Application health check.
   "uptime": 86400,
   "version": "1.0.0",
   "providers": {
-    "total": 22,
-    "healthy": 22,
-    "errored": 0
+    "total": 26,
+    "healthy": 25,
+    "errored": 0,
+    "stale": 0,
+    "notConfigured": 1
   },
   "lastPoll": "2025-01-15T10:30:00.000Z",
   "dbConnected": true
 }
 ```
 
-Returns HTTP 503 if the database is unreachable (`status: "degraded"`).
+Returns HTTP 503 if the database is unreachable. Provider errors and stale
+sources set `status: "degraded"` while retaining HTTP 200 for liveness.
+
+### GET /api/providers/health
+
+Returns per-provider ingestion health and freshness. Each provider is one of
+`healthy`, `error`, `stale`, `not_configured`, or `pending`, with its last
+attempt, last successful verification, last error, failure count, and most
+recent alert count. This is the source of the dashboard's unknown status.
 
 ## Public Feeds
 

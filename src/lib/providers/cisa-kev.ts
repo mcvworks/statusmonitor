@@ -88,6 +88,8 @@ export class CISAKEVProvider extends BaseJSONProvider<KEVCatalog> {
           url: `https://nvd.nist.gov/vuln/detail/${vuln.cveID}`,
           timestamp: new Date(vuln.dateAdded),
           status: daysUntilDue <= 0 ? 'active' : 'investigating',
+          signalKind: 'advisory' as const,
+          confidence: 'official' as const,
           metadata: {
             vendor: vuln.vendorProject,
             product: vuln.product,

@@ -9,8 +9,8 @@ interface StatuspageIncident {
   created_at: string;
   updated_at: string;
   resolved_at: string | null;
-  components: Array<{ name: string }>;
-  incident_updates: Array<{
+  components?: Array<{ name: string }>;
+  incident_updates?: Array<{
     body: string;
     status: string;
     updated_at: string;
@@ -56,24 +56,26 @@ export abstract class BaseStatuspageProvider implements AlertProvider {
       clearTimeout(timeout);
 
       if (!response.ok) {
-        console.error(`[${this.name}] HTTP ${response.status} from statuspage`);
-        return [];
+        throw new Error(`HTTP ${response.status} from statuspage`);
       }
 
       const data = (await response.json()) as StatuspageResponse;
       return data.incidents.map((incident) => this.mapIncident(incident));
     } catch (error) {
-      console.error(`[${this.name}] Failed to fetch alerts:`, error);
-      return [];
+      throw new Error(
+        `Failed to fetch statuspage: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
   private mapIncident(incident: StatuspageIncident): AlertInput {
-    const componentNames = incident.components
+    const components = incident.components ?? [];
+    const updates = incident.incident_updates ?? [];
+    const componentNames = components
       .map((c) => c.name)
       .join(', ');
 
-    const latestUpdate = incident.incident_updates?.[0];
+    const latestUpdate = updates[0];
     const description = latestUpdate
       ? `${latestUpdate.body}${componentNames ? ` (Affected: ${componentNames})` : ''}`
       : componentNames
@@ -94,8 +96,8 @@ export abstract class BaseStatuspageProvider implements AlertProvider {
         ? new Date(incident.resolved_at)
         : undefined,
       metadata: {
-        components: incident.components.map((c) => c.name),
-        updates: incident.incident_updates.map((u) => ({
+        components: components.map((c) => c.name),
+        updates: updates.map((u) => ({
           body: u.body,
           status: u.status,
           timestamp: u.updated_at,

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   Cloud,
@@ -145,20 +145,7 @@ function CategorySection({
   statusBySource: Record<string, ProviderStatus>;
 }) {
   const [expanded, setExpanded] = useState(true);
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const activeSource = searchParams.get("source") ?? "";
-
-  const handleProviderClick = (providerId: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (activeSource === providerId) {
-      params.delete("source");
-    } else {
-      params.set("source", providerId);
-    }
-    const qs = params.toString();
-    router.replace(qs ? `/?${qs}` : "/", { scroll: false });
-  };
+  const pathname = usePathname();
 
   return (
     <div className="px-3 py-1">
@@ -177,10 +164,10 @@ function CategorySection({
         <ul className="space-y-0.5 pl-3">
           {providers.map((p) => (
             <li key={p.id}>
-              <button
-                onClick={() => handleProviderClick(p.id)}
+              <Link
+                href={`/status/${p.id}`}
                 className={`flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[13px] transition-colors ${
-                  activeSource === p.id
+                  pathname === `/status/${p.id}`
                     ? "bg-primary/10 text-primary"
                     : "text-text-secondary hover:bg-surface-hover hover:text-text-primary"
                 }`}
@@ -192,7 +179,7 @@ function CategorySection({
                   }`}
                 />
                 {p.name}
-              </button>
+              </Link>
             </li>
           ))}
         </ul>

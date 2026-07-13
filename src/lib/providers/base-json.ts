@@ -25,8 +25,7 @@ export abstract class BaseJSONProvider<T = unknown> implements AlertProvider {
       clearTimeout(timeout);
 
       if (!response.ok) {
-        console.error(`[${this.name}] HTTP ${response.status} from JSON API`);
-        return [];
+        throw new Error(`HTTP ${response.status} from JSON API`);
       }
 
       const raw = await response.json();
@@ -34,8 +33,9 @@ export abstract class BaseJSONProvider<T = unknown> implements AlertProvider {
 
       return this.mapResponse(data);
     } catch (error) {
-      console.error(`[${this.name}] Failed to fetch JSON data:`, error);
-      return [];
+      throw new Error(
+        `Failed to fetch JSON data: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 }
