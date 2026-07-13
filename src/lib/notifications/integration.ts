@@ -1,6 +1,6 @@
 import type { Alert } from "@/generated/prisma/client";
 import { alertEventBus } from "@/lib/polling/event-bus";
-import { dispatchNotifications } from "./dispatcher";
+import { dispatchNotifications, retryFailedPublicNotifications } from "./dispatcher";
 
 let initialized = false;
 let pendingAlerts: Alert[] = [];
@@ -8,6 +8,7 @@ let flushTimeout: ReturnType<typeof setTimeout> | null = null;
 
 // Batch window — collect alerts for 5s after last event, then dispatch
 const BATCH_WINDOW_MS = 5_000;
+const RETRY_INTERVAL_MS = 5 * 60_000;
 
 /**
  * Initialize the notification integration.
@@ -32,6 +33,12 @@ export function initNotifications() {
   });
 
   console.log("[notifications] Integration initialized");
+
+  setInterval(() => {
+    retryFailedPublicNotifications().catch((error) =>
+      console.error("[notifications] Retry failed:", error),
+    );
+  }, RETRY_INTERVAL_MS).unref();
 }
 
 function scheduleFlush() {

@@ -14,6 +14,7 @@ const publicRoutes = [
   "/opengraph-image",
   "/feed.xml",
   "/feed.json",
+  "/subscribe",
   "/api/feedback",
   "/api/alerts",
   "/api/alerts/sse",
@@ -22,6 +23,7 @@ const publicRoutes = [
   "/api/enrichment",
   "/api/health",
   "/api/providers/health",
+  "/api/subscriptions",
 ];
 
 const authRoutes = ["/auth/signin", "/auth/verify-request", "/auth/error"];

@@ -1,4 +1,5 @@
 import type { Alert } from "@/generated/prisma/client";
+import { appUrl } from "@/lib/email-subscriptions";
 
 const SEVERITY_COLORS: Record<string, string> = {
   critical: "#ff6b6b",
@@ -58,6 +59,30 @@ export async function sendRawEmail(
   }
 }
 
+export async function sendSubscriptionConfirmation(
+  email: string,
+  confirmationToken: string,
+): Promise<void> {
+  const confirmUrl = appUrl(`/api/subscriptions/confirm?token=${encodeURIComponent(confirmationToken)}`);
+  await sendRawEmail(
+    email,
+    "Confirm your DTMonitor alerts",
+    buildConfirmationEmailHTML(confirmUrl),
+  );
+}
+
+export async function sendSubscriberAlertEmail(
+  email: string,
+  alerts: Alert[],
+  manageUrl: string,
+): Promise<void> {
+  const severitySummary = buildSeveritySummary(alerts);
+  const subject = `[DTMonitor] ${alerts.length} alert${alerts.length > 1 ? "s" : ""} — ${severitySummary}`;
+  const html = buildEmailHTML(alerts, manageUrl);
+  if (process.env.RESEND_API_KEY) await sendViaResend(email, subject, html);
+  else await sendViaSMTP(email, subject, html);
+}
+
 // ─── Senders ────────────────────────────────────────────────────
 
 async function sendViaResend(
@@ -115,7 +140,7 @@ function severityRank(s: string): number {
   return ranks[s] ?? 4;
 }
 
-function buildEmailHTML(alerts: Alert[]): string {
+function buildEmailHTML(alerts: Alert[], preferencesUrl?: string): string {
   const alertRows = alerts
     .map((alert) => {
       const color = SEVERITY_COLORS[alert.severity] ?? "#B8C0CC";
@@ -161,7 +186,7 @@ function buildEmailHTML(alerts: Alert[]): string {
     </table>
 
     <div style="text-align: center; padding: 24px 0; color: #8892A0; font-size: 12px;">
-      <a href="${process.env.AUTH_URL ?? "https://monitor.ducktyped.xyz"}/dashboard/settings" style="color: #F2C200; text-decoration: none;">
+      <a href="${escapeHtml(preferencesUrl ?? appUrl("/dashboard/settings"))}" style="color: #F2C200; text-decoration: none;">
         Manage notification preferences
       </a>
       <br><br>
@@ -170,6 +195,23 @@ function buildEmailHTML(alerts: Alert[]): string {
   </div>
 </body>
 </html>`;
+}
+
+function buildConfirmationEmailHTML(confirmUrl: string): string {
+  return `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#0F1114;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
+    <h1 style="color:#F2C200;font-size:22px;text-align:center;">DTMonitor</h1>
+    <div style="background:#151A22;border:1px solid #232A35;border-radius:12px;padding:28px;text-align:center;">
+      <h2 style="color:#E9EEF5;font-size:18px;margin:0 0 10px;">Confirm your alert subscription</h2>
+      <p style="color:#B8C0CC;font-size:14px;line-height:1.6;margin:0 0 22px;">Confirm this email address to start receiving the provider and severity alerts you selected.</p>
+      <a href="${escapeHtml(confirmUrl)}" style="display:inline-block;background:#F2C200;color:#0F1114;font-weight:700;text-decoration:none;border-radius:8px;padding:12px 20px;">Confirm alerts</a>
+      <p style="color:#8892A0;font-size:12px;line-height:1.5;margin:22px 0 0;">This link expires in 24 hours. If you did not request these alerts, ignore this email.</p>
+    </div>
+  </div>
+</body></html>`;
 }
 
 function buildTestEmailHTML(): string {
