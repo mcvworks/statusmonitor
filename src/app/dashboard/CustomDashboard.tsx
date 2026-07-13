@@ -129,6 +129,7 @@ export function CustomDashboard() {
         <Suspense>
           <SearchFilter onChange={handleFilterChange} />
         </Suspense>
+        <p className="font-[family-name:var(--font-mono)] text-[10px] text-text-muted">Private to this browser · no account required</p>
       </div>
 
       {/* Customizer panel (create/edit) */}

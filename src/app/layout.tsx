@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Orbitron, Space_Grotesk, Fira_Code } from "next/font/google";
-import { SessionProvider } from "@/components/auth/SessionProvider";
 import { AppShell } from "@/components/layout/AppShell";
 import "./globals.css";
 
@@ -112,9 +111,7 @@ export default function RootLayout({
       <body
         className={`${orbitron.variable} ${spaceGrotesk.variable} ${firaCode.variable} antialiased`}
       >
-        <SessionProvider>
-          <AppShell>{children}</AppShell>
-        </SessionProvider>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

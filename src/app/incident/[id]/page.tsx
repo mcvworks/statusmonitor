@@ -14,6 +14,7 @@ import { ComponentChips } from "@/components/dashboard/ComponentChips";
 import { CommunityThreads } from "@/components/dashboard/CommunityThreads";
 import { BlastRadiusPanel } from "@/components/blast-radius/BlastRadiusPanel";
 import { hasBlastRadius } from "@/lib/blast-radius";
+import { ShareMenu } from "@/components/sharing/ShareMenu";
 
 const BASE_URL = "https://monitor.ducktyped.xyz";
 const INDEXABLE_SIGNAL_KINDS = new Set([
@@ -216,6 +217,13 @@ export default async function IncidentPage({
           <span className="rounded-md border border-border px-1.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-text-muted">
             {CATEGORY_LABELS[alert.category as AlertCategory] ?? alert.category}
           </span>
+          <div className="ml-auto">
+            <ShareMenu
+              url={pageUrl}
+              title={`${providerName}: ${alert.title}`}
+              text={`${alert.severity.toUpperCase()} ${alert.status} incident — ${providerName}: ${alert.title}`}
+            />
+          </div>
         </div>
 
         <h1 className="text-lg font-semibold leading-snug text-text-primary lg:text-xl">

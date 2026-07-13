@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { auth } from "@/lib/auth";
 import { AlertCategory, AlertSeverity, AlertStatus } from "@/lib/alert-schema";
 
 export async function GET(request: NextRequest) {
@@ -36,26 +35,12 @@ export async function GET(request: NextRequest) {
     ];
   }
 
-  // Include user alert states when authenticated
-  const session = await auth();
-  const userId = session?.user?.id;
-
   const [alerts, total] = await Promise.all([
     prisma.alert.findMany({
       where,
       orderBy: [{ status: "asc" }, { timestamp: "desc" }],
       take: limit,
       skip: offset,
-      ...(userId
-        ? {
-            include: {
-              alertStates: {
-                where: { userId },
-                select: { state: true, snoozedUntil: true },
-              },
-            },
-          }
-        : {}),
     }),
     prisma.alert.count({ where }),
   ]);
@@ -87,12 +72,9 @@ export async function GET(request: NextRequest) {
     avgResolutionBySource[source] = Math.round(totalMs / count / 60_000);
   }
 
-  // Flatten alertStates array into a single userState field; parse metadata JSON
+  // Alert state is browser-local; the public API only serializes alert data.
   const serialized = alerts.map((alert) => {
-    const { alertStates, metadata, ...rest } = alert as typeof alert & {
-      alertStates?: { state: string; snoozedUntil: Date | null }[];
-    };
-    const userState = alertStates?.[0] ?? null;
+    const { metadata, ...rest } = alert;
     let parsedMetadata: Record<string, unknown> | null = null;
     if (metadata) {
       try {
@@ -104,12 +86,7 @@ export async function GET(request: NextRequest) {
     return {
       ...rest,
       metadata: parsedMetadata,
-      userState: userState
-        ? {
-            state: userState.state as "acknowledged" | "snoozed" | "dismissed",
-            snoozedUntil: userState.snoozedUntil?.toISOString() ?? null,
-          }
-        : null,
+      userState: null,
     };
   });
 

@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { CheckCircle, Eye, EyeOff } from "lucide-react";
-import { useSession } from "next-auth/react";
 import type { AlertCategory, AlertSeverity, SerializedAlertWithState } from "@/lib/alert-schema";
 import { MAX_ALERT_AGE_DAYS, PROVIDERS, SEVERITY_ORDER } from "@/lib/constants";
 import { useAlerts } from "@/hooks/useAlerts";
 import { CategoryGroup } from "./CategoryGroup";
+import { useLocalAlertStates } from "@/hooks/useAlertActions";
 
 const CATEGORY_ORDER: AlertCategory[] = [
   "cloud",
@@ -58,7 +58,7 @@ export function AlertList({
     source,
     q: search,
   });
-  const { data: session } = useSession();
+  const { states } = useLocalAlertStates();
   const [showDismissed, setShowDismissed] = useState(false);
 
   // Client-side filtering: text search + source filter + alert states
@@ -82,23 +82,24 @@ export function AlertList({
     }
     // "newest" is the default API order, no re-sort needed
 
-    // Filter out snoozed/dismissed alerts for authenticated users
-    if (session?.user) {
+    // Filter out snoozed/dismissed alerts stored in this browser.
+    if (Object.keys(states).length > 0) {
       let hidden = 0;
       const filtered = result.filter((a) => {
-        if (!a.userState) return true;
+        const userState = states[a.id] ?? a.userState;
+        if (!userState) return true;
 
         // Snoozed: hide if snooze hasn't expired
         if (
-          a.userState.state === "snoozed" &&
-          !isSnoozeExpired(a.userState.snoozedUntil)
+          userState.state === "snoozed" &&
+          !isSnoozeExpired(userState.snoozedUntil)
         ) {
           hidden++;
           return showDismissed;
         }
 
         // Dismissed: hide unless alert status changed (resolved → reactivated)
-        if (a.userState.state === "dismissed") {
+        if (userState.state === "dismissed") {
           hidden++;
           return showDismissed;
         }
@@ -109,7 +110,7 @@ export function AlertList({
     }
 
     return { visible: result, hiddenCount: 0 };
-  }, [alerts, source, sourceFilter, sort, session?.user, showDismissed]);
+  }, [alerts, source, sourceFilter, sort, states, showDismissed]);
 
   if (isLoading) {
     return (
@@ -178,7 +179,7 @@ export function AlertList({
       )}
 
       {/* Hidden alerts banner */}
-      {session?.user && hiddenCount > 0 && (
+      {hiddenCount > 0 && (
         <div className="flex items-center justify-between rounded-lg border border-border bg-card-solid/50 px-4 py-2.5">
           <span className="font-[family-name:var(--font-mono)] text-xs text-text-muted">
             {hiddenCount} alert{hiddenCount !== 1 ? "s" : ""}{" "}
