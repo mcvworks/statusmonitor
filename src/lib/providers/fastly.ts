@@ -1,7 +1,7 @@
-import { BaseStatuspageProvider } from './base-statuspage';
+import { BaseStatusRSSProvider } from './base-status-rss';
 import type { ProviderMetadata } from './types';
 
-export class FastlyProvider extends BaseStatuspageProvider {
+export class FastlyProvider extends BaseStatusRSSProvider {
   name = 'fastly';
   category = 'cloud';
   pollInterval = 'fast' as const;
@@ -9,10 +9,10 @@ export class FastlyProvider extends BaseStatuspageProvider {
     name: 'fastly',
     displayName: 'Fastly',
     description: 'Edge cloud platform and CDN',
-    url: 'https://status.fastly.com',
+    url: 'https://www.fastlystatus.com',
   };
 
   constructor() {
-    super('https://status.fastly.com');
+    super('https://www.fastlystatus.com/rss/');
   }
 }

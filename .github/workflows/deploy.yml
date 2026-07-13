@@ -15,11 +15,12 @@ jobs:
         env:
           GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
           BING_SITE_VERIFICATION: ${{ vars.BING_SITE_VERIFICATION }}
+          CLOUDFLARE_RADAR_API_KEY: ${{ secrets.CLOUDFLARE_RADAR_API_KEY }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          envs: GOOGLE_SITE_VERIFICATION,BING_SITE_VERIFICATION
+          envs: GOOGLE_SITE_VERIFICATION,BING_SITE_VERIFICATION,CLOUDFLARE_RADAR_API_KEY
           script: |
             set -e
 
@@ -57,6 +58,13 @@ jobs:
                 sed -i "s|^BING_SITE_VERIFICATION=.*|BING_SITE_VERIFICATION=\"$BING_SITE_VERIFICATION\"|" .env
               else
                 echo "BING_SITE_VERIFICATION=\"$BING_SITE_VERIFICATION\"" >> .env
+              fi
+            fi
+            if [ -n "${CLOUDFLARE_RADAR_API_KEY:-}" ]; then
+              if grep -q '^CLOUDFLARE_RADAR_API_KEY=' .env 2>/dev/null; then
+                sed -i "s|^CLOUDFLARE_RADAR_API_KEY=.*|CLOUDFLARE_RADAR_API_KEY=\"$CLOUDFLARE_RADAR_API_KEY\"|" .env
+              else
+                echo "CLOUDFLARE_RADAR_API_KEY=\"$CLOUDFLARE_RADAR_API_KEY\"" >> .env
               fi
             fi
 
