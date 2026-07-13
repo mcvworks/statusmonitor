@@ -100,6 +100,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
+        {/* Bing's analyzer still checks these legacy language declarations. */}
+        <meta httpEquiv="content-language" content="en-US" />
+        <meta name="language" content="English" />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script
           type="application/ld+json"
