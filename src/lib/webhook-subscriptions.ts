@@ -9,6 +9,20 @@ export function isSlackWebhook(value: string): boolean {
   }
 }
 
+export function isTeamsWebhook(value: string): boolean {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    return url.protocol === "https:" && (
+      host.endsWith(".webhook.office.com")
+      || host.endsWith(".logic.azure.com")
+      || host.endsWith(".powerautomate.com")
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function encryptWebhook(value: string): string {
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", encryptionKey(), iv);

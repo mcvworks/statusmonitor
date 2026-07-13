@@ -92,6 +92,7 @@ model Alert {
   notificationLogs        NotificationLog[]
   emailSubscriptionLogs   EmailSubscriptionLog[]
   webhookSubscriptionLogs WebhookSubscriptionLog[]
+  browserPushLogs         BrowserPushLog[]
   updates                 AlertUpdate[]
 
   @@unique([source, externalId])
@@ -255,6 +256,35 @@ model WebhookSubscriptionLog {
 
   subscription WebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
   alert        Alert               @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, alertId, eventKey])
+}
+
+model BrowserPushSubscription {
+  id             String   @id @default(cuid())
+  endpoint       String   @unique
+  p256dh         String
+  auth           String
+  enabled        Boolean  @default(true)
+  severityFilter String   @default("[]")
+  sourceFilter   String   @default("[]")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  notificationLogs BrowserPushLog[]
+}
+
+model BrowserPushLog {
+  id             String   @id @default(cuid())
+  subscriptionId String
+  alertId        String
+  eventKey       String
+  sentAt         DateTime @default(now())
+  success        Boolean
+  error          String?
+
+  subscription BrowserPushSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  alert        Alert                   @relation(fields: [alertId], references: [id], onDelete: Cascade)
 
   @@unique([subscriptionId, alertId, eventKey])
 }

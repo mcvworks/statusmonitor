@@ -6,7 +6,7 @@ import { appUrl, createManageToken } from "@/lib/email-subscriptions";
 import { decryptWebhook } from "@/lib/webhook-subscriptions";
 import { sendSlackNotification } from "./slack";
 import { sendTeamsNotification } from "./teams";
-import { sendPushNotification } from "./web-push";
+import { sendAccountFreePushNotifications, sendPushNotification } from "./web-push";
 
 interface NotificationChannel {
   channel: string;
@@ -45,6 +45,7 @@ export async function dispatchNotifications(alerts: Alert[]): Promise<void> {
     dispatchUserNotifications(uniqueAlerts),
     dispatchPublicEmailSubscriptions(uniqueAlerts),
     dispatchWebhookSubscriptions(uniqueAlerts),
+    sendAccountFreePushNotifications(uniqueAlerts),
   ]);
 }
 
@@ -199,10 +200,12 @@ async function dispatchWebhookSubscriptions(alerts: Alert[]): Promise<void> {
     const pending = events.filter(({ alert, eventKey }) => !sentKeys.has(`${alert.id}:${eventKey}`));
     if (pending.length === 0) continue;
     try {
-      if (subscription.channel !== "slack") throw new Error("Unsupported webhook channel");
-      await sendSlackNotification("", "", pending.map(({ alert }) => alert), {
-        webhookUrl: decryptWebhook(subscription.webhookSecret),
-      });
+      const webhookUrl = decryptWebhook(subscription.webhookSecret);
+      if (subscription.channel === "slack") {
+        await sendSlackNotification("", "", pending.map(({ alert }) => alert), { webhookUrl });
+      } else if (subscription.channel === "teams") {
+        await sendTeamsNotification("", "", pending.map(({ alert }) => alert), { webhookUrl });
+      } else throw new Error("Unsupported webhook channel");
       await logWebhookNotifications(subscription.id, pending, true);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
