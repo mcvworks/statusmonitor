@@ -75,6 +75,7 @@ export function DashboardClient() {
       {/* Alert feed */}
       <div id="alert-feed" />
       <AlertList
+        scope="operations"
         category={filters.category}
         severity={filters.severity}
         status={filters.status}

@@ -9,6 +9,7 @@ interface AlertFilters {
   q?: string;
   limit?: number;
   offset?: number;
+  scope?: "all" | "operations" | "security";
 }
 
 interface AlertsResponse {

@@ -79,7 +79,7 @@ function TickerItem({ alert }: { alert: SerializedAlert }) {
 }
 
 export function NewsTicker() {
-  const { alerts, isLoading } = useAlerts({ limit: 50 });
+  const { alerts, isLoading } = useAlerts({ limit: 50, scope: "operations" });
 
   // Latest activity regardless of status — a news ticker reports what
   // just happened, resolved or not. Dedupe by source+title: some feeds

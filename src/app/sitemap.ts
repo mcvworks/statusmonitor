@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 const BASE_URL = "https://monitor.ducktyped.xyz";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [latestAlert, providerUpdates, incidents] = await Promise.all([
+  const [latestAlert, providerUpdates, incidents, securityEvents] = await Promise.all([
     prisma.alert.findFirst({
       orderBy: { updatedAt: "desc" },
       select: { updatedAt: true },
@@ -22,6 +22,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       where: {
         signalKind: { in: ["incident", "internet_outage", "maintenance"] },
       },
+      orderBy: { timestamp: "desc" },
+      take: 500,
+      select: { id: true, updatedAt: true },
+    }),
+    prisma.alert.findMany({
+      where: { category: "security" },
       orderBy: { timestamp: "desc" },
       take: 500,
       select: { id: true, updatedAt: true },
@@ -46,6 +52,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: latestUpdate,
     },
     {
+      url: `${BASE_URL}/security`,
+      lastModified: securityEvents[0]?.updatedAt ?? latestUpdate,
+    },
+    {
       url: `${BASE_URL}/subscribe`,
     },
   ];
@@ -62,5 +72,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: a.updatedAt,
   }));
 
-  return [...staticPages, ...providerPages, ...incidentPages];
+  const securityPages: MetadataRoute.Sitemap = securityEvents.map((a) => ({
+    url: `${BASE_URL}/security/event/${a.id}`,
+    lastModified: a.updatedAt,
+  }));
+
+  return [...staticPages, ...providerPages, ...incidentPages, ...securityPages];
 }

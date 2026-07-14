@@ -35,7 +35,9 @@ export async function getFeedAlerts(filters: FeedFilters) {
   return prisma.alert.findMany({
     where: {
       ...(filters.source ? { source: filters.source } : {}),
-      ...(filters.category ? { category: filters.category } : {}),
+      ...(filters.category
+        ? { category: filters.category }
+        : { category: { not: "security" } }),
       ...(filters.severity ? { severity: filters.severity } : {}),
     },
     orderBy: { timestamp: "desc" },

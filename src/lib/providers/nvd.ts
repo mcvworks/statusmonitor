@@ -150,6 +150,8 @@ export class NVDProvider extends BaseJSONProvider<NVDResponse> {
         signalKind: 'advisory',
         confidence: 'official',
         metadata: {
+          securityKind: 'critical-vulnerability',
+          exploitationStatus: 'none-known',
           cvss: {
             score,
             severity: cvssData?.baseSeverity ?? null,
