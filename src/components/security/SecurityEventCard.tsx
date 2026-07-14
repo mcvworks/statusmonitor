@@ -47,6 +47,9 @@ export function SecurityEventCard({ event }: { event: SecurityEventView }) {
         {event.epssProbability !== null && (
           <span>EPSS {(event.epssProbability * 100).toFixed(1)}%</span>
         )}
+        {event.relatedAlerts.length > 0 && (
+          <span>{event.relatedAlerts.length + 1} correlated sources</span>
+        )}
       </div>
 
       {alert.description && (
@@ -85,4 +88,3 @@ export function SecurityEventCard({ event }: { event: SecurityEventView }) {
     </article>
   );
 }
-

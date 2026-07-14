@@ -300,6 +300,26 @@ export const PROVIDERS: Record<string, ProviderMeta> = {
     historyUrl: null,
     downdetectorSlug: null,
   },
+  "github-advisories": {
+    name: "GitHub Advisories",
+    category: "security",
+    tier: "slow",
+    color: "#8B5CF6",
+    iconSlug: "github",
+    statusUrl: "https://github.com/advisories",
+    historyUrl: null,
+    downdetectorSlug: null,
+  },
+  "sec-cyber": {
+    name: "SEC Cyber Disclosures",
+    category: "security",
+    tier: "slow",
+    color: "#1B365D",
+    iconSlug: null,
+    statusUrl: "https://www.sec.gov/edgar/search/",
+    historyUrl: null,
+    downdetectorSlug: null,
+  },
 
   // ISP (slow tier)
   "cloudflare-radar": {

@@ -24,14 +24,16 @@ export async function pollProvider(
   let updatedCount = 0;
   let error: string | undefined;
 
-  if (provider.minimumIntervalMs) {
-    const state = await prisma.providerState.findUnique({
+  let previousState: { lastSuccessAt: Date | null } | null = null;
+  if (provider.minimumIntervalMs || provider.silenceInitialBackfill) {
+    previousState = await prisma.providerState.findUnique({
       where: { provider: provider.name },
       select: { lastSuccessAt: true },
     });
     if (
-      state?.lastSuccessAt &&
-      Date.now() - state.lastSuccessAt.getTime() < provider.minimumIntervalMs
+      provider.minimumIntervalMs &&
+      previousState?.lastSuccessAt &&
+      Date.now() - previousState.lastSuccessAt.getTime() < provider.minimumIntervalMs
     ) {
       return {
         provider: provider.name,
@@ -44,6 +46,7 @@ export async function pollProvider(
   }
 
   try {
+    const silentBackfill = provider.silenceInitialBackfill === true && !previousState?.lastSuccessAt;
     const incoming = await provider.fetchAlerts();
     alertsFound = incoming.length;
 
@@ -53,14 +56,16 @@ export async function pollProvider(
     // Upsert new alerts
     for (const alert of newAlerts) {
       const created = await upsertAlert(alert);
-      alertEventBus.emit("alert:new", created);
+      if (!silentBackfill) alertEventBus.emit("alert:new", created);
     }
     newCount = newAlerts.length;
 
     // Upsert updated alerts
     for (const alert of updatedAlerts) {
       const updated = await upsertAlert(alert);
-      if (alert.status === "resolved") {
+      if (silentBackfill) {
+        continue;
+      } else if (alert.status === "resolved") {
         alertEventBus.emit("alert:resolved", updated);
       } else {
         alertEventBus.emit("alert:updated", updated);

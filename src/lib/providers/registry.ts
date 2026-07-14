@@ -20,6 +20,8 @@ import { DockerHubProvider } from './dockerhub';
 import { NpmRegistryProvider } from './npm-registry';
 import { CISAKEVProvider } from './cisa-kev';
 import { NVDProvider } from './nvd';
+import { GitHubAdvisoriesProvider } from './github-advisories';
+import { SecCyberProvider } from './sec-cyber';
 import { CloudflareRadarProvider } from './cloudflare-radar';
 import { DowndetectorProvider } from './downdetector';
 import {
@@ -66,6 +68,8 @@ registerProvider(new NpmRegistryProvider());
 // Register Security providers
 registerProvider(new CISAKEVProvider());
 registerProvider(new NVDProvider());
+registerProvider(new GitHubAdvisoriesProvider());
+registerProvider(new SecCyberProvider());
 
 // Register ISP provider
 registerProvider(new CloudflareRadarProvider());

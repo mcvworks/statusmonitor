@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Alert } from "@/generated/prisma/client";
-import { toSecurityEvent } from "./security";
+import { correlateSecurityEvents, toSecurityEvent } from "./security";
 
 function alert(overrides: Partial<Alert> = {}): Alert {
   const now = new Date("2026-07-13T12:00:00.000Z");
@@ -52,4 +52,38 @@ test("EPSS enrichments affect exploitation state without claiming confirmation",
   assert.equal(event.kind, "critical-vulnerability");
   assert.equal(event.exploitationState, "likely");
   assert.equal(event.epssProbability, 0.62);
+});
+
+test("extracts correlation identifiers from GitHub advisory metadata", () => {
+  const event = toSecurityEvent(alert({
+    externalId: "GHSA-aaaa-bbbb-cccc",
+    source: "github-advisories",
+    metadata: JSON.stringify({
+      cveId: "CVE-2026-1234",
+      identifiers: [{ type: "CVE", value: "CVE-2026-1234" }],
+    }),
+  }));
+
+  assert.deepEqual(event.identifiers.sort(), ["CVE-2026-1234", "GHSA-AAAA-BBBB-CCCC"]);
+});
+
+test("correlates NVD, GitHub, and KEV evidence into the highest-risk event", () => {
+  const nvd = toSecurityEvent(alert({ externalId: "CVE-2026-1234" }));
+  const github = toSecurityEvent(alert({
+    id: "github-alert",
+    externalId: "GHSA-aaaa-bbbb-cccc",
+    source: "github-advisories",
+    metadata: JSON.stringify({ cveId: "CVE-2026-1234" }),
+  }));
+  const kev = toSecurityEvent(alert({
+    id: "kev-alert",
+    externalId: "CVE-2026-1234",
+    source: "cisa-kev",
+    severity: "major",
+  }));
+  const correlated = correlateSecurityEvents([nvd, github, kev]);
+
+  assert.equal(correlated.length, 1);
+  assert.equal(correlated[0].alert.source, "cisa-kev");
+  assert.equal(correlated[0].relatedAlerts.length, 2);
 });
