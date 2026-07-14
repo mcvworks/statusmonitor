@@ -38,6 +38,7 @@ interface AlertListProps {
   source?: string;
   sort?: string;
   sourceFilter?: string[];
+  scope?: "all" | "operations" | "security";
 }
 
 export function AlertList({
@@ -48,6 +49,7 @@ export function AlertList({
   source,
   sort,
   sourceFilter,
+  scope,
 }: AlertListProps = {}) {
   // source and search are filtered server-side — filtering the 50-alert
   // window client-side made matches outside that window invisible
@@ -57,6 +59,7 @@ export function AlertList({
     status,
     source,
     q: search,
+    scope,
   });
   const { states } = useLocalAlertStates();
   const [showDismissed, setShowDismissed] = useState(false);

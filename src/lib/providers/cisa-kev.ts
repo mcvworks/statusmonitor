@@ -91,6 +91,8 @@ export class CISAKEVProvider extends BaseJSONProvider<KEVCatalog> {
           signalKind: 'advisory' as const,
           confidence: 'official' as const,
           metadata: {
+            securityKind: 'exploited-vulnerability',
+            exploitationStatus: 'active',
             vendor: vuln.vendorProject,
             product: vuln.product,
             requiredAction: vuln.requiredAction,

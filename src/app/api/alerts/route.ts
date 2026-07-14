@@ -9,10 +9,18 @@ export async function GET(request: NextRequest) {
   const severity = params.get("severity");
   const source = params.get("source");
   const status = params.get("status");
+  const scope = params.get("scope");
   const limit = Math.min(parseInt(params.get("limit") ?? "50", 10), 200);
   const offset = Math.max(parseInt(params.get("offset") ?? "0", 10), 0);
 
   const where: Record<string, unknown> = {};
+
+  if (scope === "operations") {
+    where.category = { not: "security" };
+    where.signalKind = { not: "advisory" };
+  } else if (scope === "security") {
+    where.category = "security";
+  }
 
   if (category && AlertCategory.safeParse(category).success) {
     where.category = category;
