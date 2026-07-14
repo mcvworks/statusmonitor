@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 export const SECURITY_KINDS = [
   "exploited-vulnerability",
   "critical-vulnerability",
+  "security-incident",
   "breach",
   "ransomware",
   "supply-chain",
@@ -16,6 +17,7 @@ export type ExploitationState = "active" | "likely" | "emerging" | "none-known";
 export const SECURITY_KIND_LABELS: Record<SecurityKind, string> = {
   "exploited-vulnerability": "Exploited now",
   "critical-vulnerability": "Critical vulnerability",
+  "security-incident": "Security incident",
   breach: "Breach",
   ransomware: "Ransomware",
   "supply-chain": "Supply chain",
@@ -33,6 +35,8 @@ export interface SecurityEventView {
   product: string | null;
   epssProbability: number | null;
   ransomwareUse: boolean;
+  identifiers: string[];
+  relatedAlerts: Alert[];
 }
 
 export function parseAlertMetadata(raw: string | null): Record<string, unknown> {
@@ -56,6 +60,20 @@ export function toSecurityEvent(alert: Alert): SecurityEventView {
   const epss = metadata.epss as { probability?: unknown } | undefined;
   const epssProbability =
     typeof epss?.probability === "number" ? epss.probability : null;
+  const identifiers = new Set<string>();
+  if (/^(CVE|GHSA)-/i.test(alert.externalId)) identifiers.add(alert.externalId.toUpperCase());
+  for (const key of ["cveId", "ghsaId"]) {
+    const value = metadataString(metadata, key);
+    if (value) identifiers.add(value.toUpperCase());
+  }
+  if (Array.isArray(metadata.identifiers)) {
+    for (const item of metadata.identifiers) {
+      if (typeof item === "string") identifiers.add(item.toUpperCase());
+      else if (item && typeof item === "object" && typeof (item as { value?: unknown }).value === "string") {
+        identifiers.add((item as { value: string }).value.toUpperCase());
+      }
+    }
+  }
 
   let kind: SecurityKind = "critical-vulnerability";
   if (SECURITY_KINDS.includes(explicitKind as SecurityKind)) {
@@ -99,6 +117,8 @@ export function toSecurityEvent(alert: Alert): SecurityEventView {
     product: metadataString(metadata, "product"),
     epssProbability,
     ransomwareUse,
+    identifiers: [...identifiers],
+    relatedAlerts: [],
   };
 }
 
@@ -109,8 +129,31 @@ export async function getSecurityEvents(limit = 100): Promise<SecurityEventView[
     take: Math.min(Math.max(limit, 1), 500),
   });
 
-  return alerts
-    .map(toSecurityEvent)
-    .sort((a, b) => b.riskScore - a.riskScore || b.alert.timestamp.getTime() - a.alert.timestamp.getTime());
+  return correlateSecurityEvents(alerts.map(toSecurityEvent));
 }
 
+export function correlateSecurityEvents(events: SecurityEventView[]): SecurityEventView[] {
+  const grouped = new Map<string, SecurityEventView>();
+  for (const event of events) {
+    const cve = event.identifiers.find((identifier) => identifier.startsWith("CVE-"));
+    const ghsa = event.identifiers.find((identifier) => identifier.startsWith("GHSA-"));
+    const key = cve ?? ghsa ?? `${event.alert.source}:${event.alert.externalId}`;
+    const existing = grouped.get(key);
+    if (!existing) {
+      grouped.set(key, event);
+      continue;
+    }
+    if (event.riskScore > existing.riskScore) {
+      event.relatedAlerts = [existing.alert, ...existing.relatedAlerts];
+      event.identifiers = [...new Set([...event.identifiers, ...existing.identifiers])];
+      grouped.set(key, event);
+    } else {
+      existing.relatedAlerts.push(event.alert, ...event.relatedAlerts);
+      existing.identifiers = [...new Set([...existing.identifiers, ...event.identifiers])];
+    }
+  }
+
+  return [...grouped.values()].sort(
+    (a, b) => b.riskScore - a.riskScore || b.alert.timestamp.getTime() - a.alert.timestamp.getTime(),
+  );
+}

@@ -32,5 +32,7 @@ export interface AlertProvider {
   metadata: ProviderMetadata;
   /** Prevent polling APIs more frequently than their published guidance. */
   minimumIntervalMs?: number;
+  /** Populate existing records on the first successful poll without emitting alert events. */
+  silenceInitialBackfill?: boolean;
   fetchAlerts(): Promise<AlertInput[]>;
 }
