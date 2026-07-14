@@ -43,3 +43,18 @@ test("ignores withdrawn, stale, and lower-severity GitHub advisories", () => {
   assert.equal(provider.mapResponse([base], new Date("2026-07-13T12:00:00Z")).length, 0);
 });
 
+test("normalizes unavailable GitHub CVSS scores to null", () => {
+  const provider = new GitHubAdvisoriesProvider();
+  const alerts = provider.mapResponse([{
+    ghsa_id: "GHSA-dddd-eeee-ffff", cve_id: "CVE-2026-9876", url: "",
+    html_url: "https://github.com/advisories/GHSA-dddd-eeee-ffff",
+    summary: "Advisory awaiting a CVSS score", description: "Score unavailable.",
+    type: "reviewed", severity: "high", published_at: "2026-07-12T12:00:00Z",
+    updated_at: "2026-07-12T12:00:00Z", withdrawn_at: null,
+    identifiers: [], vulnerabilities: [],
+    cvss: { score: null, vector_string: null }, cwes: [],
+  }], new Date("2026-07-13T12:00:00Z"));
+
+  assert.equal(alerts.length, 1);
+  assert.equal(alerts[0].metadata?.cvss, null);
+});

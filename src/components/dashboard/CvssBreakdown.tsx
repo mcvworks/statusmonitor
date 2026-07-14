@@ -1,17 +1,17 @@
 "use client";
 
 interface CvssData {
-  score: number;
-  severity: string | null;
-  vector: string | null;
-  attackVector: string | null;
-  attackComplexity: string | null;
-  privilegesRequired: string | null;
-  userInteraction: string | null;
-  scope: string | null;
-  confidentialityImpact: string | null;
-  integrityImpact: string | null;
-  availabilityImpact: string | null;
+  score?: number | null;
+  severity?: string | null;
+  vector?: string | null;
+  attackVector?: string | null;
+  attackComplexity?: string | null;
+  privilegesRequired?: string | null;
+  userInteraction?: string | null;
+  scope?: string | null;
+  confidentialityImpact?: string | null;
+  integrityImpact?: string | null;
+  availabilityImpact?: string | null;
 }
 
 interface CvssBreakdownProps {
@@ -36,7 +36,7 @@ function MetricPill({
   value,
 }: {
   label: string;
-  value: string | null;
+  value: string | null | undefined;
 }) {
   if (!value) return null;
   const display = value
@@ -60,7 +60,14 @@ function MetricPill({
   );
 }
 
-function ScoreBar({ score }: { score: number }) {
+function ScoreBar({ score }: { score: number | null | undefined }) {
+  if (typeof score !== "number" || !Number.isFinite(score)) {
+    return (
+      <span className="font-[family-name:var(--font-mono)] text-[10px] text-text-muted">
+        Not scored
+      </span>
+    );
+  }
   const pct = (score / 10) * 100;
   const color =
     score >= 9 ? "#ff6b6b" : score >= 7 ? "#FA6216" : score >= 4 ? "#F2C200" : "#48E0C7";
