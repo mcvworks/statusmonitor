@@ -19,7 +19,7 @@ interface GitHubAdvisory {
     first_patched_version: string | null;
     vulnerable_functions?: string[];
   }>;
-  cvss?: { score: number; vector_string: string | null };
+  cvss?: { score: number | null; vector_string: string | null };
   cwes?: Array<{ cwe_id: string; name: string }>;
 }
 
@@ -99,7 +99,7 @@ export class GitHubAdvisoriesProvider implements AlertProvider {
             ecosystems: [...new Set(packages.map((item) => item.ecosystem))],
             product: packageNames.join(", ") || null,
             requiredAction: action,
-            cvss: advisory.cvss
+            cvss: typeof advisory.cvss?.score === "number" && Number.isFinite(advisory.cvss.score)
               ? { score: advisory.cvss.score, vector: advisory.cvss.vector_string }
               : null,
             cwes: advisory.cwes ?? [],
