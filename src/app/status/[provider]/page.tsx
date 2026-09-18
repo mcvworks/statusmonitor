@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ExternalLink, History, Radio } from "lucide-react";
+import { BookOpen, ExternalLink, History, Radio, Wrench } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { CATEGORY_LABELS, PROVIDERS, SEVERITY_ORDER } from "@/lib/constants";
+import { getDuckTypedGuides } from "@/lib/ducktyped-guides";
 import { getProvider } from "@/lib/providers/registry";
 import type { AlertSeverity } from "@/lib/alert-schema";
 import { ProviderIcon } from "@/components/dashboard/ProviderIcon";
@@ -156,6 +157,7 @@ export default async function ProviderStatusPage({
         : currentStatus === "Service outage"
           ? "text-critical"
           : "text-minor";
+  const duckTypedLinks = getDuckTypedGuides(key);
   const copy = seoCopy(key);
   const pageUrl = `${BASE_URL}/status/${key}`;
   const jsonLd = {
@@ -256,6 +258,25 @@ export default async function ProviderStatusPage({
           </div>
         )}
       </section>
+
+      {duckTypedLinks.length > 0 && (
+        <section className="glass-card p-5" aria-labelledby="troubleshooting-guides">
+          <h2 id="troubleshooting-guides" className="section-label mb-3">Troubleshooting guides</h2>
+          <p className="text-sm leading-relaxed text-text-secondary">
+            Seeing errors while {provider.name} is degraded? These duckTyped guides explain what they mean and how to confirm the cause.
+          </p>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {duckTypedLinks.map((link) => (
+              <li key={link.href}>
+                <a href={link.href} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-text-secondary hover:border-primary/30 hover:text-primary">
+                  {link.kind === "tool" ? <Wrench className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="glass-card p-5" aria-labelledby="source-information">
         <h2 id="source-information" className="section-label mb-3">Source information</h2>
