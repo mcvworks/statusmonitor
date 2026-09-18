@@ -146,9 +146,12 @@ jobs:
 
             # EMAIL_FROM on the dead ducktyped.com domain breaks Resend
             # ("domain is not verified") — magic links and feedback mail
-            if grep -q '^EMAIL_FROM=.*ducktyped\.com' .env 2>/dev/null; then
-              echo "Fixing EMAIL_FROM (was on the unverified ducktyped.com domain)"
-              sed -i 's|^EMAIL_FROM=.*|EMAIL_FROM="DTMonitor <alerts@ducktyped.xyz>"|' .env
+            # Only monitor.ducktyped.xyz is verified in Resend. The root
+            # ducktyped.xyz is not (its mail is Microsoft 365), so a sender
+            # on it is rejected just like the old .com one.
+            if grep -qE '^EMAIL_FROM=.*@ducktyped\.(com|xyz)' .env 2>/dev/null; then
+              echo "Fixing EMAIL_FROM (was on a domain not verified in Resend)"
+              sed -i 's|^EMAIL_FROM=.*|EMAIL_FROM="DTMonitor <alerts@monitor.ducktyped.xyz>"|' .env
             fi
 
             # Keep Auth.js redirects on the live .xyz domain. Older production
