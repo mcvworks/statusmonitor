@@ -26,6 +26,12 @@ export function Footer() {
           <Link href="/history" className="text-text-secondary transition-colors hover:text-primary">
             Incident history
           </Link>
+          <a
+            href="https://ducktyped.xyz/privacy/"
+            className="text-text-secondary transition-colors hover:text-primary"
+          >
+            Privacy
+          </a>
           <span>Data sourced from official status pages & feeds</span>
           <a
             href="/feed.xml"

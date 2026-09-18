@@ -128,7 +128,11 @@ export function SubscriptionForm({ compact = false }: { compact?: boolean }) {
       </div>
 
       {error && <p className="text-sm text-critical" role="alert">{error}</p>}
-      <p className="text-xs text-text-muted">No password. Confirm by email, then manage or unsubscribe in one click from any alert.</p>
+      <p className="text-xs text-text-muted">No password. Confirm by email, then manage or unsubscribe in one click from any alert.{" "}
+        <a href="https://ducktyped.xyz/privacy/" className="underline transition-colors hover:text-primary">
+          Privacy policy
+        </a>
+      </p>
     </form>
   );
 }
