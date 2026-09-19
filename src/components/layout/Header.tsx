@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Activity, Clock, Menu, X, Sun, Moon } from "lucide-react";
+import { Activity, ArrowUpRight, Clock, Menu, X, Sun, Moon } from "lucide-react";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useSSE } from "@/hooks/useSSE";
 
@@ -63,8 +63,16 @@ export function Header({ onMenuToggle }: HeaderProps) {
             </div>
           </div>
 
-          {/* Right: Theme + Auth + Hamburger */}
+          {/* Right: Tools link + Theme + Auth + Hamburger */}
           <div className="flex items-center gap-2">
+            {/* The way back to the parent site; its nav links here as "Monitor". */}
+            <a
+              href="https://ducktyped.xyz/utility/"
+              className="hidden items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-[0.85rem] font-medium tracking-[0.4px] text-text-secondary transition-colors hover:border-primary hover:text-primary md:inline-flex"
+            >
+              duckTyped Tools
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </a>
             <button
               onClick={toggle}
               className="rounded-lg p-2 text-text-muted transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-text-primary"
@@ -152,6 +160,13 @@ export function Header({ onMenuToggle }: HeaderProps) {
             <MobileNavLink href="/dashboard/my-stack" onClick={() => setMobileOpen(false)}>
               My stack
             </MobileNavLink>
+            <a
+              href="https://ducktyped.xyz/utility/"
+              className="flex items-center gap-1 rounded-lg px-3 py-3 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
+            >
+              duckTyped Tools
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </a>
           </nav>
         </div>
       )}
