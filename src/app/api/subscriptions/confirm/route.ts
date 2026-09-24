@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { hashToken } from "@/lib/email-subscriptions";
+import { appUrl, hashToken } from "@/lib/email-subscriptions";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get("token");
-  const destination = new URL("/subscribe/confirmed", request.url);
+  // Behind the reverse proxy request.url can contain the standalone server's
+  // 0.0.0.0:3002 bind address. Use the same public origin as emailed links.
+  const destination = new URL(appUrl("/subscribe/confirmed"));
   if (!token) {
     destination.searchParams.set("status", "invalid");
     return NextResponse.redirect(destination);
