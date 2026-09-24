@@ -3,6 +3,7 @@ import type { RSSItem } from './base-rss';
 import type { AlertInput } from './types';
 
 const STATUS_PATTERN = /\b(resolved|completed|monitoring|identified|investigating|active|scheduled)\b/gi;
+const STATUS_LABEL_PATTERN = /\b(resolved|completed|monitoring|identified|investigating|active|scheduled)\s*[-:–—]\s+/gi;
 
 export function plainText(value: string | undefined): string {
   if (!value) return '';
@@ -22,7 +23,10 @@ export function plainText(value: string | undefined): string {
 }
 
 export function statusFromText(text: string): AlertInput['status'] {
-  const matches = [...text.matchAll(STATUS_PATTERN)];
+  // Lifecycle labels carry state; later prose such as "we will continue
+  // monitoring" must not reopen a "Resolved - ..." update.
+  const labels = [...text.matchAll(STATUS_LABEL_PATTERN)];
+  const matches = labels.length ? labels : [...text.matchAll(STATUS_PATTERN)];
   const latest = matches.at(-1)?.[1]?.toLowerCase();
 
   if (latest === 'resolved' || latest === 'completed') return 'resolved';
