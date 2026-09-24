@@ -49,7 +49,7 @@ export function BrowserDataTools() {
   }
 
   function reset() {
-    if (!window.confirm("Delete saved views, stack entries, and alert actions from this browser?")) return;
+    if (!window.confirm("Clear saved views, stack entries, alert actions, and channel management keys from this browser? This does not stop alerts. Disconnect Slack and Teams first, or export a backup to keep their management keys.")) return;
     Object.values(BROWSER_STORAGE_KEYS).forEach((key) => window.localStorage.removeItem(key));
     setMessage("Local settings cleared. Reloading…");
     window.setTimeout(() => window.location.reload(), 500);
@@ -58,6 +58,7 @@ export function BrowserDataTools() {
   return (
     <div className="glass-card space-y-4 p-5">
       <div><h2 className="text-sm font-semibold text-text-primary">Browser data</h2><p className="mt-1 text-xs leading-5 text-text-muted">Your dashboard, stack, and alert actions stay on this device. Export a backup to move them to another browser.</p></div>
+      <p className="text-xs leading-5 text-text-muted">Clearing or importing browser data does not stop alerts and can remove the keys used to manage Slack and Teams connections. Disconnect those channels first, or export a backup. Manage email and browser alerts with the controls above.</p>
       <div className="flex flex-wrap gap-2">
         <button onClick={download} className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs text-text-secondary hover:bg-surface-hover hover:text-text-primary"><Download className="h-3.5 w-3.5" />Export settings</button>
         <button onClick={() => inputRef.current?.click()} className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs text-text-secondary hover:bg-surface-hover hover:text-text-primary"><Upload className="h-3.5 w-3.5" />Import settings</button>

@@ -286,6 +286,26 @@ No parameters returns the entire dependency map.
 }
 ```
 
+## Passwordless Email Alert Management
+
+Subscribers can open `/subscribe/manage` to request a private management link. The same entry point is linked from Settings, the signup form, and the site footer. Subscriber alert emails include an explicit unsubscribe link to the signed management page.
+
+### POST /api/subscriptions/manage
+
+**Auth:** Public. Body: `{ "email": "subscriber@example.com" }`.
+
+For an existing subscription, sends a signed link through the configured email provider. Returns `{ "ok": true }` for both existing and unknown addresses; it never returns credentials or creates a subscription. Returns 400 for invalid input, 429 after five requests per IP or email within 15 minutes, or 503 on a delivery/database failure. Rate limits are held in process memory and reset on restart.
+
+### GET, PUT, DELETE /api/subscriptions/manage?id=…&token=…
+
+**Auth:** The signed ID/token pair from the subscriber's private email. Treat the complete URL as a credential. Responses use `Cache-Control: no-store`.
+
+- **GET** reads `email`, `enabled`, `confirmed`, `severities`, and `sources`. Opening a link never unsubscribes or changes preferences.
+- **PUT** accepts `{ "severities": ["critical", "major"], "sources": [] }`. An empty source list means all providers. At least one severity is required. Pending subscriptions return 409 and must still complete email confirmation.
+- **DELETE** removes that email subscription and its saved preferences, including pending subscriptions. Repeating a valid signed delete succeeds. Browser, Slack, and Teams subscriptions are separate; an email already in flight may still arrive.
+
+Invalid credentials return 401. Reading or updating a removed subscription returns 404. Users with a lost/invalid link can request another through `/subscribe/manage`.
+
 ## Notification Settings
 
 ### GET /api/settings

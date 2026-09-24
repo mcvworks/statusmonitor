@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import Link from "next/link";
 import { Bell, Check, Mail } from "lucide-react";
 import { PROVIDERS } from "@/lib/constants";
 
@@ -36,18 +37,19 @@ export function SubscriptionForm({ compact = false }: { compact?: boolean }) {
     event.preventDefault();
     setState("sending");
     setError("");
-    const response = await fetch("/api/subscriptions", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email, severities, sources }),
-    });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      setError(body.error ?? "Unable to subscribe right now.");
+    try {
+      const response = await fetch("/api/subscriptions", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), severities, sources }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error ?? "Unable to subscribe right now.");
+      setState("sent");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to subscribe right now. Please try again.");
       setState("error");
-      return;
     }
-    setState("sent");
   }
 
   if (state === "sent") {
@@ -128,11 +130,12 @@ export function SubscriptionForm({ compact = false }: { compact?: boolean }) {
       </div>
 
       {error && <p className="text-sm text-critical" role="alert">{error}</p>}
-      <p className="text-xs text-text-muted">No password. Confirm by email, then manage or unsubscribe in one click from any alert.{" "}
+      <p className="text-xs leading-5 text-text-muted">No password. Alerts start after you confirm your email. Every alert email has a link to manage preferences or unsubscribe.{" "}
         <a href="https://ducktyped.xyz/privacy/" className="underline transition-colors hover:text-primary">
           Privacy policy
         </a>
       </p>
+      <p className="text-sm text-text-secondary">Already subscribed? <Link href="/subscribe/manage" className="text-primary underline">Manage or stop email alerts</Link>.</p>
     </form>
   );
 }

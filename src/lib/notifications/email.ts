@@ -83,6 +83,21 @@ export async function sendSubscriberAlertEmail(
   else await sendViaSMTP(email, subject, html);
 }
 
+export async function sendSubscriptionManageLink(email: string, manageUrl: string): Promise<void> {
+  await sendRawEmail(email, "Manage or stop your DTMonitor email alerts", `
+<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:24px;background:#0F1114;font-family:Arial,sans-serif;color:#E9EEF5;">
+  <div style="max-width:560px;margin:auto;padding:24px;background:#151A22;border-radius:12px;">
+    <h1 style="font-size:22px;color:#F2C200;">Manage your DTMonitor emails</h1>
+    <p>Use your private link to change alert preferences or stop email alerts. No password is needed.</p>
+    <p><a href="${escapeHtml(manageUrl)}" style="display:inline-block;padding:12px 18px;background:#F2C200;color:#0F1114;border-radius:8px;text-decoration:none;font-weight:bold;">Manage email alerts</a></p>
+    <p><a href="${escapeHtml(manageUrl)}#unsubscribe" style="color:#F2C200;text-decoration:underline;">Unsubscribe from email alerts</a></p>
+    <p style="font-size:13px;color:#B8C0CC;">Opening this link does not change your subscription. Select Unsubscribe on the page to stop emails.</p>
+    <p style="font-size:12px;color:#8892A0;">If you did not request this link, you can ignore this email. Keep the link private: it gives access to your email-alert preferences.</p>
+  </div>
+</body></html>`);
+}
+
 // ─── Senders ────────────────────────────────────────────────────
 
 async function sendViaResend(
@@ -187,8 +202,9 @@ function buildEmailHTML(alerts: Alert[], preferencesUrl?: string): string {
 
     <div style="text-align: center; padding: 24px 0; color: #8892A0; font-size: 12px;">
       <a href="${escapeHtml(preferencesUrl ?? appUrl("/dashboard/settings"))}" style="color: #F2C200; text-decoration: none;">
-        Manage notification preferences
+        Manage alert preferences
       </a>
+      ${preferencesUrl ? `<br><br><a href="${escapeHtml(preferencesUrl)}#unsubscribe" style="display:inline-block;padding:10px 16px;border:1px solid #8892A0;border-radius:6px;color:#E9EEF5;text-decoration:underline;font-size:14px;">Unsubscribe from email alerts</a><p>You requested these alerts from DTMonitor. Unsubscribing stops email alerts; other alert channels are managed separately.</p>` : ''}
       <br><br>
       Built by <a href="https://ducktyped.xyz" style="color: #48E0C7; text-decoration: none;">Ducktyped</a>
     </div>
