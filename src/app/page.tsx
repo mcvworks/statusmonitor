@@ -66,7 +66,7 @@ export default async function Home() {
             Live Cloud &amp; SaaS Service Status
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-text-secondary">
-            Real-time monitoring of cloud platforms, DevOps tools, security
+            Monitor cloud platforms, DevOps tools, security
             advisories, and ISP connectivity.
           </p>
           <Link
@@ -85,8 +85,8 @@ export default async function Home() {
         <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
           <div>
             <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-widest text-secondary">Automated alerts</p>
-            <h2 id="email-alerts-heading" className="mt-2 text-xl font-semibold text-text-primary">Know when your services go down</h2>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">Drop your email, choose providers and severity, then receive matching outage alerts automatically. No account required.</p>
+            <h2 id="email-alerts-heading" className="mt-2 text-xl font-semibold text-text-primary">Follow outages and security advisories</h2>
+            <p className="mt-2 text-sm leading-6 text-text-secondary">Choose providers and severity, confirm your email, and receive matching alerts as source updates are collected. No account required. Manage preferences or unsubscribe anytime.</p>
           </div>
           <SubscriptionForm compact />
         </div>

@@ -113,11 +113,12 @@ export function usePushNotifications(): PushNotificationsState {
       const sub = await registration.pushManager.getSubscription();
       if (sub) {
         // Remove from server
-        await fetch("/api/push/subscribe", {
+        const response = await fetch("/api/push/subscribe", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ endpoint: sub.endpoint }),
         });
+        if (!response.ok) throw new Error("Unable to stop browser alerts. Please try again.");
 
         // Unsubscribe locally
         await sub.unsubscribe();
