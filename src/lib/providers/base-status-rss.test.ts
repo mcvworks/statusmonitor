@@ -26,3 +26,16 @@ test('sanitizeStripeDates repairs malformed far-future maintenance dates', () =>
     '<entry><published>2026-05-15T13:30:30Z</published><updated>2026-05-15T13:30:30Z</updated></entry>',
   );
 });
+
+test('a resolved lifecycle label takes precedence over monitoring mentioned in later prose', () => {
+  assert.equal(statusFromText(
+    'March 7, 2026 02:11 PST Monitoring - Service is stable. ' +
+    'March 7, 2026 03:39 PST Resolved - The system remains stable. We will continue monitoring.',
+  ), 'resolved');
+  assert.equal(statusFromText(
+    'Investigating - Checking errors. Resolved: Service restored; the previously identified cause was fixed.',
+  ), 'resolved');
+  assert.equal(statusFromText(
+    'Resolved - Restored. Investigating — A new issue has appeared.',
+  ), 'investigating');
+});

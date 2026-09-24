@@ -175,6 +175,9 @@ jobs:
             echo "── Backfilling legacy signal classifications ──"
             npx prisma db execute --file prisma/backfill-signal-kinds.sql
 
+            echo "── Correcting the legacy resolved Docker RSS incident ──"
+            npx prisma db execute --file prisma/backfill-rss-status.sql
+
             echo "── Starting PM2 ──"
             pm2 start ecosystem.config.js
             pm2 save
