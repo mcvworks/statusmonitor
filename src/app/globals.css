@@ -12,6 +12,10 @@
   --color-primary-hover: #FFD020;
   --color-secondary: #48E0C7;
   --color-accent: #FA6216;
+  --color-primary-ink: var(--t-primary-ink);
+  --color-secondary-ink: var(--t-secondary-ink);
+  --color-critical-ink: var(--t-critical-ink);
+  --color-on-primary: #0F1114;
 
   /* Severity */
   --color-critical: #ff6b6b;
@@ -57,6 +61,9 @@
   --t-text-primary: #E9EEF5;
   --t-text-secondary: #B8C0CC;
   --t-text-muted: #8892A0;
+  --t-primary-ink: #F2C200;
+  --t-secondary-ink: #48E0C7;
+  --t-critical-ink: #ff6b6b;
 
   /* Glass card vars */
   --glass-bg: rgba(21, 26, 34, 0.70);
@@ -89,6 +96,9 @@
   --t-text-primary: #0F1114;
   --t-text-secondary: #555555;
   --t-text-muted: #777777;
+  --t-primary-ink: #7A5B00;
+  --t-secondary-ink: #006B59;
+  --t-critical-ink: #B42318;
 
   --glass-bg: rgba(255, 255, 255, 0.80);
   --glass-border: #D0D5DD;

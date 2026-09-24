@@ -62,10 +62,10 @@ export function BrowserDataTools() {
       <div className="flex flex-wrap gap-2">
         <button onClick={download} className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs text-text-secondary hover:bg-surface-hover hover:text-text-primary"><Download className="h-3.5 w-3.5" />Export settings</button>
         <button onClick={() => inputRef.current?.click()} className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs text-text-secondary hover:bg-surface-hover hover:text-text-primary"><Upload className="h-3.5 w-3.5" />Import settings</button>
-        <button onClick={reset} className="inline-flex items-center gap-2 rounded-lg border border-critical/30 px-3 py-2 text-xs text-critical hover:bg-critical/5"><Trash2 className="h-3.5 w-3.5" />Clear local data</button>
+        <button onClick={reset} className="inline-flex items-center gap-2 rounded-lg border border-critical/30 px-3 py-2 text-xs text-critical-ink hover:bg-critical/5"><Trash2 className="h-3.5 w-3.5" />Clear local data</button>
         <input ref={inputRef} type="file" accept="application/json" onChange={importFile} className="hidden" />
       </div>
-      {message && <p className="text-xs text-secondary" role="status">{message}</p>}
+      {message && <p className="text-xs text-secondary-ink" role="status">{message}</p>}
     </div>
   );
 }

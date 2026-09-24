@@ -11,11 +11,11 @@ export function SettingsPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/dashboard" className="rounded-lg p-1.5 text-text-muted hover:bg-surface-hover hover:text-text-primary"><ArrowLeft className="h-4 w-4" /></Link>
-        <div><h1 className="flex items-center gap-2 font-[family-name:var(--font-display)] text-lg font-semibold text-text-primary"><Settings className="h-5 w-5 text-primary" />Settings</h1><p className="text-xs text-text-muted">Manage private browser data and account-free alerts</p></div>
+        <div><h1 className="flex items-center gap-2 font-[family-name:var(--font-display)] text-lg font-semibold text-text-primary"><Settings className="h-5 w-5 text-primary-ink" />Settings</h1><p className="text-xs text-text-muted">Manage private browser data and account-free alerts</p></div>
       </div>
       <div className="glass-card flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-        <div><h2 className="flex items-center gap-2 text-sm font-semibold text-text-primary"><Bell className="h-4 w-4 text-primary" />Email alerts</h2><p className="mt-1 text-xs leading-5 text-text-muted">Request a private email link to change preferences or unsubscribe. Each alert channel is managed separately.</p><Link href="/subscribe" className="mt-2 inline-block text-xs text-primary underline">Start a new email subscription</Link></div>
-        <Link href="/subscribe/manage" className="shrink-0 rounded-lg bg-primary px-4 py-2 text-center text-xs font-semibold text-background">Manage or stop email alerts</Link>
+        <div><h2 className="flex items-center gap-2 text-sm font-semibold text-text-primary"><Bell className="h-4 w-4 text-primary-ink" />Email alerts</h2><p className="mt-1 text-xs leading-5 text-text-muted">Request a private email link to change preferences or unsubscribe. Each alert channel is managed separately.</p><Link href="/subscribe" className="mt-2 inline-block text-xs text-primary-ink underline">Start a new email subscription</Link></div>
+        <Link href="/subscribe/manage" className="shrink-0 rounded-lg bg-primary px-4 py-2 text-center text-xs font-semibold text-on-primary">Manage or stop email alerts</Link>
       </div>
       <SlackConnection />
       <BrowserPushControl />

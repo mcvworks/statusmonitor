@@ -55,7 +55,7 @@ export function SubscriptionForm({ compact = false }: { compact?: boolean }) {
   if (state === "sent") {
     return (
       <div className="flex items-start gap-3 rounded-xl border border-secondary/30 bg-secondary/5 p-4" role="status">
-        <Check className="mt-0.5 h-5 w-5 shrink-0 text-secondary" />
+        <Check className="mt-0.5 h-5 w-5 shrink-0 text-secondary-ink" />
         <div>
           <p className="font-semibold text-text-primary">Check your inbox</p>
           <p className="mt-1 text-sm text-text-secondary">Click the confirmation link we sent to {email}. Alerts begin only after you confirm.</p>
@@ -84,7 +84,7 @@ export function SubscriptionForm({ compact = false }: { compact?: boolean }) {
               className="w-full rounded-lg border border-border bg-surface-input py-2.5 pl-10 pr-3 text-sm text-text-primary outline-none transition focus:border-primary"
             />
           </div>
-          <button disabled={state === "sending" || severities.length === 0} className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-background transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">
+          <button disabled={state === "sending" || severities.length === 0} className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">
             <Bell className="h-4 w-4" />
             {state === "sending" ? "Sending…" : "Get alerts"}
           </button>
@@ -95,7 +95,7 @@ export function SubscriptionForm({ compact = false }: { compact?: boolean }) {
         <legend className="mb-2 text-sm font-medium text-text-primary">Alert severity</legend>
         <div className="flex flex-wrap gap-2">
           {ALERT_SEVERITIES.map((severity) => (
-            <button key={severity} type="button" aria-pressed={severities.includes(severity)} onClick={() => toggle(severities, severity, setSeverities)} className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${severities.includes(severity) ? "border-primary bg-primary/10 text-primary" : "border-border text-text-secondary hover:border-text-muted"}`}>
+            <button key={severity} type="button" aria-pressed={severities.includes(severity)} onClick={() => toggle(severities, severity, setSeverities)} className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${severities.includes(severity) ? "border-primary bg-primary/10 text-primary-ink" : "border-border text-text-secondary hover:border-text-muted"}`}>
               {SEVERITY_LABELS[severity]}
             </button>
           ))}
@@ -105,20 +105,20 @@ export function SubscriptionForm({ compact = false }: { compact?: boolean }) {
       <div>
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-medium text-text-primary">Providers</p>
-          <button type="button" onClick={() => setShowProviders(!showProviders)} className="text-xs text-primary hover:underline">
+          <button type="button" onClick={() => setShowProviders(!showProviders)} className="text-xs text-primary-ink hover:underline">
             {showProviders ? "Hide providers" : "Choose providers"}
           </button>
         </div>
         <p className="mt-1 text-xs text-text-muted">{sources.length === 0 ? "All monitored providers" : `${sources.length} provider${sources.length === 1 ? "" : "s"} selected`}</p>
         {showProviders && (
           <div className="mt-3 max-h-72 space-y-4 overflow-y-auto rounded-xl border border-border bg-surface-input p-4">
-            <button type="button" onClick={() => setSources([])} className={`rounded-full border px-3 py-1.5 text-xs transition ${sources.length === 0 ? "border-secondary bg-secondary/10 text-secondary" : "border-border text-text-secondary"}`}>All providers</button>
+            <button type="button" onClick={() => setSources([])} className={`rounded-full border px-3 py-1.5 text-xs transition ${sources.length === 0 ? "border-secondary bg-secondary/10 text-secondary-ink" : "border-border text-text-secondary"}`}>All providers</button>
             {Object.entries(groups).map(([category, providers]) => (
               <div key={category}>
                 <p className="mb-2 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-text-muted">{category}</p>
                 <div className="flex flex-wrap gap-2">
                   {providers.map(([key, provider]) => (
-                    <button key={key} type="button" aria-pressed={sources.includes(key)} onClick={() => toggle(sources, key, setSources)} className={`rounded-full border px-3 py-1.5 text-xs transition ${sources.includes(key) ? "border-primary bg-primary/10 text-primary" : "border-border text-text-secondary hover:border-text-muted"}`}>
+                    <button key={key} type="button" aria-pressed={sources.includes(key)} onClick={() => toggle(sources, key, setSources)} className={`rounded-full border px-3 py-1.5 text-xs transition ${sources.includes(key) ? "border-primary bg-primary/10 text-primary-ink" : "border-border text-text-secondary hover:border-text-muted"}`}>
                       {provider.name}
                     </button>
                   ))}
@@ -129,13 +129,13 @@ export function SubscriptionForm({ compact = false }: { compact?: boolean }) {
         )}
       </div>
 
-      {error && <p className="text-sm text-critical" role="alert">{error}</p>}
+      {error && <p className="text-sm text-critical-ink" role="alert">{error}</p>}
       <p className="text-xs leading-5 text-text-muted">No password. Alerts start after you confirm your email. Every alert email has a link to manage preferences or unsubscribe.{" "}
-        <a href="https://ducktyped.xyz/privacy/" className="underline transition-colors hover:text-primary">
+        <a href="https://ducktyped.xyz/privacy/" className="underline transition-colors hover:text-primary-ink">
           Privacy policy
         </a>
       </p>
-      <p className="text-sm text-text-secondary">Already subscribed? <Link href="/subscribe/manage" className="text-primary underline">Manage or stop email alerts</Link>.</p>
+      <p className="text-sm text-text-secondary">Already subscribed? <Link href="/subscribe/manage" className="text-primary-ink underline">Manage or stop email alerts</Link>.</p>
     </form>
   );
 }

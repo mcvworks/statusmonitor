@@ -31,7 +31,7 @@ export function RequestManageLinkForm() {
       <h2 className="font-semibold text-text-primary">Check your inbox</h2>
       <p className="text-sm text-text-secondary">If {email} has an email subscription, we sent a private link to manage or stop its alerts. Check your spam folder too.</p>
       <p className="text-sm text-text-muted">Requesting a link does not start, stop, or change any alerts.</p>
-      <button type="button" onClick={() => setState("idle")} className="text-sm text-primary underline">Use a different email address</button>
+      <button type="button" onClick={() => setState("idle")} className="text-sm text-primary-ink underline">Use a different email address</button>
     </div>
   );
 
@@ -42,10 +42,10 @@ export function RequestManageLinkForm() {
         <label htmlFor="manage-alert-email" className="mb-2 block text-sm font-medium text-text-primary">Email address</label>
         <input id="manage-alert-email" type="email" required autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} disabled={state === "sending"} className="w-full rounded-lg border border-border bg-surface-input px-3 py-2.5 text-sm text-text-primary outline-none focus:border-primary" />
       </div>
-      <button disabled={state === "sending"} className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-background disabled:opacity-50">{state === "sending" ? "Sending…" : "Email me a management link"}</button>
-      {error && <p role="alert" className="text-sm text-critical">{error}</p>}
+      <button disabled={state === "sending"} className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary disabled:opacity-50">{state === "sending" ? "Sending…" : "Email me a management link"}</button>
+      {error && <p role="alert" className="text-sm text-critical-ink">{error}</p>}
       <p className="text-xs leading-5 text-text-muted">No account or password needed. This form does not subscribe you. You can also use the Unsubscribe link in any alert email.</p>
-      <p className="text-xs text-text-muted">Looking for browser, Slack, or Teams alerts? <Link href="/dashboard/settings" className="text-primary underline">Open alert settings</Link>.</p>
+      <p className="text-xs text-text-muted">Looking for browser, Slack, or Teams alerts? <Link href="/dashboard/settings" className="text-primary-ink underline">Open alert settings</Link>.</p>
     </form>
   );
 }
