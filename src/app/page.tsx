@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Activity, AlertTriangle, Clock, Shield } from "lucide-react";
-import { prisma } from "@/lib/db";
+import { getDashboardSummary } from "@/lib/dashboard-summary";
 import { PROVIDERS } from "@/lib/constants";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
 import { HealthBanner } from "@/components/dashboard/HealthBanner";
@@ -21,28 +21,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://monitor.ducktyped.xyz" },
 };
 
-async function getStats() {
-  const [activeCount, securityCount, lastPoll] = await Promise.all([
-    prisma.alert.count({
-      where: {
-        status: { not: "resolved" },
-        signalKind: { in: ["incident", "internet_outage"] },
-      },
-    }),
-    prisma.alert.count({
-      where: { signalKind: "advisory", status: { not: "resolved" } },
-    }),
-    prisma.pollLog.findFirst({
-      orderBy: { completedAt: "desc" },
-      where: { completedAt: { not: null } },
-      select: { completedAt: true },
-    }),
-  ]);
-
-  return { activeCount, securityCount, lastPoll: lastPoll?.completedAt };
-}
-
-function formatPollTime(date: Date | null | undefined): string {
+function formatPollTime(date: string | null): string {
   if (!date) return "—";
   const diff = Date.now() - new Date(date).getTime();
   const mins = Math.floor(diff / 60_000);
@@ -52,7 +31,7 @@ function formatPollTime(date: Date | null | undefined): string {
 }
 
 export default async function Home() {
-  const { activeCount, securityCount, lastPoll } = await getStats();
+  const { activeCount, securityCount, lastPollAt: lastPoll } = await getDashboardSummary();
 
   return (
     <div className="space-y-6">
