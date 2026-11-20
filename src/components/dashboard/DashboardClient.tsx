@@ -7,7 +7,6 @@ import { useSSE } from "@/hooks/useSSE";
 import {
   DASHBOARD_SUMMARY_KEY,
   useDashboardSummary,
-  type SummaryEnvelope,
 } from "@/hooks/useDashboardSummary";
 import type { DashboardSummary } from "@/lib/dashboard-snapshot";
 import { LiveIndicator } from "./LiveIndicator";
@@ -35,14 +34,7 @@ export function DashboardClient({
   // refresh inside useDashboardSummary keep it current from then on.
   const fallback = useMemo(
     () =>
-      initialSummary
-        ? {
-            [DASHBOARD_SUMMARY_KEY]: {
-              summary: initialSummary,
-              receivedAt: null,
-            } satisfies SummaryEnvelope,
-          }
-        : {},
+      initialSummary ? { [DASHBOARD_SUMMARY_KEY]: initialSummary } : {},
     [initialSummary],
   );
 

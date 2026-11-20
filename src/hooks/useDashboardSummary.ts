@@ -16,13 +16,7 @@ const REFRESH_MS = 30_000;
 const OUT_OF_DATE_MS = 3 * 60_000;
 const CLOCK_TICK_MS = 15_000;
 
-export interface SummaryEnvelope {
-  summary: DashboardSummary;
-  /** Browser time when this snapshot arrived; null for the server render. */
-  receivedAt: number | null;
-}
-
-async function fetchSummary(url: string): Promise<SummaryEnvelope> {
+async function fetchSummary(url: string): Promise<DashboardSummary> {
   const response = await fetch(url, { cache: "no-store" });
   // A failed response must surface as an error, never as an empty summary.
   if (!response.ok) {
@@ -42,14 +36,17 @@ async function fetchSummary(url: string): Promise<SummaryEnvelope> {
   ) {
     throw new Error("Summary response was incomplete");
   }
-  return { summary: summary as DashboardSummary, receivedAt: Date.now() };
+  // Publish the time at delivery before SWR renders the new data. The last
+  // relative-time tick may predate the deadline of a slow response.
+  updateClock();
+  return summary as DashboardSummary;
 }
 
-function snapshotLifetimeMs(summary: DashboardSummary): number {
-  if (!summary.freshnessExpiresAt) return OUT_OF_DATE_MS;
-  const untilSourceExpires =
-    Date.parse(summary.freshnessExpiresAt) - Date.parse(summary.generatedAt);
-  return Math.min(OUT_OF_DATE_MS, untilSourceExpires);
+function snapshotDeadlineMs(summary: DashboardSummary): number {
+  const snapshotDeadline = Date.parse(summary.generatedAt) + OUT_OF_DATE_MS;
+  return summary.freshnessExpiresAt
+    ? Math.min(snapshotDeadline, Date.parse(summary.freshnessExpiresAt))
+    : snapshotDeadline;
 }
 
 // ─── Shared ticking clock ──────────────────────────────────────
@@ -57,7 +54,6 @@ function snapshotLifetimeMs(summary: DashboardSummary): number {
 // useSyncExternalStore so render stays pure and hydration matches the server.
 
 let clockNow = 0;
-let clockStartedAt = 0;
 let clockTimer: ReturnType<typeof setInterval> | undefined;
 const clockListeners = new Set<() => void>();
 
@@ -70,13 +66,12 @@ function updateClock() {
 
 function subscribeClock(
   listener: () => void,
-  lifetimeMs: number | null,
-  receivedAt: number | null,
+  deadline: number | null,
 ) {
+  // A later-hydrating component must not use a tick from before its mount.
+  updateClock();
   clockListeners.add(listener);
   if (!clockTimer) {
-    clockNow = Date.now();
-    if (clockStartedAt === 0) clockStartedAt = clockNow;
     clockTimer = setInterval(updateClock, CLOCK_TICK_MS);
     document.addEventListener("visibilitychange", updateClock);
   }
@@ -84,11 +79,8 @@ function subscribeClock(
   // Source deadlines rarely align with relative-time ticks. Wake the shared
   // clock at expiry even when the refresh is still in flight.
   let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
-  if (lifetimeMs !== null) {
-    const deadline = (receivedAt ?? clockStartedAt) + lifetimeMs;
-    if (deadline > clockNow) {
-      deadlineTimer = setTimeout(updateClock, Math.max(0, deadline - Date.now()));
-    }
+  if (deadline !== null && deadline > clockNow) {
+    deadlineTimer = setTimeout(updateClock, Math.max(0, deadline - Date.now()));
   }
 
   return () => {
@@ -108,11 +100,7 @@ const readServerClock = () => 0;
 export interface DashboardSummaryState {
   /** Null until a snapshot has loaded. Never a made-up zero. */
   summary: DashboardSummary | null;
-  /**
-   * "Now" on the server's clock: the snapshot time plus the time elapsed in
-   * this browser since it arrived. Relative times stay right even when the
-   * visitor's own clock is wrong.
-   */
+  /** Snapshot time on the server render, then the current browser UTC time. */
   nowMs: number | null;
   /** True while the first snapshot is still loading. */
   isLoading: boolean;
@@ -123,29 +111,26 @@ export interface DashboardSummaryState {
 }
 
 export function useDashboardSummary(enabled = true): DashboardSummaryState {
-  const { data, error, isLoading } = useSWR<SummaryEnvelope>(
+  const { data, error, isLoading } = useSWR<DashboardSummary>(
     enabled ? DASHBOARD_SUMMARY_KEY : null,
     fetchSummary,
     { refreshInterval: REFRESH_MS },
   );
-  const lifetimeMs = data ? snapshotLifetimeMs(data.summary) : null;
-  const receivedAt = data?.receivedAt ?? null;
+  const deadline = data ? snapshotDeadlineMs(data) : null;
   const subscribe = useCallback(
-    (listener: () => void) => subscribeClock(listener, lifetimeMs, receivedAt),
-    [lifetimeMs, receivedAt],
+    (listener: () => void) => subscribeClock(listener, deadline),
+    [deadline],
   );
   const clock = useSyncExternalStore(enabled ? subscribe : subscribeNever, readClock, readServerClock);
-  return getDashboardSummaryState(data, !!error, isLoading, clock, clockStartedAt);
+  return getDashboardSummaryState(data, !!error, isLoading, clock);
 }
 
 export function getDashboardSummaryState(
-  data: SummaryEnvelope | undefined,
+  summary: DashboardSummary | undefined,
   failed: boolean,
   loading: boolean,
   clock: number,
-  startedAt: number,
 ): DashboardSummaryState {
-  const summary = data?.summary ?? null;
   if (!summary) {
     return {
       summary: null,
@@ -156,19 +141,16 @@ export function getDashboardSummaryState(
     };
   }
 
-  const generatedAtMs = new Date(summary.generatedAt).getTime();
-  // Before the clock starts (server render and hydration) no time has passed.
-  const elapsed =
-    clock === 0
-      ? 0
-      : Math.max(0, clock - (data?.receivedAt ?? startedAt));
+  // Match the server HTML during hydration. Once subscribed, the clock
+  // is already at the actual browser time, including pre-hydration delay.
+  const nowMs = clock || Date.parse(summary.generatedAt);
 
   return {
     summary,
-    nowMs: generatedAtMs + elapsed,
+    nowMs,
     isLoading: false,
     isError: failed,
-    isLastKnown: failed || elapsed >= snapshotLifetimeMs(summary),
+    isLastKnown: failed || nowMs >= snapshotDeadlineMs(summary),
   };
 }
 
