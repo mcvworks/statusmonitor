@@ -30,6 +30,8 @@ const summary = buildDashboardSummary({
   advisoriesRecent: 0,
 });
 
+const servedAt = now.getTime();
+const summarySample = { summary, servedAt, requestStartedAt: null };
 const feedData = {
   alerts: [{
     id: "example-alert",
@@ -46,7 +48,7 @@ const feedData = {
 
 test("a failed refresh renders a cached all-clear as last known in the Console", () => {
   const cache = new Map([[DASHBOARD_SUMMARY_KEY, {
-    data: summary,
+    data: summarySample,
     error: new Error("Summary request failed"),
   }]]);
   const markup = renderToStaticMarkup(createElement(
@@ -89,7 +91,7 @@ test("sidebar uses the summary on the homepage and the alert feed on other route
       { value: pathname },
       createElement(
         SWRConfig,
-        { value: { fallback: { [DASHBOARD_SUMMARY_KEY]: summary, "/api/alerts": feedData } } },
+        { value: { fallback: { [DASHBOARD_SUMMARY_KEY]: summarySample, "/api/alerts": feedData } } },
         createElement(Sidebar, { collapsed: false, onToggle: () => {} }),
       ),
     ));
@@ -128,15 +130,18 @@ function withSourceUnavailable(dataState: "stale" | "unverified") {
     status: "unknown",
   };
   return {
-    ...summary,
-    coverage: { ...summary.coverage, fresh: 0, [coverage]: 1 },
-    providers: [provider],
+    ...summarySample,
+    summary: {
+      ...summary,
+      coverage: { ...summary.coverage, fresh: 0, [coverage]: 1 },
+      providers: [provider],
+    },
   };
 }
 
 function renderProviderDetail(
   alerts: State<unknown>,
-  snapshot: State<unknown> = { data: summary },
+  snapshot: State<unknown> = { data: summarySample },
 ) {
   const cache = new Map([
     [DASHBOARD_SUMMARY_KEY, snapshot],
@@ -183,7 +188,7 @@ test("provider detail requires current verified source data even after a success
     /Waiting for a verified source poll/,
   );
   assertUnknownDetail(
-    renderProviderDetail(emptyAlerts, { data: summary, error: new Error("refresh failed") }),
+    renderProviderDetail(emptyAlerts, { data: summarySample, error: new Error("refresh failed") }),
     /Current provider status is unavailable/,
   );
   const lastObservedAt = new Date(now.getTime() + 1000).toISOString();

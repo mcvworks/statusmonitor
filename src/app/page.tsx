@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import {
-  getDashboardSummary,
-  type DashboardSummary,
-} from "@/lib/dashboard-summary";
+import { getDashboardSummary } from "@/lib/dashboard-summary";
+import type { SummarySample } from "@/lib/dashboard-summary-clock";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
 import { SubscriptionForm } from "@/components/subscriptions/SubscriptionForm";
 
@@ -20,9 +18,10 @@ export const metadata: Metadata = {
 export default async function Home() {
   // If the snapshot cannot be read the page still renders, and the summary
   // says so. It never falls back to zeros.
-  let initialSummary: DashboardSummary | null = null;
+  let initialSummary: SummarySample | null = null;
   try {
-    initialSummary = await getDashboardSummary();
+    const summary = await getDashboardSummary();
+    initialSummary = { summary, servedAt: Date.now(), requestStartedAt: null };
   } catch (error) {
     console.error("Dashboard summary failed", error);
   }

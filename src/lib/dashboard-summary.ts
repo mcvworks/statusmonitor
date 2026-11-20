@@ -94,6 +94,21 @@ export async function readDashboardSummary(
         })).map(({ source }) => source),
   );
 
+  const radarSource = "cloudflare-radar";
+  const radarPoll = pollByProvider.get(radarSource);
+  // Radar's window and record cap can omit an outage that has no end date.
+  // Keep the coverage gap until the record is observed again or explicitly
+  // resolved, without promoting the older observation to a current outage.
+  const omittedRadarOutage = radarPoll && await db.alert.findFirst({
+    where: {
+      source: radarSource,
+      signalKind: "internet_outage",
+      status: { not: "resolved" },
+      lastObservedAt: { lt: radarPoll.startedAt },
+    },
+    select: { id: true },
+  });
+
   // Same freshness windows as /api/providers/health. A source listed in the
   // registry without an adapter has no window and can never count as fresh.
   const sources: SummarySourceInput[] = Object.entries(PROVIDERS).map(
@@ -111,6 +126,7 @@ export async function readDashboardSummary(
         state: stateByProvider.get(key) ?? null,
         successfulPoll: pollByProvider.get(key) ?? null,
         hasUnverifiedObservations: unverifiedSources.has(key),
+        hasOmittedOutage: key === radarSource && Boolean(omittedRadarOutage),
       };
     },
   );

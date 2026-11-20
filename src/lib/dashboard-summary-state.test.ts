@@ -1,37 +1,43 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { getDashboardSummaryState } from "../hooks/useDashboardSummary";
+import { advanceSummaryClock, summaryTiming, type SummarySample } from "./dashboard-summary-clock";
 import { buildDashboardSummary, type SummarySourceInput } from "./dashboard-snapshot";
 
 const generatedAt = new Date("2026-11-20T03:00:00Z");
-const summary = buildDashboardSummary({
-  now: generatedAt,
+const empty = {
   lastPollAt: null,
   sources: [],
   openAlerts: [],
   advisoriesOpen: 0,
   advisoriesRecent: 0,
-});
+};
+const summary = buildDashboardSummary({ ...empty, now: generatedAt });
+const sample: SummarySample = {
+  summary,
+  servedAt: generatedAt.getTime(),
+  requestStartedAt: 100,
+};
 
 test("a failed refresh immediately makes a cached zero last known", () => {
-  const failed = getDashboardSummaryState(summary, true, false, generatedAt.getTime() + 1);
+  const clock = advanceSummaryClock(null, 101, sample);
+  const failed = getDashboardSummaryState(sample, true, false, clock);
   assert.equal(failed.summary, summary);
   assert.equal(failed.isLastKnown, true);
   assert.equal(failed.isError, true);
-
-  const recovered = getDashboardSummaryState(summary, false, false, generatedAt.getTime() + 2);
-  assert.equal(recovered.isLastKnown, false);
+  assert.equal(getDashboardSummaryState(sample, false, false, clock).isLastKnown, false);
 });
 
-test("an expired snapshot stays last known while its replacement is pending", () => {
-  const expiresAt = generatedAt.getTime() + 180_000;
-  assert.equal(getDashboardSummaryState(summary, false, true, expiresAt - 1).isLastKnown, false);
-  assert.equal(getDashboardSummaryState(summary, false, true, expiresAt).isLastKnown, true);
+test("the general snapshot lifetime also runs from generation", () => {
+  const cached = { ...sample, servedAt: sample.servedAt + 10_000 };
+  const clock = advanceSummaryClock(null, 100, cached);
+  assert.equal(getDashboardSummaryState(cached, false, true, advanceSummaryClock(clock, 170_099)).isLastKnown, false);
+  assert.equal(getDashboardSummaryState(cached, false, true, advanceSummaryClock(clock, 170_100)).isLastKnown, true);
 });
 
 test("loading and failure without a snapshot have no count", () => {
-  const loading = getDashboardSummaryState(undefined, false, true, 0);
-  const failed = getDashboardSummaryState(undefined, true, true, 0);
+  const loading = getDashboardSummaryState(undefined, false, true, null);
+  const failed = getDashboardSummaryState(undefined, true, true, null);
   assert.equal(loading.summary, null);
   assert.equal(loading.isLoading, true);
   assert.equal(failed.summary, null);
@@ -50,60 +56,70 @@ const source: SummarySourceInput = {
   state: { lastSuccessAt: pollCompletedAt, lastError: null, consecutiveFailures: 0 },
 };
 const sourceSnapshot = {
+  ...empty,
   now: new Date(deadline - 5_000),
   lastPollAt: pollCompletedAt,
   sources: [source, { ...source, key: "aws", freshnessWindowMs: 15 * 60_000 }],
-  openAlerts: [],
-  advisoriesOpen: 0,
-  advisoriesRecent: 0,
 };
-const cached = buildDashboardSummary(sourceSnapshot);
+const cached: SummarySample = {
+  summary: buildDashboardSummary(sourceSnapshot),
+  servedAt: sourceSnapshot.now.getTime(),
+  requestStartedAt: 100,
+};
 
-test("a cached source deadline expires during a pending refresh and a new snapshot restores trust", () => {
-  assert.equal(cached.providers[0].status, "operational");
-  assert.equal(cached.freshnessExpiresAt, new Date(deadline).toISOString());
-
-  const justBefore = getDashboardSummaryState(cached, false, false, deadline - 1);
-  assert.equal(justBefore.isLastKnown, false);
-
-  // SWR keeps isLoading false during a revalidation when it has cached data.
-  const atDeadline = getDashboardSummaryState(cached, false, false, deadline);
-  assert.equal(atDeadline.nowMs, deadline);
-  assert.equal(atDeadline.isLastKnown, true);
-
-  const stillPending = getDashboardSummaryState(cached, false, false, deadline + 10_000);
-  assert.equal(stillPending.nowMs, Date.parse("2026-11-20T10:06:10Z"));
-  assert.equal(stillPending.isLastKnown, true);
-  assert.equal(stillPending.isError, false);
-
-  const refreshed = buildDashboardSummary({ ...sourceSnapshot, now: new Date(deadline) });
-  assert.equal(refreshed.freshnessExpiresAt, "2026-11-20T10:15:00.000Z");
-  assert.equal(refreshed.providers[0].coverage, "stale");
-  assert.equal(refreshed.providers[0].status, "unknown");
-  assert.equal(refreshed.providers[1].status, "operational");
-  assert.equal(
-    getDashboardSummaryState(refreshed, false, false, deadline + 11_000).isLastKnown,
-    false,
-  );
+test("a source deadline expires during a pending refresh", () => {
+  assert.equal(cached.summary.freshnessExpiresAt, new Date(deadline).toISOString());
+  const clock = advanceSummaryClock(null, 100, cached);
+  assert.equal(summaryTiming(cached, clock).wakeAt, 5_100);
+  const justBefore = advanceSummaryClock(clock, 5_099);
+  assert.equal(getDashboardSummaryState(cached, false, false, justBefore).isLastKnown, false);
+  const expired = advanceSummaryClock(justBefore, 5_100);
+  assert.equal(getDashboardSummaryState(cached, false, false, expired).isLastKnown, true);
 });
 
-test("a snapshot delivered by the API after the source deadline is already last known", () => {
-  const receipt = deadline + 3_000;
-  const atReceipt = getDashboardSummaryState(cached, false, false, receipt);
-  assert.equal(atReceipt.nowMs, receipt);
-  assert.equal(atReceipt.isLastKnown, true);
-  assert.equal(atReceipt.isError, false);
-  assert.equal(getDashboardSummaryState(cached, false, false, receipt + 1).isLastKnown, true);
+test("API timing includes server cache age, request time, and delayed delivery despite wall clock skew", (t) => {
+  t.mock.method(Date, "now", () => deadline - 60 * 60_000);
+  const transport = { ...cached, servedAt: cached.servedAt + 1_000 };
+  const receipt = advanceSummaryClock(null, 7_100, transport);
+  const state = getDashboardSummaryState(transport, false, false, receipt);
+  assert.equal(state.nowMs, deadline + 3_000);
+  assert.equal(state.isLastKnown, true);
 });
 
-test("delayed hydration checks the original deadline with the first browser clock reading", () => {
-  const serverRender = getDashboardSummaryState(cached, false, false, 0);
-  assert.equal(serverRender.nowMs, deadline - 5_000);
-  assert.equal(serverRender.isLastKnown, false);
+test("hydration includes time since document navigation despite a skewed wall clock", (t) => {
+  t.mock.method(Date, "now", () => deadline - 60 * 60_000);
+  const initial = { ...cached, requestStartedAt: null };
+  assert.equal(getDashboardSummaryState(initial, false, false, null).isLastKnown, false);
+  const hydration = advanceSummaryClock(null, 8_000, initial);
+  assert.equal(getDashboardSummaryState(initial, false, false, hydration).nowMs, deadline + 3_000);
+  assert.equal(getDashboardSummaryState(initial, false, false, hydration).isLastKnown, true);
+});
 
-  const hydration = deadline + 3_000;
-  const hydrated = getDashboardSummaryState(cached, false, false, hydration);
-  assert.equal(hydrated.nowMs, hydration);
-  assert.equal(hydrated.isLastKnown, true);
-  assert.equal(getDashboardSummaryState(cached, false, false, hydration + 1).isLastKnown, true);
+test("clock rollback and a faster replay cannot renew an expired generation", (t) => {
+  const wall = t.mock.method(Date, "now", () => deadline);
+  const expired = advanceSummaryClock(null, 5_100, cached);
+  assert.equal(getDashboardSummaryState(cached, false, false, expired).isLastKnown, true);
+  wall.mock.mockImplementation(() => deadline - 60_000);
+  const fasterReplay = { ...cached, servedAt: deadline - 2_000, requestStartedAt: 5_200 };
+  const replayed = advanceSummaryClock(expired, 5_300, fasterReplay);
+  const rolledBack = advanceSummaryClock(replayed, 100);
+  assert.equal(getDashboardSummaryState(fasterReplay, false, false, rolledBack).isLastKnown, true);
+});
+
+test("a fresh generation recovers after an expired one and the replaced generation stays last known", () => {
+  const expired = advanceSummaryClock(null, 8_100, cached);
+  const refreshed: SummarySample = {
+    summary: buildDashboardSummary({ ...sourceSnapshot, now: new Date(deadline + 4_000) }),
+    servedAt: deadline + 4_000,
+    requestStartedAt: 8_200,
+  };
+  const clock = advanceSummaryClock(expired, 8_250, refreshed);
+  const state = getDashboardSummaryState(refreshed, false, false, clock);
+  assert.equal(state.isLastKnown, false);
+  assert.equal(state.summary?.providers[0].status, "unknown");
+  assert.equal(state.summary?.providers[1].status, "operational");
+
+  const replaced = advanceSummaryClock(null, 100, cached);
+  const newer = advanceSummaryClock(replaced, 101, { ...refreshed, requestStartedAt: 100 });
+  assert.equal(getDashboardSummaryState(cached, false, false, newer).isLastKnown, true);
 });

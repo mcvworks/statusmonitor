@@ -8,7 +8,7 @@ import {
   DASHBOARD_SUMMARY_KEY,
   useDashboardSummary,
 } from "@/hooks/useDashboardSummary";
-import type { DashboardSummary } from "@/lib/dashboard-snapshot";
+import type { SummarySample } from "@/lib/dashboard-summary-clock";
 import { LiveIndicator } from "./LiveIndicator";
 import { SearchFilter, type FilterValues } from "./SearchFilter";
 import { AlertList } from "./AlertList";
@@ -21,7 +21,7 @@ import { ProviderDetailPanel } from "./ProviderDetailPanel";
 
 interface DashboardClientProps {
   /** Server snapshot for the first render; null if it could not be read. */
-  initialSummary: DashboardSummary | null;
+  initialSummary: SummarySample | null;
   /** Email signup, rendered at the end of the rail. */
   children?: React.ReactNode;
 }

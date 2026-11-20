@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import test from "node:test";
+import test, { type TestContext } from "node:test";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "../generated/prisma/client";
 import { readDashboardSummary } from "./dashboard-summary";
+import { CloudflareRadarProvider } from "./providers/cloudflare-radar";
 
 const migrations = [
   "20260313044340_init",
@@ -12,7 +13,7 @@ const migrations = [
   "20260713090000_add_signal_and_provider_health",
 ];
 
-test("the summary stays unverified after a newer observation until that poll succeeds", async (t) => {
+async function createSummaryDb(t: TestContext) {
   const db = new PrismaClient({
     adapter: new PrismaBetterSqlite3({ url: "file::memory:" }),
   });
@@ -24,6 +25,11 @@ test("the summary stays unverified after a newer observation until that poll suc
     }
   }
 
+  return db;
+}
+
+test("the summary stays unverified after a newer observation until that poll succeeds", async (t) => {
+  const db = await createSummaryDb(t);
   const at = (time: string) => new Date(`2026-11-20T${time}Z`);
   const provider = "cloudflare";
   const previous = { startedAt: at("10:00:00"), completedAt: at("10:00:10") };
@@ -92,4 +98,90 @@ test("the summary stays unverified after a newer observation until that poll suc
   assert.equal(recovered.incidents.bySeverity.major, 1);
   assert.equal(recovered.affected[0].id, id);
   assert.equal(recovered.lastPollAt, next.completedAt.toISOString());
+});
+
+
+test("Radar omission leaves coverage incomplete until the adapter reports an explicit end", async (t) => {
+  const db = await createSummaryDb(t);
+  const radar = new CloudflareRadarProvider();
+  const earlier = new Date("2026-11-19T10:00:00Z");
+  const pollStart = new Date("2026-11-20T10:05:00Z");
+  const pollCompletion = new Date("2026-11-20T10:05:05Z");
+  const observation = new Date("2026-11-20T10:05:02Z");
+
+  function mapOutage(id: number, startDate: Date, endDate?: Date) {
+    return radar.mapResponse({
+      success: true,
+      result: { outages: [{
+        id, asn: 1, asnName: "Example ISP", asnLocation: "Example",
+        eventType: "outage", scope: "region", startDate: startDate.toISOString(),
+        endDate: endDate?.toISOString(),
+      }] },
+    })[0];
+  }
+
+  async function saveOutage(id: number, start: Date, observed: Date) {
+    const { metadata, ...record } = mapOutage(id, start);
+    return db.alert.create({
+      data: { ...record, metadata: metadata ? JSON.stringify(metadata) : undefined, lastObservedAt: observed },
+    });
+  }
+
+  for (const provider of [radar.name, "cloudflare"]) {
+    await db.providerState.create({
+      data: { provider, lastAttemptAt: pollStart, lastSuccessAt: pollCompletion },
+    });
+    await db.pollLog.create({
+      data: { provider, startedAt: pollStart, completedAt: pollCompletion },
+    });
+  }
+
+  const omitted = await saveOutage(1, earlier, earlier);
+  await db.alert.create({
+    data: {
+      source: "cloudflare", externalId: "exhaustive-omission", category: "cloud",
+      severity: "major", status: "investigating", title: "Past service disruption",
+      timestamp: earlier, lastObservedAt: earlier,
+    },
+  });
+
+  const read = () => db.$transaction((tx) => readDashboardSummary(tx, pollCompletion));
+  const radarStatus = (snapshot: Awaited<ReturnType<typeof read>>) =>
+    snapshot.providers.find(({ key }) => key === radar.name);
+
+  const missing = await read();
+  assert.equal(radarStatus(missing)?.dataState, "incomplete");
+  assert.equal(radarStatus(missing)?.status, "unknown");
+  assert.equal(missing.observedOutages, 0);
+  assert.equal(missing.incidents.total, 0);
+  assert.equal(missing.affected.length, 0);
+  assert.equal(missing.providers.find(({ key }) => key === "cloudflare")?.status, "operational");
+
+  const observed = await saveOutage(2, pollStart, observation);
+  const mixed = await read();
+  assert.equal(radarStatus(mixed)?.dataState, "incomplete");
+  assert.equal(radarStatus(mixed)?.coverage, "unavailable");
+  assert.equal(radarStatus(mixed)?.status, "outage");
+  assert.equal(mixed.observedOutages, 1);
+  assert.equal(mixed.incidents.total, 0);
+  assert.deepEqual(mixed.affected.map(({ id, confidence }) => ({ id, confidence })), [
+    { id: observed.id, confidence: "observed" },
+  ]);
+
+  for (const { alert, radarId, start } of [
+    { alert: omitted, radarId: 1, start: earlier },
+    { alert: observed, radarId: 2, start: pollStart },
+  ]) {
+    const { status, resolvedAt } = mapOutage(radarId, start, observation);
+    await db.alert.update({
+      where: { id: alert.id },
+      data: { status, resolvedAt, lastObservedAt: observation },
+    });
+  }
+
+  const resolved = await read();
+  assert.equal(radarStatus(resolved)?.dataState, "healthy");
+  assert.equal(radarStatus(resolved)?.status, "operational");
+  assert.equal(resolved.observedOutages, 0);
+  assert.equal(resolved.affected.length, 0);
 });

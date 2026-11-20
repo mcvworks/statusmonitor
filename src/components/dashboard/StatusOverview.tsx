@@ -141,6 +141,7 @@ const UNAVAILABLE_REASONS: Record<SummaryProvider["dataState"], string> = {
   error: "latest check failed",
   not_configured: "not configured",
   unverified: "awaiting a recorded successful poll",
+  incomplete: "prior outage missing from Radar results",
   pending: "awaiting first check",
 };
 
@@ -293,7 +294,7 @@ function AttentionRow({
   /** False once the snapshot is too old: nothing is called fresh any more. */
   trusted: boolean;
 }) {
-  const hasIncident = provider.coverage === "fresh" && provider.incidents > 0;
+  const hasIncident = provider.incidents > 0;
   const label = hasIncident
     ? PROVIDER_STATUS_STYLES[provider.status].label
     : ROLE_LABELS[provider.role];
@@ -316,8 +317,9 @@ function AttentionRow({
     if (provider.observed > 0) {
       details.push(plural(provider.observed, "observed outage"));
     }
+    if (provider.dataState === "incomplete") details.push(UNAVAILABLE_REASONS.incomplete);
     details.push(
-      `${trusted ? "fresh · " : ""}checked ${formatAge(provider.lastSuccessAt, nowMs)}`,
+      `${trusted && provider.coverage === "fresh" ? "fresh · " : ""}checked ${formatAge(provider.lastSuccessAt, nowMs)}`,
     );
   } else if (provider.coverage === "stale") {
     details.push(

@@ -13,6 +13,7 @@ export type SourceDataState =
   | "error"
   | "stale"
   | "unverified"
+  | "incomplete"
   | "not_configured"
   | "pending";
 
@@ -41,6 +42,8 @@ export interface SummarySourceInput {
   freshnessWindowMs: number | null;
   successfulPoll: { startedAt: Date; completedAt: Date } | null;
   hasUnverifiedObservations: boolean;
+  /** A bounded outage feed omitted a previously observed unresolved record. */
+  hasOmittedOutage?: boolean;
   state: {
     lastSuccessAt: Date | null;
     lastError: string | null;
@@ -98,7 +101,7 @@ export interface SummaryAffected {
 
 export interface DashboardSummary {
   generatedAt: string;
-  /** First deadline among the sources counted as fresh in this snapshot. */
+  /** First deadline among fresh sources and verified current observations. */
   freshnessExpiresAt: string | null;
   /** Latest completed poll attempt, including failures. */
   lastPollAt: string | null;
@@ -151,9 +154,8 @@ export function deriveDataState(
     return "stale";
   }
   if (state.consecutiveFailures > 0) return "error";
-  return source.successfulPoll && !source.hasUnverifiedObservations
-    ? "healthy"
-    : "unverified";
+  if (!source.successfulPoll || source.hasUnverifiedObservations) return "unverified";
+  return source.hasOmittedOutage ? "incomplete" : "healthy";
 }
 
 /**
@@ -264,12 +266,15 @@ export function buildDashboardSummary(input: {
     };
     providers.push(provider);
 
-    if (sourceCoverage !== "fresh") {
+    if (sourceCoverage !== "fresh" && dataState !== "incomplete") {
       provider.openAtLastCheck = operational.length;
       continue;
     }
 
-    if (lastSuccessMs !== null && source.freshnessWindowMs !== null) {
+    if (
+      (sourceCoverage === "fresh" || operational.length > 0) &&
+      lastSuccessMs !== null && source.freshnessWindowMs !== null
+    ) {
       freshnessDeadlineMs = Math.min(
         freshnessDeadlineMs,
         lastSuccessMs + source.freshnessWindowMs,
@@ -288,7 +293,7 @@ export function buildDashboardSummary(input: {
     );
     provider.incidents = current.length;
     if (current.length === 0) {
-      provider.status = "operational";
+      if (sourceCoverage === "fresh") provider.status = "operational";
       continue;
     }
 
