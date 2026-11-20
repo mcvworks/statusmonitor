@@ -14,7 +14,12 @@ export function SeverityBadge({ severity }: { severity: AlertSeverity }) {
   return (
     <span
       className="inline-flex items-center rounded-full px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] font-medium uppercase tracking-wider"
-      style={{ color: colors.fg, backgroundColor: colors.bg }}
+      // Where a text-safe ink is defined (the homepage Console in the light
+      // theme) the label uses it; everywhere else the brand color applies.
+      style={{
+        color: `var(--ink-${severity}, ${colors.fg})`,
+        backgroundColor: colors.bg,
+      }}
     >
       <span
         className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full"

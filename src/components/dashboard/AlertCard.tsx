@@ -46,6 +46,13 @@ const SIGNAL_LABELS: Record<SerializedAlertWithState["signalKind"], string> = {
   maintenance: "Maintenance",
 };
 
+const CONFIDENCE_LABELS: Record<SerializedAlertWithState["confidence"], string> = {
+  official: "Official",
+  corroborated: "Corroborated",
+  observed: "Observed",
+  crowdsourced: "Crowdsourced",
+};
+
 interface AlertCardProps {
   alert: SerializedAlertWithState;
   showActions?: boolean;
@@ -76,8 +83,8 @@ function SeverityTrend({
     <span
       className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] ${
         escalating
-          ? "bg-critical/10 text-critical"
-          : "bg-secondary/10 text-secondary"
+          ? "bg-critical/10 text-critical-ink"
+          : "bg-secondary/10 text-secondary-ink"
       }`}
       title={`${escalating ? "Escalated" : "De-escalated"} from ${previous}`}
     >
@@ -120,9 +127,9 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
 
   return (
     <div
-      className={`glass-card p-4 transition-all hover:-translate-y-0.5 hover:shadow-lg ${
-        isResolved ? "opacity-50" : ""
-      } ${isAcknowledged ? "opacity-60" : ""} ${
+      className={`alert-card glass-card @container p-4 transition-all hover:-translate-y-0.5 hover:shadow-lg ${
+        isResolved ? "opacity-70" : ""
+      } ${isAcknowledged ? "opacity-75" : ""} ${
         !isResolved && alert.severity === "critical" ? "alert-pulse" : ""
       }`}
       style={{
@@ -130,7 +137,7 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
         borderLeftColor: severityColor?.fg ?? "#232A35",
       }}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-2 @md:flex-row @md:items-start @md:justify-between @md:gap-3">
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
             <SeverityBadge severity={alert.severity} />
@@ -138,17 +145,17 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
               {SIGNAL_LABELS[alert.signalKind]}
             </span>
             {alert.confidence !== "official" && (
-              <span className="rounded-full bg-surface-input px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-text-muted">
-                {alert.confidence}
+              <span className="rounded-full border border-dashed border-text-muted px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-text-secondary">
+                {CONFIDENCE_LABELS[alert.confidence] ?? alert.confidence}
               </span>
             )}
             {isResolved && (
-              <span className="rounded-full bg-secondary/10 px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-secondary">
+              <span className="rounded-full bg-secondary/10 px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-secondary-ink">
                 Resolved
               </span>
             )}
             {isAcknowledged && (
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-primary">
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-primary-ink">
                 Acknowledged
               </span>
             )}
@@ -160,10 +167,10 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
             )}
           </div>
 
-          <h3 className="text-sm font-medium text-text-primary">
+          <h3 className="text-sm font-medium text-text-primary [overflow-wrap:anywhere]">
             <Link
               href={`/incident/${alert.id}`}
-              className="transition-colors hover:text-primary"
+              className="rounded transition-colors hover:text-primary-ink"
             >
               {alert.title}
             </Link>
@@ -179,19 +186,19 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
             </span>
             {alert.region && (
               <>
-                <span className="text-border">|</span>
+                <span className="hidden text-border @md:inline" aria-hidden="true">|</span>
                 <span>{alert.region}</span>
               </>
             )}
-            <span className="text-border">|</span>
+            <span className="hidden text-border @md:inline" aria-hidden="true">|</span>
             <span>{formatRelativeTime(alert.timestamp)}</span>
-            <span className="text-border">|</span>
+            <span className="hidden text-border @md:inline" aria-hidden="true">|</span>
             <span title={alert.lastObservedAt}>
               verified {formatRelativeTime(alert.lastObservedAt)}
             </span>
             {!isResolved && avgResolutionMin != null && (
               <>
-                <span className="text-border">|</span>
+                <span className="hidden text-border @md:inline" aria-hidden="true">|</span>
                 <span className="text-text-secondary">
                   ~{formatDuration(avgResolutionMin)} avg resolution
                 </span>
@@ -200,7 +207,7 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
           </div>
 
           {alert.description && (
-            <p className="mt-2 text-xs leading-relaxed text-text-secondary">
+            <p className="mt-2 text-xs leading-relaxed text-text-secondary [overflow-wrap:anywhere]">
               {expanded
                 ? alert.description
                 : truncate(alert.description, 140)}
@@ -222,9 +229,9 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
                 href={alert.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 font-[family-name:var(--font-mono)] text-[10px] text-text-muted transition-colors hover:text-text-primary"
+                className="inline-flex items-center gap-1 rounded font-[family-name:var(--font-mono)] text-[11px] text-text-muted underline-offset-2 transition-colors hover:text-text-primary hover:underline"
               >
-                <ExternalLink className="h-2.5 w-2.5" />
+                <ExternalLink className="h-2.5 w-2.5" aria-hidden="true" />
                 Incident details
               </a>
             )}
@@ -237,9 +244,9 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
                 }
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 font-[family-name:var(--font-mono)] text-[10px] text-text-muted transition-colors hover:text-text-primary"
+                className="inline-flex items-center gap-1 rounded font-[family-name:var(--font-mono)] text-[11px] text-text-muted underline-offset-2 transition-colors hover:text-text-primary hover:underline"
               >
-                <ExternalLink className="h-2.5 w-2.5" />
+                <ExternalLink className="h-2.5 w-2.5" aria-hidden="true" />
                 {isResolved ? "Status history" : `${providerName} status`}
               </a>
             )}
@@ -248,9 +255,9 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
                 href={`https://downdetector.com/status/${provider.downdetectorSlug}/`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 font-[family-name:var(--font-mono)] text-[10px] text-text-muted transition-colors hover:text-text-primary"
+                className="inline-flex items-center gap-1 rounded font-[family-name:var(--font-mono)] text-[11px] text-text-muted underline-offset-2 transition-colors hover:text-text-primary hover:underline"
               >
-                <ExternalLink className="h-2.5 w-2.5" />
+                <ExternalLink className="h-2.5 w-2.5" aria-hidden="true" />
                 User reports
               </a>
             )}
@@ -287,7 +294,7 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
           )}
         </div>
 
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1 self-end @md:self-start">
           <ShareMenu
             url={`/incident/${alert.id}`}
             title={`${providerName}: ${alert.title}`}
@@ -311,7 +318,7 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
                 <>
                   <button
                     onClick={() => acknowledge(alert.id)}
-                    className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-secondary/10 hover:text-secondary"
+                    className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-secondary/10 hover:text-secondary-ink"
                     aria-label="Acknowledge"
                     title="Acknowledge"
                   >
@@ -320,8 +327,9 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
                   <div className="relative">
                     <button
                       onClick={() => setSnoozeOpen(!snoozeOpen)}
-                      className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-primary/10 hover:text-primary"
+                      className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-primary/10 hover:text-primary-ink"
                       aria-label="Snooze"
+                      aria-expanded={snoozeOpen}
                       title="Snooze"
                     >
                       <Clock className="h-3.5 w-3.5" />
@@ -342,7 +350,7 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
                   </div>
                   <button
                     onClick={() => dismiss(alert.id)}
-                    className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-critical/10 hover:text-critical"
+                    className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-critical/10 hover:text-critical-ink"
                     aria-label="Dismiss"
                     title="Dismiss"
                   >
@@ -357,7 +365,9 @@ export function AlertCard({ alert, showActions = true, avgResolutionMin }: Alert
             <button
               onClick={() => setExpanded(!expanded)}
               className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary"
-              aria-label={expanded ? "Collapse" : "Expand"}
+              aria-label={expanded ? "Collapse description" : "Expand description"}
+              aria-expanded={expanded}
+              title={expanded ? "Collapse description" : "Expand description"}
             >
               {expanded ? (
                 <ChevronUp className="h-3.5 w-3.5" />

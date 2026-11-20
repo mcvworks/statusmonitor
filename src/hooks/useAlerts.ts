@@ -21,7 +21,15 @@ interface AlertsResponse {
   avgResolutionBySource: Record<string, number>;
 }
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+// A failed response must surface as an error. Parsed as data it would look
+// like an empty feed, which reads as "nothing is wrong".
+const fetcher = async (url: string) => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Alert request failed with ${response.status}`);
+  }
+  return response.json();
+};
 
 function buildUrl(filters: AlertFilters): string {
   const params = new URLSearchParams();
@@ -34,8 +42,8 @@ function buildUrl(filters: AlertFilters): string {
   return `/api/alerts${qs ? `?${qs}` : ""}`;
 }
 
-export function useAlerts(filters: AlertFilters = {}) {
-  const url = buildUrl(filters);
+export function useAlerts(filters: AlertFilters = {}, enabled = true) {
+  const url = enabled ? buildUrl(filters) : null;
   const { data, error, isLoading, mutate } = useSWR<AlertsResponse>(
     url,
     fetcher,
@@ -47,6 +55,7 @@ export function useAlerts(filters: AlertFilters = {}) {
     total: data?.total ?? 0,
     hasMore: data?.hasMore ?? false,
     avgResolutionBySource: data?.avgResolutionBySource ?? {},
+    hasData: Array.isArray(data?.alerts),
     isLoading,
     isError: !!error,
     mutate,

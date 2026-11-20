@@ -1,13 +1,7 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Activity, AlertTriangle, Clock, Shield } from "lucide-react";
-import { prisma } from "@/lib/db";
-import { PROVIDERS } from "@/lib/constants";
+import { getTimedDashboardSummary } from "@/lib/dashboard-summary";
+import type { SummarySample } from "@/lib/dashboard-summary-clock";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
-import { HealthBanner } from "@/components/dashboard/HealthBanner";
-import { NewsTicker } from "@/components/dashboard/NewsTicker";
-import { SeveritySummaryBar } from "@/components/dashboard/SeveritySummaryBar";
 import { SubscriptionForm } from "@/components/subscriptions/SubscriptionForm";
 
 // Rendered per-request: stats/incident lists must be live, not frozen
@@ -21,135 +15,39 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://monitor.ducktyped.xyz" },
 };
 
-async function getStats() {
-  const [activeCount, securityCount, lastPoll] = await Promise.all([
-    prisma.alert.count({
-      where: {
-        status: { not: "resolved" },
-        signalKind: { in: ["incident", "internet_outage"] },
-      },
-    }),
-    prisma.alert.count({
-      where: { signalKind: "advisory", status: { not: "resolved" } },
-    }),
-    prisma.pollLog.findFirst({
-      orderBy: { completedAt: "desc" },
-      where: { completedAt: { not: null } },
-      select: { completedAt: true },
-    }),
-  ]);
-
-  return { activeCount, securityCount, lastPoll: lastPoll?.completedAt };
-}
-
-function formatPollTime(date: Date | null | undefined): string {
-  if (!date) return "—";
-  const diff = Date.now() - new Date(date).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return "Just now";
-  if (mins === 1) return "1 min ago";
-  return `${mins} min ago`;
-}
-
 export default async function Home() {
-  const { activeCount, securityCount, lastPoll } = await getStats();
+  // If the snapshot cannot be read the page still renders, and the summary
+  // says so. It never falls back to zeros.
+  let initialSummary: SummarySample | null = null;
+  try {
+    initialSummary = await getTimedDashboardSummary();
+  } catch (error) {
+    console.error("Dashboard summary failed", error);
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Live incident wire */}
-      <NewsTicker />
-
-      {/* Hero */}
-      <div className="glass-card corner-brackets relative overflow-hidden rounded-2xl p-6 lg:p-8">
-        <div className="relative z-10">
-          <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-wide text-primary lg:text-3xl">
-            Live Cloud &amp; SaaS Service Status
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-text-secondary">
-            Monitor cloud platforms, DevOps tools, security
-            advisories, and ISP connectivity.
-          </p>
-          <Link
-            href="/status"
-            className="mt-3 inline-flex font-[family-name:var(--font-mono)] text-xs text-primary hover:underline"
-          >
-            Browse all provider status pages →
-          </Link>
-        </div>
-        {/* Radial glow */}
-        <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-[radial-gradient(circle,rgba(242,194,0,0.06),transparent_70%)]" />
-      </div>
-
+    <DashboardClient initialSummary={initialSummary}>
       {/* Passwordless email alert signup */}
-      <section className="glass-card rounded-2xl p-5 lg:p-6" aria-labelledby="email-alerts-heading">
-        <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
-          <div>
-            <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-widest text-secondary">Automated alerts</p>
-            <h2 id="email-alerts-heading" className="mt-2 text-xl font-semibold text-text-primary">Follow outages and security advisories</h2>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">Choose providers and severity, confirm your email, and receive matching alerts as source updates are collected. No account required. Manage preferences or unsubscribe anytime.</p>
-          </div>
-          <SubscriptionForm compact />
-        </div>
-      </section>
-
-      {/* Summary cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <SummaryCard
-          icon={<Activity className="h-5 w-5 text-secondary" />}
-          label="Services Monitored"
-          value={String(Object.keys(PROVIDERS).length)}
-        />
-        <SummaryCard
-          icon={<AlertTriangle className="h-5 w-5 text-critical" />}
-          label="Active Incidents"
-          value={String(activeCount)}
-        />
-        <SummaryCard
-          icon={<Clock className="h-5 w-5 text-minor" />}
-          label="Last Poll"
-          value={formatPollTime(lastPoll)}
-        />
-        <SummaryCard
-          icon={<Shield className="h-5 w-5 text-info" />}
-          label="Security Advisories"
-          value={String(securityCount)}
-        />
-      </div>
-
-      {/* Aggregate health banner */}
-      <HealthBanner />
-
-      {/* Severity distribution bar */}
-      <Suspense>
-        <SeveritySummaryBar />
-      </Suspense>
-
-      {/* SSE-connected search/filter + provider grid + alert feed */}
-      <DashboardClient />
-    </div>
-  );
-}
-
-function SummaryCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="glass-card flex items-center gap-4 p-4">
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-input">
-        {icon}
-      </div>
-      <div>
-        <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-wider text-text-muted">
-          {label}
+      <section
+        id="email-alerts"
+        aria-labelledby="email-alerts-heading"
+        className="glass-card scroll-mt-28 p-4"
+      >
+        <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-widest text-secondary-ink">
+          Automated alerts
         </p>
-        <p className="text-xl font-semibold text-text-primary">{value}</p>
-      </div>
-    </div>
+        <h2
+          id="email-alerts-heading"
+          className="mt-2 text-lg font-semibold text-text-primary"
+        >
+          Follow outages and security advisories
+        </h2>
+        <p className="mb-4 mt-2 text-[13px] leading-6 text-text-secondary">
+          Choose providers and severity, confirm your email, and receive
+          matching alerts as source updates are collected. No account required.
+        </p>
+        <SubscriptionForm compact />
+      </section>
+    </DashboardClient>
   );
 }

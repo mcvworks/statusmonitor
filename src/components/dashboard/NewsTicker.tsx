@@ -19,7 +19,15 @@ function hostname(url: string): string {
   }
 }
 
-function TickerItem({ alert }: { alert: SerializedAlert }) {
+function TickerItem({
+  alert,
+  duplicate = false,
+}: {
+  alert: SerializedAlert;
+  /** The second, looping copy: seen moving past, but never a tab stop. */
+  duplicate?: boolean;
+}) {
+  const tabIndex = duplicate ? -1 : undefined;
   const provider = PROVIDERS[alert.source];
   const severityColor = SEVERITY_COLORS[alert.severity as AlertSeverity];
   const providerColor = provider?.color
@@ -41,7 +49,8 @@ function TickerItem({ alert }: { alert: SerializedAlert }) {
       {/* Item body → internal incident page */}
       <Link
         href={`/incident/${alert.id}`}
-        className="group inline-flex items-center gap-1.5 whitespace-nowrap"
+        tabIndex={tabIndex}
+        className="group inline-flex items-center gap-1.5 whitespace-nowrap rounded"
       >
         <ProviderIcon providerKey={alert.source} size={13} />
         <span
@@ -64,16 +73,17 @@ function TickerItem({ alert }: { alert: SerializedAlert }) {
           href={alert.url!}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] text-text-muted transition-colors hover:border-primary/30 hover:text-primary"
+          tabIndex={tabIndex}
+          className="inline-flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] text-text-muted transition-colors hover:border-primary/30 hover:text-primary-ink"
           title={`Verified source: ${sourceDomain}`}
         >
-          <ExternalLink className="h-2.5 w-2.5" />
+          <ExternalLink className="h-2.5 w-2.5" aria-hidden="true" />
           {sourceDomain}
         </a>
       )}
 
       {/* Separator */}
-      <span className="pl-3 text-border">▍</span>
+      <span className="pl-3 text-border" aria-hidden="true">▍</span>
     </span>
   );
 }
@@ -101,11 +111,14 @@ export function NewsTicker() {
   if (isLoading || items.length === 0) return null;
 
   return (
-    <div className="glass-card flex items-center overflow-hidden !py-0">
+    <section
+      aria-label="Latest alerts wire"
+      className="glass-card flex items-center overflow-hidden !py-0"
+    >
       {/* Label */}
       <div className="z-10 flex shrink-0 items-center gap-1.5 self-stretch border-r border-border bg-[var(--header-bg)] px-3 py-2.5">
-        <Radio className="h-3.5 w-3.5 text-primary" />
-        <span className="hidden font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-widest text-primary sm:inline">
+        <Radio className="h-3.5 w-3.5 text-primary-ink" aria-hidden="true" />
+        <span className="hidden font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-widest text-primary-ink sm:inline">
           Wire
         </span>
       </div>
@@ -116,6 +129,9 @@ export function NewsTicker() {
           className="ticker-track items-center py-2"
           style={{ animationDuration: `${items.length * SECONDS_PER_ITEM}s` }}
         >
+          {/* The second copy only exists to make the loop seamless. It is
+              hidden from assistive tech and skipped when tabbing. Visible
+              links still respond to the pointer. */}
           {[0, 1].map((copy) => (
             <span
               key={copy}
@@ -123,7 +139,11 @@ export function NewsTicker() {
               aria-hidden={copy === 1}
             >
               {items.map((alert) => (
-                <TickerItem key={`${copy}-${alert.id}`} alert={alert} />
+                <TickerItem
+                  key={`${copy}-${alert.id}`}
+                  alert={alert}
+                  duplicate={copy === 1}
+                />
               ))}
             </span>
           ))}
@@ -138,11 +158,12 @@ export function NewsTicker() {
       <a
         href="/feed.xml"
         title="Subscribe to this feed (RSS) — add ?source=aws or ?severity=critical to filter"
-        className="z-10 flex shrink-0 items-center gap-1.5 self-stretch border-l border-border px-3 py-2.5 font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-widest text-text-muted transition-colors hover:bg-[rgba(242,194,0,0.06)] hover:text-primary"
+        aria-label="Subscribe to the alert feed (RSS)"
+        className="z-10 flex shrink-0 items-center gap-1.5 self-stretch border-l border-border px-3 py-2.5 font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-widest text-text-muted transition-colors hover:bg-[rgba(242,194,0,0.06)] hover:text-primary-ink"
       >
-        <Rss className="h-3.5 w-3.5" />
+        <Rss className="h-3.5 w-3.5" aria-hidden="true" />
         <span className="hidden md:inline">Subscribe</span>
       </a>
-    </div>
+    </section>
   );
 }

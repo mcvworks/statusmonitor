@@ -4,14 +4,11 @@ import { useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ExternalLink, History, Rss, Users, X } from "lucide-react";
 import { PROVIDERS, CATEGORY_LABELS } from "@/lib/constants";
-import {
-  deriveProviderStatus,
-  PROVIDER_STATUS_STYLES,
-} from "@/lib/provider-status";
+import { PROVIDER_STATUS_STYLES } from "@/lib/provider-status";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useActivity } from "@/hooks/useActivity";
 import { useProviderStats } from "@/hooks/useProviderStats";
-import { useProviderHealth } from "@/hooks/useProviderHealth";
+import { formatAge, useDashboardSummary } from "@/hooks/useDashboardSummary";
 import { formatRelativeTime } from "@/lib/utils";
 import { SEVERITY_COLORS } from "@/lib/constants";
 import type { AlertSeverity } from "@/lib/alert-schema";
@@ -34,10 +31,10 @@ export function ProviderDetailPanel({ source }: ProviderDetailPanelProps) {
   const searchParams = useSearchParams();
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const { alerts, isLoading, avgResolutionBySource } = useAlerts({ source });
+  const { alerts, hasData, isLoading, isError, avgResolutionBySource } = useAlerts({ source });
   const { activity } = useActivity();
   const { stats } = useProviderStats(source);
-  const { providers: providerHealth } = useProviderHealth();
+  const { summary, nowMs, isLastKnown, isLoading: summaryLoading } = useDashboardSummary();
 
   // Bring the panel into view when a provider is selected from the sidebar
   // (which may happen while scrolled elsewhere on the page)
@@ -47,15 +44,41 @@ export function ProviderDetailPanel({ source }: ProviderDetailPanelProps) {
 
   if (!meta) return null;
 
-  const status = isLoading ? "unknown" : deriveProviderStatus(alerts);
-  const style = PROVIDER_STATUS_STYLES[status];
-  const activeCount = alerts.filter((a) => a.status !== "resolved").length;
+  const provider = summary?.providers.find((entry) => entry.key === source);
+  const lastSuccessAt = provider?.lastSuccessAt;
+  // The alert request can see the next poll's writes before the shared summary
+  // has refreshed. Those observations also need successful poll verification.
+  const lastSuccessMs = lastSuccessAt ? Date.parse(lastSuccessAt) : NaN;
+  const hasNewerObservations = hasData && alerts.some(
+    (alert) => Date.parse(alert.lastObservedAt) > lastSuccessMs,
+  );
+  let statusNote: string | undefined;
+  let hasVerifiedIncident = false;
+  if (isError) {
+    statusNote = "Provider alerts could not be refreshed.";
+  } else if (isLoading || summaryLoading) {
+    statusNote = "Checking provider status…";
+  } else if (isLastKnown || !provider || !Number.isFinite(lastSuccessMs) || !hasData) {
+    statusNote = "Current provider status is unavailable.";
+  } else if (provider.coverage === "stale") {
+    statusNote = "Source data is stale.";
+  } else if (provider.dataState === "unverified" || hasNewerObservations) {
+    statusNote = "Waiting for a verified source poll.";
+  } else if (provider.dataState === "incomplete") {
+    statusNote = "The latest poll did not verify a previous incident’s status.";
+    hasVerifiedIncident = provider.incidents > 0;
+  } else if (provider.coverage !== "fresh") {
+    statusNote = "Source data is unavailable.";
+  }
+
+  const currentProvider = !statusNote || hasVerifiedIncident ? provider : undefined;
+  const style = PROVIDER_STATUS_STYLES[currentProvider?.status ?? "unknown"];
+  const activeCount = currentProvider?.incidents;
   const weekActivity = activity[source] ?? [];
   const weekCount = weekActivity.reduce((sum, n) => sum + n, 0);
   // avgResolutionBySource is only populated when this provider has
   // alerts in the current response; the stats endpoint covers all time
   const avgResolution = avgResolutionBySource[source] ?? stats?.avgResolutionMin;
-  const dataHealth = providerHealth[source];
 
   const clearFilter = () => {
     const params = new URLSearchParams(searchParams.toString());
@@ -98,13 +121,10 @@ export function ProviderDetailPanel({ source }: ProviderDetailPanelProps) {
         </button>
       </div>
 
-      {/* Stats */}
-      {dataHealth && dataHealth.state !== "healthy" && (
-        <div className="mt-3 rounded-lg border border-minor/30 bg-minor/5 px-3 py-2 font-[family-name:var(--font-mono)] text-[11px] text-minor">
-          Source {dataHealth.state.replace("_", " ")}
-          {dataHealth.lastSuccessAt &&
-            ` · last verified ${formatRelativeTime(dataHealth.lastSuccessAt)}`}
-          {dataHealth.lastError && ` · ${dataHealth.lastError}`}
+      {statusNote && (
+        <div role="status" className="mt-3 rounded-lg border border-minor/30 bg-minor/5 px-3 py-2 font-[family-name:var(--font-mono)] text-[11px] text-minor">
+          {statusNote}
+          {lastSuccessAt && ` Last successful check ${formatAge(lastSuccessAt, nowMs)}.`}
         </div>
       )}
 
@@ -112,8 +132,8 @@ export function ProviderDetailPanel({ source }: ProviderDetailPanelProps) {
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <StatTile
           label="Active incidents"
-          value={isLoading ? "—" : String(activeCount)}
-          accent={activeCount > 0}
+          value={activeCount === undefined ? "—" : String(activeCount)}
+          accent={activeCount !== undefined && activeCount > 0}
         />
         <StatTile
           label="Alerts (7 days)"

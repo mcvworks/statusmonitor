@@ -6,6 +6,7 @@ import { Radio } from "lucide-react";
 import { useEventFeed } from "@/hooks/useEventFeed";
 import { ProviderIcon } from "./ProviderIcon";
 import { PROVIDERS } from "@/lib/constants";
+import { sourceRole, type SourceRole } from "@/lib/dashboard-snapshot";
 import { formatRelativeTime } from "@/lib/utils";
 import type { EventType } from "@/lib/polling/event-ring-buffer";
 
@@ -25,6 +26,14 @@ const EVENT_LABELS: Record<EventType, string> = {
   "de-escalated": "De-escalated",
 };
 
+// A new record from a security feed is an advisory and one from a crowd
+// source is a report. Only a service's own status feed reports incidents.
+const NEW_LABELS: Record<SourceRole, string> = {
+  service: "new incident",
+  advisory: "new advisory",
+  community: "new report",
+};
+
 function truncateTitle(title: string, max = 60): string {
   if (title.length <= max) return title;
   return title.slice(0, max - 1) + "…";
@@ -41,7 +50,7 @@ function buildDescription(event: {
 
   switch (event.type) {
     case "new":
-      return `${provider} — new incident: ${truncateTitle(event.title)}`;
+      return `${provider} — ${NEW_LABELS[sourceRole(event.source, PROVIDERS[event.source]?.category)]}: ${truncateTitle(event.title)}`;
     case "resolved":
       return `${provider} — resolved: ${truncateTitle(event.title)}`;
     case "escalated":

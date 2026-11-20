@@ -65,26 +65,29 @@ function SourceGroup({
   return (
     <div className="rounded-xl border border-border/50 bg-card-solid/30">
       <button
+        type="button"
+        aria-expanded={!collapsed}
         onClick={() => setCollapsed(!collapsed)}
-        className="flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors hover:bg-surface-hover/50"
+        className="flex w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-xl px-4 py-2.5 text-left transition-colors hover:bg-surface-hover/50"
       >
         {collapsed ? (
-          <ChevronRight className="h-3.5 w-3.5 text-text-muted" />
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-text-muted" aria-hidden="true" />
         ) : (
-          <ChevronDown className="h-3.5 w-3.5 text-text-muted" />
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-text-muted" aria-hidden="true" />
         )}
         <ProviderIcon providerKey={cluster.source} size={14} />
-        <span className="text-xs font-medium text-text-primary">
+        <span className="min-w-0 text-xs font-medium text-text-primary [overflow-wrap:anywhere]">
           {cluster.name}
         </span>
+        {/* A group can mix incidents, maintenance and other notices. */}
         <span className="font-[family-name:var(--font-mono)] text-[11px] text-text-muted">
-          {cluster.alerts.length} incident{cluster.alerts.length !== 1 ? "s" : ""}
+          {cluster.alerts.length} alert{cluster.alerts.length !== 1 ? "s" : ""}
           {activeCount > 0 && activeCount < cluster.alerts.length && (
-            <> &middot; {activeCount} active</>
+            <> &middot; {activeCount} unresolved</>
           )}
         </span>
         {avgResolutionMin != null && activeCount > 0 && (
-          <span className="ml-auto font-[family-name:var(--font-mono)] text-[10px] text-text-muted">
+          <span className="ml-auto font-[family-name:var(--font-mono)] text-[11px] text-text-muted">
             typically resolves in ~{formatDuration(avgResolutionMin)}
           </span>
         )}
@@ -122,10 +125,10 @@ export function CategoryGroup({
 
   return (
     <div>
-      <div className="section-label mb-3">
+      <h3 className="section-label mb-3">
         {CATEGORY_LABELS[category]}
         <span className="ml-1 text-text-muted">({alerts.length})</span>
-      </div>
+      </h3>
       <div className="space-y-3">
         {clusters.map((cluster) => (
           <SourceGroup

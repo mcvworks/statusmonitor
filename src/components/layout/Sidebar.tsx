@@ -21,6 +21,7 @@ import {
 } from "@/lib/constants";
 import type { AlertCategory, SerializedAlert } from "@/lib/alert-schema";
 import { useAlerts } from "@/hooks/useAlerts";
+import { useDashboardSummary } from "@/hooks/useDashboardSummary";
 import {
   deriveProviderStatus,
   PROVIDER_STATUS_STYLES,
@@ -41,16 +42,26 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed, onToggle, mobile }: SidebarProps) {
-  // Live per-provider status for the dots (SWR dedupes this fetch with
-  // the dashboard's own alert queries)
-  const { alerts } = useAlerts();
+  const isHomepage = usePathname() === "/";
+  const { summary, isLastKnown } = useDashboardSummary(isHomepage);
+  const { alerts } = useAlerts({}, !isHomepage);
   const statusBySource: Record<string, ProviderStatus> = {};
-  const alertsBySource: Record<string, SerializedAlert[]> = {};
-  for (const alert of alerts) {
-    (alertsBySource[alert.source] ??= []).push(alert);
-  }
-  for (const [key, sourceAlerts] of Object.entries(alertsBySource)) {
-    statusBySource[key] = deriveProviderStatus(sourceAlerts);
+  const defaultStatus = isHomepage ? "unknown" : "operational";
+
+  if (isHomepage) {
+    if (summary && !isLastKnown) {
+      for (const provider of summary.providers) {
+        statusBySource[provider.key] = provider.status;
+      }
+    }
+  } else {
+    const alertsBySource: Record<string, SerializedAlert[]> = {};
+    for (const alert of alerts) {
+      (alertsBySource[alert.source] ??= []).push(alert);
+    }
+    for (const [key, sourceAlerts] of Object.entries(alertsBySource)) {
+      statusBySource[key] = deriveProviderStatus(sourceAlerts);
+    }
   }
 
   // Group providers by category
@@ -94,6 +105,7 @@ export function Sidebar({ collapsed, onToggle, mobile }: SidebarProps) {
               category={cat}
               providers={grouped[cat] ?? []}
               statusBySource={statusBySource}
+              defaultStatus={defaultStatus}
             />
           ))}
         {collapsed && !mobile &&
@@ -139,10 +151,12 @@ function CategorySection({
   category,
   providers,
   statusBySource,
+  defaultStatus,
 }: {
   category: AlertCategory;
   providers: (ProviderMeta & { id: string })[];
   statusBySource: Record<string, ProviderStatus>;
+  defaultStatus: ProviderStatus;
 }) {
   const [expanded, setExpanded] = useState(true);
   const pathname = usePathname();
@@ -174,7 +188,7 @@ function CategorySection({
               >
                 <span
                   className={`status-dot ${
-                    PROVIDER_STATUS_STYLES[statusBySource[p.id] ?? "operational"]
+                    PROVIDER_STATUS_STYLES[statusBySource[p.id] ?? defaultStatus]
                       .dot
                   }`}
                 />
