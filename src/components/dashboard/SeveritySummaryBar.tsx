@@ -1,49 +1,25 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAlerts } from "@/hooks/useAlerts";
-import { SEVERITY_COLORS, SEVERITY_ORDER } from "@/lib/constants";
-import type { AlertSeverity } from "@/lib/alert-schema";
-import { isOperationalSignal } from "@/lib/signal-kind";
+import { useDashboardSummary } from "@/hooks/useDashboardSummary";
+import { SEVERITY_COLORS } from "@/lib/constants";
+import { MONO, SEVERITIES, SEVERITY_LABELS, plural } from "./console-labels";
 
-const SEVERITIES = (
-  Object.keys(SEVERITY_ORDER) as AlertSeverity[]
-).sort((a, b) => SEVERITY_ORDER[a] - SEVERITY_ORDER[b]);
-
-const SEVERITY_LABELS: Record<AlertSeverity, string> = {
-  critical: "Critical",
-  major: "Major",
-  minor: "Minor",
-  info: "Info",
-};
-
-const MIN_SEGMENT_PCT = 4;
-
+/**
+ * Severity shortcuts for the alert-feed header. Each chip toggles the feed's
+ * severity filter through the URL, like the filter menu does. The numbers are
+ * confirmed incidents right now, taken from the server snapshot, so they do
+ * not change with the feed's filters or page size.
+ */
 export function SeveritySummaryBar() {
-  const { alerts, isLoading } = useAlerts();
+  const { summary, isOutOfDate } = useDashboardSummary();
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeSeverity = searchParams.get("severity") ?? "";
+  // No snapshot, or one too old to trust: show the shortcuts without numbers.
+  const counts = summary && !isOutOfDate ? summary.incidents.bySeverity : null;
 
-  const active = alerts.filter(
-    (a) => a.status !== "resolved" && isOperationalSignal(a),
-  );
-
-  // Count by severity
-  const counts: Record<AlertSeverity, number> = {
-    critical: 0,
-    major: 0,
-    minor: 0,
-    info: 0,
-  };
-  for (const a of active) {
-    const sev = a.severity as AlertSeverity;
-    if (sev in counts) counts[sev]++;
-  }
-
-  const total = active.length;
-
-  const handleSegmentClick = (severity: string) => {
+  const toggle = (severity: string) => {
     const params = new URLSearchParams(searchParams.toString());
     if (activeSeverity === severity) {
       params.delete("severity");
@@ -54,95 +30,51 @@ export function SeveritySummaryBar() {
     router.replace(qs ? `/?${qs}` : "/", { scroll: false });
   };
 
-  if (isLoading) {
-    return (
-      <div className="glass-card p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="section-label">Severity Distribution</h2>
-        </div>
-        <div className="h-3 animate-pulse rounded-full bg-surface-hover" />
-      </div>
-    );
-  }
-
-  // Empty state
-  if (total === 0) {
-    return (
-      <div className="glass-card p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="section-label">Severity Distribution</h2>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="h-1.5 flex-1 rounded-full bg-border" />
-          <span className="font-[family-name:var(--font-mono)] text-[11px] text-text-muted">
-            No active incidents
-          </span>
-        </div>
-      </div>
-    );
-  }
-
-  // Calculate segment widths with minimum
-  const present = SEVERITIES.filter((s) => counts[s] > 0);
-  const rawPcts = present.map((s) => (counts[s] / total) * 100);
-  // Apply minimum width; redistribute excess proportionally
-  const adjusted = rawPcts.map((p) => Math.max(p, MIN_SEGMENT_PCT));
-  const adjustedTotal = adjusted.reduce((a, b) => a + b, 0);
-  const widths = adjusted.map((p) => (p / adjustedTotal) * 100);
-
   return (
-    <div className="glass-card p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="section-label">Severity Distribution</h2>
-        <span className="font-[family-name:var(--font-mono)] text-[11px] text-text-muted">
-          {total} active
-        </span>
-      </div>
-
-      {/* Labels */}
-      <div className="mb-1.5 flex gap-4">
-        {SEVERITIES.map((sev) => (
+    <div
+      role="group"
+      aria-label="Filter the feed by severity"
+      className="flex flex-wrap items-center gap-1.5"
+    >
+      <span className={`${MONO} mr-1 text-[10px] uppercase tracking-[0.1em] text-text-muted`}>
+        Confirmed now
+      </span>
+      {SEVERITIES.map((severity) => {
+        const count = counts ? counts[severity] : null;
+        const pressed = activeSeverity === severity;
+        return (
           <button
-            key={sev}
-            onClick={() => handleSegmentClick(sev)}
-            className={`flex items-center gap-1.5 transition-opacity ${
-              counts[sev] === 0
-                ? "pointer-events-none opacity-30"
-                : activeSeverity === sev
-                  ? "opacity-100"
-                  : "opacity-70 hover:opacity-100"
+            key={severity}
+            type="button"
+            aria-pressed={pressed}
+            aria-label={
+              count === null
+                ? `${SEVERITY_LABELS[severity]}: filter the feed`
+                : `${SEVERITY_LABELS[severity]}: ${plural(count, "confirmed incident")} now. Filter the feed.`
+            }
+            onClick={() => toggle(severity)}
+            className={`${MONO} inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] transition-colors ${
+              pressed
+                ? "border-primary bg-primary/10 text-primary-ink"
+                : count === 0
+                  ? "border-border text-text-muted hover:border-border-hover hover:text-text-secondary"
+                  : "border-border text-text-secondary hover:border-border-hover hover:bg-surface-hover hover:text-text-primary"
             }`}
           >
             <span
-              className="inline-block h-2 w-2 rounded-full"
-              style={{ backgroundColor: SEVERITY_COLORS[sev].fg }}
+              className={`inline-block h-2 w-2 rounded-full ${
+                count === 0 && !pressed ? "opacity-40" : ""
+              }`}
+              style={{ backgroundColor: SEVERITY_COLORS[severity].fg }}
+              aria-hidden="true"
             />
-            <span className="font-[family-name:var(--font-mono)] text-[11px] text-text-secondary">
-              {counts[sev]} {SEVERITY_LABELS[sev]}
+            {SEVERITY_LABELS[severity]}
+            <span className={count ? "font-semibold text-text-primary" : ""}>
+              {count ?? "–"}
             </span>
           </button>
-        ))}
-      </div>
-
-      {/* Stacked bar */}
-      <div className="flex h-3 overflow-hidden rounded-full bg-surface-input">
-        {present.map((sev, i) => (
-          <button
-            key={sev}
-            onClick={() => handleSegmentClick(sev)}
-            className={`relative h-full transition-all duration-500 ease-out first:rounded-l-full last:rounded-r-full ${
-              activeSeverity && activeSeverity !== sev
-                ? "opacity-40"
-                : "opacity-100"
-            }`}
-            style={{
-              width: `${widths[i]}%`,
-              backgroundColor: SEVERITY_COLORS[sev].fg,
-            }}
-            title={`${SEVERITY_LABELS[sev]}: ${counts[sev]} incident${counts[sev] !== 1 ? "s" : ""}`}
-          />
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }

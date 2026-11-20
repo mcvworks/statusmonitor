@@ -19,10 +19,9 @@ import {
   CATEGORY_LABELS,
   type ProviderMeta,
 } from "@/lib/constants";
-import type { AlertCategory, SerializedAlert } from "@/lib/alert-schema";
-import { useAlerts } from "@/hooks/useAlerts";
+import type { AlertCategory } from "@/lib/alert-schema";
+import { useDashboardSummary } from "@/hooks/useDashboardSummary";
 import {
-  deriveProviderStatus,
   PROVIDER_STATUS_STYLES,
   type ProviderStatus,
 } from "@/lib/provider-status";
@@ -41,16 +40,15 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed, onToggle, mobile }: SidebarProps) {
-  // Live per-provider status for the dots (SWR dedupes this fetch with
-  // the dashboard's own alert queries)
-  const { alerts } = useAlerts();
+  // Live per-provider status for the dots, from the same snapshot as the
+  // homepage summary (SWR shares the request). A provider is only shown as
+  // operational when its source is fresh and reports no open incident.
+  const { summary, isOutOfDate } = useDashboardSummary();
   const statusBySource: Record<string, ProviderStatus> = {};
-  const alertsBySource: Record<string, SerializedAlert[]> = {};
-  for (const alert of alerts) {
-    (alertsBySource[alert.source] ??= []).push(alert);
-  }
-  for (const [key, sourceAlerts] of Object.entries(alertsBySource)) {
-    statusBySource[key] = deriveProviderStatus(sourceAlerts);
+  if (summary && !isOutOfDate) {
+    for (const provider of summary.providers) {
+      statusBySource[provider.key] = provider.status;
+    }
   }
 
   // Group providers by category
@@ -174,7 +172,7 @@ function CategorySection({
               >
                 <span
                   className={`status-dot ${
-                    PROVIDER_STATUS_STYLES[statusBySource[p.id] ?? "operational"]
+                    PROVIDER_STATUS_STYLES[statusBySource[p.id] ?? "unknown"]
                       .dot
                   }`}
                 />

@@ -6,21 +6,42 @@ import { useDependencyMap } from "@/hooks/useDependencies";
 import { DEPENDENCY_MAP } from "@/lib/dependencies/static-map";
 import { isOperationalSignal } from "@/lib/signal-kind";
 
-export function BlastRadiusSummary() {
+interface BlastRadiusSummaryProps {
+  /**
+   * Providers known to have a current incident (the homepage passes its
+   * server snapshot). Null means "not known yet": nothing is shown. When the
+   * prop is left out, they are derived from the latest alerts instead.
+   */
+  providers?: string[] | null;
+}
+
+export function BlastRadiusSummary({ providers }: BlastRadiusSummaryProps = {}) {
+  return providers === undefined ? (
+    <BlastRadiusFromAlerts />
+  ) : (
+    <BlastRadiusNotice providers={providers ?? []} />
+  );
+}
+
+function BlastRadiusFromAlerts() {
   const { alerts } = useAlerts();
-  const { isLoading } = useDependencyMap();
 
   // Find major providers with active incidents
-  const blastRadiusProviders = new Set(DEPENDENCY_MAP.map((m) => m.provider));
-  const activeProviderAlerts = alerts.filter(
-    (a) =>
-      a.status !== "resolved" &&
-      isOperationalSignal(a) &&
-      blastRadiusProviders.has(a.source),
-  );
+  const activeProviders = alerts
+    .filter((a) => a.status !== "resolved" && isOperationalSignal(a))
+    .map((a) => a.source);
 
-  // Unique providers with active incidents
-  const affectedProviders = new Set(activeProviderAlerts.map((a) => a.source));
+  return <BlastRadiusNotice providers={activeProviders} />;
+}
+
+function BlastRadiusNotice({ providers }: { providers: string[] }) {
+  const { isLoading } = useDependencyMap();
+
+  // Unique providers with active incidents that have a dependency map
+  const blastRadiusProviders = new Set(DEPENDENCY_MAP.map((m) => m.provider));
+  const affectedProviders = new Set(
+    providers.filter((provider) => blastRadiusProviders.has(provider)),
+  );
   const providerCount = affectedProviders.size;
 
   if (providerCount === 0 || isLoading) return null;

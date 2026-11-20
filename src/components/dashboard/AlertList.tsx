@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CheckCircle, Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
+import { Eye, EyeOff, Inbox } from "lucide-react";
 import type { AlertCategory, AlertSeverity, SerializedAlertWithState } from "@/lib/alert-schema";
 import { MAX_ALERT_AGE_DAYS, PROVIDERS, SEVERITY_ORDER } from "@/lib/constants";
 import { useAlerts } from "@/hooks/useAlerts";
@@ -39,6 +40,8 @@ interface AlertListProps {
   sort?: string;
   sourceFilter?: string[];
   scope?: "all" | "operations" | "security";
+  /** Show how many of the matching alerts are listed. */
+  showCount?: boolean;
 }
 
 export function AlertList({
@@ -50,10 +53,11 @@ export function AlertList({
   sort,
   sourceFilter,
   scope,
+  showCount = false,
 }: AlertListProps = {}) {
   // source and search are filtered server-side — filtering the 50-alert
   // window client-side made matches outside that window invisible
-  const { alerts, isLoading, isError, avgResolutionBySource } = useAlerts({
+  const { alerts, total, isLoading, isError, avgResolutionBySource } = useAlerts({
     category,
     severity,
     status,
@@ -117,7 +121,7 @@ export function AlertList({
 
   if (isLoading) {
     return (
-      <div className="glass-card flex items-center justify-center p-12">
+      <div role="status" className="glass-card flex items-center justify-center p-12">
         <div className="flex items-center gap-3 text-text-muted">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           <span className="font-[family-name:var(--font-mono)] text-sm">
@@ -128,9 +132,11 @@ export function AlertList({
     );
   }
 
-  if (isError) {
+  // A failed request says nothing about the services, so it is never
+  // rendered as an empty (and reassuring) list.
+  if (isError && alerts.length === 0) {
     return (
-      <div className="glass-card flex items-center justify-center p-12 text-critical">
+      <div role="alert" className="glass-card flex items-center justify-center p-12 text-critical-ink">
         <p className="font-[family-name:var(--font-mono)] text-sm">
           Failed to load alerts. Retrying...
         </p>
@@ -138,29 +144,37 @@ export function AlertList({
     );
   }
 
+  const hasFilters = !!(search || source || category || severity || status);
+
   if (visible.length === 0 && hiddenCount === 0) {
     const providerName = source
       ? (PROVIDERS[source]?.name ?? source)
       : undefined;
     const hasOtherFilters = !!(search || category || severity || status);
+    // A saved view limits the latest alerts to its own services.
+    const limitedToView = !source && !!sourceFilter && sourceFilter.length > 0;
+    // This describes the feed only. Whether services are healthy is the
+    // summary's job, which also knows which sources could not be checked.
     return (
-      <div className="glass-card corner-brackets flex flex-col items-center justify-center p-12">
-        <CheckCircle className="mb-3 h-8 w-8 text-secondary" />
+      <div role="status" className="glass-card corner-brackets flex flex-col items-center justify-center p-12 text-center">
+        <Inbox className="mb-3 h-8 w-8 text-text-muted" aria-hidden="true" />
         <p className="text-lg font-medium text-text-primary">
           {providerName
-            ? `No Recent Alerts from ${providerName}`
+            ? `No recent alerts from ${providerName}`
             : hasOtherFilters
-              ? "No Matching Alerts"
-              : "All Systems Operational"}
+              ? "No matching alerts"
+              : limitedToView
+                ? "No alerts from the services in this view"
+                : "No alerts in the feed"}
         </p>
-        <p className="mt-1 text-sm text-text-muted">
-          {providerName
-            ? hasOtherFilters
-              ? "Try adjusting your search or filters."
-              : `No incidents from ${providerName} in the retained history (${MAX_ALERT_AGE_DAYS} days).`
-            : hasOtherFilters
-              ? "Try adjusting your search or filters."
-              : "No active incidents detected across all monitored services."}
+        <p className="mt-1 max-w-md text-sm text-text-secondary">
+          {hasOtherFilters
+            ? "Nothing matches your search or filters. Clear them to see the full feed."
+            : providerName
+              ? `Nothing from ${providerName} in the retained history (${MAX_ALERT_AGE_DAYS} days).`
+              : limitedToView
+                ? "None of the latest alerts come from the services in this view. An empty list on its own is not an all-clear."
+                : "The monitored sources have reported nothing in the retained history. An empty feed on its own is not an all-clear."}
         </p>
       </div>
     );
@@ -170,6 +184,29 @@ export function AlertList({
 
   return (
     <div className="space-y-6">
+      {showCount && (
+        <p
+          role="status"
+          className="mb-2 px-1 font-[family-name:var(--font-mono)] text-[11px] text-text-muted"
+        >
+          Showing {visible.length.toLocaleString("en-US")}
+          {total > visible.length && ` of ${total.toLocaleString("en-US")}`}{" "}
+          {hasFilters ? "matching " : ""}alert{total === 1 ? "" : "s"}
+          {isError && " · refresh failed, retrying"}
+          {total > visible.length && (
+            <>
+              {" · "}
+              <Link
+                href="/history"
+                className="text-primary-ink underline-offset-2 hover:underline"
+              >
+                browse the full history
+              </Link>
+            </>
+          )}
+        </p>
+      )}
+
       {CATEGORY_ORDER.map((cat) =>
         grouped[cat] ? (
           <CategoryGroup

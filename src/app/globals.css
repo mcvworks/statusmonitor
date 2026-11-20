@@ -216,6 +216,99 @@ body::before {
   box-shadow: 0 0 6px rgba(255, 107, 107, 0.4);
 }
 
+/* Sources that cannot be confirmed are drawn as rings, never as a solid dot,
+   so they are told apart from "operational" without relying on color. */
+.status-dot-stale {
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--ink-minor, #F2C200);
+}
+
+.status-dot-unavailable {
+  width: 9px;
+  height: 9px;
+  border: 2px dotted var(--t-text-muted);
+}
+
+/* Fresh source that still lists older open records: not an incident, but
+   not confirmed operational either. */
+.status-dot-older {
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--t-text-muted);
+}
+
+/* ─── Console (public dashboard) ───────────────────────── */
+/* Scoped to the homepage: text-safe severity inks, a visible keyboard focus
+   ring, and a muted gray that stays readable at 10–11px in the light theme. */
+.console {
+  --focus-ring: #F2C200;
+  --ink-critical: #ff6b6b;
+  --ink-major: #FA6216;
+  --ink-minor: #F2C200;
+  --ink-info: #48E0C7;
+}
+
+.light-theme .console {
+  --focus-ring: #7A5B00;
+  --ink-critical: #B42318;
+  --ink-major: #B54708;
+  --ink-minor: #7A5B00;
+  --ink-info: #006B59;
+  --t-text-muted: #5F6672;
+}
+
+.console :is(a, button, input, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Text fields keep their own border highlight; the ring sits on the edge. */
+.console :is(input, select):focus-visible {
+  outline-offset: 0;
+}
+
+.coverage-stale {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--ink-minor) 0 3px,
+    transparent 3px 6px
+  );
+}
+
+/* Corner brackets as on duckTyped: the four 14px corners only. The shared
+   clip-path version also paints the whole left edge of the card. */
+.console .corner-brackets::after {
+  clip-path: none;
+  --corner: linear-gradient(#000 0 0);
+  -webkit-mask:
+    var(--corner) 0 0 / 14px 14px no-repeat,
+    var(--corner) 100% 0 / 14px 14px no-repeat,
+    var(--corner) 0 100% / 14px 14px no-repeat,
+    var(--corner) 100% 100% / 14px 14px no-repeat;
+  mask:
+    var(--corner) 0 0 / 14px 14px no-repeat,
+    var(--corner) 100% 0 / 14px 14px no-repeat,
+    var(--corner) 0 100% / 14px 14px no-repeat,
+    var(--corner) 100% 100% / 14px 14px no-repeat;
+}
+
+/* ─── Alert Card ───────────────────────────────────────── */
+/* Share and snooze menus open past the card edge, so the card must not clip
+   them, and it rises above the cards below while one is open. */
+.alert-card {
+  overflow: visible;
+}
+
+/* With clipping off, the scanline overlay follows the rounded corners itself. */
+.alert-card::before {
+  border-radius: inherit;
+}
+
+.alert-card:has([aria-expanded="true"]) {
+  z-index: 30;
+}
+
 /* ─── Critical Alert Pulse ─────────────────────────────── */
 @keyframes alert-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
