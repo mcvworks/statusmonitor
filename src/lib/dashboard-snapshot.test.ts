@@ -54,9 +54,11 @@ function summarize(
   sources: SummarySourceInput[],
   openAlerts: SummaryAlertInput[],
   advisories = { open: 0, recent: 0 },
+  lastPollAt: Date | null = null,
 ) {
   return buildDashboardSummary({
     now: NOW,
+    lastPollAt,
     sources,
     openAlerts,
     advisoriesOpen: advisories.open,
@@ -223,7 +225,7 @@ test("a stale source confirms nothing but reports what was open at its last chec
   assert.equal(summary.providers[0].openAtLastCheck, 1);
 });
 
-test("what a source had open at its last check leaves out older open records", () => {
+test("last-known incidents keep distinct IDs and older open records", () => {
   const lastSuccessAt = ago(3 * MINUTE);
   const listed = new Date(lastSuccessAt.getTime() - 5_000);
   const summary = summarize(
@@ -240,10 +242,9 @@ test("what a source had open at its last check leaves out older open records", (
   assert.equal(summary.providers[0].dataState, "error");
   assert.equal(summary.providers[0].coverage, "unavailable");
   assert.equal(summary.providers[0].status, "unknown");
-  assert.equal(summary.providers[0].openAtLastCheck, 1);
+  assert.equal(summary.providers[0].openAtLastCheck, 3);
   assert.equal(summary.providers[0].incidents, 0);
   assert.equal(summary.incidents.total, 0);
-  assert.deepEqual(summary.olderOpen, { total: 0, providers: 0 });
 });
 
 test("records a fresh source no longer lists are not current", () => {
@@ -253,75 +254,29 @@ test("records a fresh source no longer lists are not current", () => {
   );
 
   assert.equal(summary.incidents.total, 0);
-  assert.equal(summary.olderOpen.total, 0);
   assert.equal(summary.providers[0].status, "operational");
 });
 
-test("old open records are disclosed separately and never counted as current", () => {
+test("records on fresh sources follow recorded status regardless of age or dated updates", () => {
   const summary = summarize(
     [source("okta"), source("cloudflare")],
     [
-      alert({ source: "okta", title: "Resolved Service Disruption", severity: "major", timestamp: ago(587 * DAY) }),
-      alert({ source: "okta", title: "Resolved Service Degradation", timestamp: ago(90 * DAY) }),
-      // Old start, but the source tracks it with dated updates: still current.
+      alert({ source: "okta", title: "Service disruption", severity: "major", timestamp: ago(587 * DAY) }),
+      alert({ source: "okta", title: "Service degradation", status: "monitoring", timestamp: ago(90 * DAY) }),
       alert({ title: "Workers events delayed", timestamp: ago(10 * DAY), lastUpdateAt: ago(DAY) }),
+      alert({ source: "okta", status: "resolved", severity: "critical" }),
     ],
   );
 
-  assert.equal(summary.incidents.total, 1);
-  assert.deepEqual(summary.olderOpen, { total: 2, providers: 1 });
-  const okta = summary.providers.find((p) => p.key === "okta");
-  assert.equal(okta?.incidents, 0);
-  assert.equal(okta?.olderOpen, 2);
-  assert.deepEqual(summary.affected.map((row) => row.source), ["cloudflare"]);
+  assert.equal(summary.incidents.total, 3);
+  assert.deepEqual(summary.incidents.bySeverity, { critical: 0, major: 1, minor: 2, info: 0 });
+  assert.equal(summary.providers[0].incidents, 2);
+  assert.equal(summary.providers[0].status, "outage");
+  assert.deepEqual(summary.affected.map((row) => row.source), ["okta", "cloudflare"]);
+  assert.equal(summary.affected[0].more, 1);
 });
 
-test("a source that still lists older open records is never operational", () => {
-  const summary = summarize(
-    [source("aws"), source("azure")],
-    [
-      alert({ source: "aws", title: "Increased Error Rates", severity: "critical", timestamp: ago(65 * DAY) }),
-    ],
-  );
-
-  const byKey = Object.fromEntries(summary.providers.map((p) => [p.key, p]));
-  assert.equal(byKey.aws.coverage, "fresh");
-  assert.equal(byKey.aws.incidents, 0);
-  assert.equal(byKey.aws.olderOpen, 1);
-  assert.equal(byKey.aws.status, "unknown");
-  // A fresh source that lists nothing open is the only operational one.
-  assert.equal(byKey.azure.status, "operational");
-  assert.equal(summary.incidents.total, 0);
-  assert.equal(summary.affected.length, 0);
-});
-
-test("an open record the source tracks with dated updates stays current however old", () => {
-  const summary = summarize(
-    [source("cloudflare"), source("okta")],
-    [
-      // Opened 10 days ago, last update 9 days ago, still listed as open.
-      alert({
-        title: "Workers events not produced",
-        timestamp: ago(10 * DAY),
-        lastUpdateAt: ago(9 * DAY),
-      }),
-      // Same age, but its open state is only read out of feed text.
-      alert({ source: "okta", title: "Resolved Service Degradation", timestamp: ago(10 * DAY) }),
-    ],
-  );
-
-  assert.equal(summary.incidents.total, 1);
-  assert.deepEqual(summary.affected.map((row) => row.source), ["cloudflare"]);
-  const byKey = Object.fromEntries(summary.providers.map((p) => [p.key, p]));
-  assert.equal(byKey.cloudflare.status, "degraded");
-  assert.equal(byKey.cloudflare.incidents, 1);
-  assert.equal(byKey.cloudflare.olderOpen, 0);
-  assert.equal(byKey.okta.incidents, 0);
-  assert.equal(byKey.okta.olderOpen, 1);
-  assert.deepEqual(summary.olderOpen, { total: 1, providers: 1 });
-});
-
-test("repeated headlines from one source count as one incident", () => {
+test("distinct records with repeated headlines each count once", () => {
   const summary = summarize(
     [source("fastly")],
     [
@@ -332,10 +287,10 @@ test("repeated headlines from one source count as one incident", () => {
     ],
   );
 
-  assert.equal(summary.incidents.total, 2);
+  assert.equal(summary.incidents.total, 4);
   assert.equal(summary.affected.length, 1);
   assert.equal(summary.affected[0].severity, "major");
-  assert.equal(summary.affected[0].more, 1);
+  assert.equal(summary.affected[0].more, 3);
   assert.equal(summary.providers[0].status, "outage");
 });
 
@@ -365,16 +320,10 @@ test("affected rows list the most severe provider first", () => {
   );
 });
 
-test("the last completed poll is the newest successful source check", () => {
-  const newest = ago(90_000);
-  const summary = summarize(
-    [
-      source("a", { state: { lastSuccessAt: ago(10 * MINUTE), lastError: null, consecutiveFailures: 0 } }),
-      source("b", { state: { lastSuccessAt: newest, lastError: null, consecutiveFailures: 0 } }),
-      source("c", { state: null }),
-    ],
-    [],
-  );
-  assert.equal(summary.lastPollAt, newest.toISOString());
-  assert.equal(summarize([source("c", { state: null })], []).lastPollAt, null);
+test("the last completed poll comes from the poll log independently of source health", () => {
+  const lastPollAt = ago(10_000);
+  const sources = [source("a"), source("b", { state: null })];
+  const summary = summarize(sources, [], undefined, lastPollAt);
+  assert.equal(summary.lastPollAt, lastPollAt.toISOString());
+  assert.equal(summarize(sources, []).lastPollAt, null);
 });

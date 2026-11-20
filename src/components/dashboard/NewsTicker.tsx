@@ -130,14 +130,13 @@ export function NewsTicker() {
           style={{ animationDuration: `${items.length * SECONDS_PER_ITEM}s` }}
         >
           {/* The second copy only exists to make the loop seamless. It is
-              hidden from assistive tech and removed from the tab order
-              (inert, with tabIndex as the fallback for older browsers). */}
+              hidden from assistive tech and skipped when tabbing. Visible
+              links still respond to the pointer. */}
           {[0, 1].map((copy) => (
             <span
               key={copy}
               className="inline-flex items-center"
               aria-hidden={copy === 1}
-              inert={copy === 1}
             >
               {items.map((alert) => (
                 <TickerItem

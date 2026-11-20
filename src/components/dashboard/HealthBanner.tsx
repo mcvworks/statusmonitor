@@ -58,7 +58,7 @@ function nameList(providers: SummaryProvider[]): string {
  * loading, failed, or out of date, nothing is presented as an all-clear.
  */
 export function HealthBanner({ sseStatus }: { sseStatus: SSEStatus }) {
-  const { summary, nowMs, isLoading, isError, isOutOfDate } =
+  const { summary, nowMs, isLoading, isError, isLastKnown } =
     useDashboardSummary();
   const hydrated = useHydrated();
   // Before the page is live the stream has simply not started yet.
@@ -109,7 +109,7 @@ export function HealthBanner({ sseStatus }: { sseStatus: SSEStatus }) {
         </nav>
       </div>
 
-      {summary && isOutOfDate && (
+      {summary && isLastKnown && (
         <p
           role="alert"
           className="mt-3 flex items-start gap-2 rounded-lg border border-major/40 bg-major/5 px-3 py-2 text-[13px] text-text-primary"
@@ -119,8 +119,8 @@ export function HealthBanner({ sseStatus }: { sseStatus: SSEStatus }) {
             aria-hidden="true"
           />
           <span>
-            This summary could not be refreshed and may be out of date. Showing
-            the snapshot from {formatUtc(summary.generatedAt)}.
+            {isError ? "Summary refresh failed." : "The summary has expired."}{" "}
+            Last known snapshot from {formatUtc(summary.generatedAt)}.
           </span>
         </p>
       )}
@@ -130,16 +130,16 @@ export function HealthBanner({ sseStatus }: { sseStatus: SSEStatus }) {
           summary={summary}
           nowMs={nowMs}
           live={live}
-          trusted={!isOutOfDate}
+          trusted={!isLastKnown}
         />
       ) : (
-        <TilePlaceholders failed={isError && !isLoading} />
+        <TilePlaceholders failed={isError && !isLoading} live={live} />
       )}
 
       <h2
         className={`${MONO} mt-5 text-[11px] font-semibold uppercase tracking-[0.08em] text-text-secondary`}
       >
-        Affected now
+        {isLastKnown ? "Affected at last refresh" : "Affected now"}
         {summary && summary.affected.length > 0 && (
           <span className="font-normal text-text-muted">
             {" "}
@@ -149,7 +149,7 @@ export function HealthBanner({ sseStatus }: { sseStatus: SSEStatus }) {
       </h2>
 
       {summary ? (
-        <AffectedNow summary={summary} nowMs={nowMs} trusted={!isOutOfDate} />
+        <AffectedNow summary={summary} nowMs={nowMs} trusted={!isLastKnown} />
       ) : (
         <p
           role={isError && !isLoading ? "alert" : "status"}
@@ -181,7 +181,25 @@ function Tile({
   );
 }
 
-function TilePlaceholders({ failed }: { failed: boolean }) {
+function StreamStatus({ live }: { live: { text: string; dot: string } }) {
+  return (
+    <span className={`${TILE_NOTE} flex items-center gap-1.5`}>
+      <span
+        className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${live.dot}`}
+        aria-hidden="true"
+      />
+      {live.text}
+    </span>
+  );
+}
+
+function TilePlaceholders({
+  failed,
+  live,
+}: {
+  failed: boolean;
+  live: { text: string; dot: string };
+}) {
   const labels = [
     "Confirmed incidents",
     "Source coverage",
@@ -195,6 +213,7 @@ function TilePlaceholders({ failed }: { failed: boolean }) {
           <span className={TILE_LABEL}>{label}</span>
           <span className={`${TILE_VALUE} !text-text-muted`}>—</span>
           <span className={TILE_NOTE}>{failed ? "unavailable" : "loading…"}</span>
+          {label === "Last completed poll" && <StreamStatus live={live} />}
         </Tile>
       ))}
     </div>
@@ -217,38 +236,50 @@ function Tiles({
   const serviceGaps = summary.providers.filter(
     (p) => p.role === "service" && p.coverage !== "fresh",
   ).length;
+  const hasFreshService = summary.providers.some(
+    (p) => p.role === "service" && p.coverage === "fresh",
+  );
+  const showIncidentCount = incidents.total > 0 || (trusted && hasFreshService);
   // Teal only for a real all-clear: nothing open anywhere, every service
   // source fresh.
-  const incidentAccent = !trusted
-    ? undefined
-    : worst
-      ? SEVERITY_INK[worst]
-      : serviceGaps === 0 &&
-          summary.observedOutages === 0 &&
-          summary.olderOpen.total === 0
-        ? "var(--ink-info)"
-        : undefined;
+  const allServiceSourcesClear =
+    hasFreshService && serviceGaps === 0 && summary.observedOutages === 0;
+  const severityInk = worst ? SEVERITY_INK[worst] : undefined;
+  const incidentAccent = trusted
+    ? severityInk ?? (allServiceSourcesClear ? "var(--ink-info)" : undefined)
+    : undefined;
+  const coverageAccent = coverage.fresh === coverage.total
+    ? "var(--ink-info)"
+    : "var(--ink-minor)";
+  const coverageGaps = [
+    coverage.stale > 0 && `${coverage.stale} stale`,
+    coverage.unavailable > 0 && `${coverage.unavailable} unavailable`,
+  ].filter(Boolean).join(" · ");
   const pollAge = agePartsOf(summary.lastPollAt, nowMs);
 
   return (
     <div className="mt-4 grid grid-cols-2 gap-2 @2xl:grid-cols-4">
       <Tile accent={incidentAccent}>
-        <span className={TILE_LABEL}>Confirmed incidents</span>
+        <span className={TILE_LABEL}>
+          {trusted ? "Confirmed incidents" : "Last known confirmed incidents"}
+        </span>
         <span
           className={TILE_VALUE}
-          style={worst ? { color: SEVERITY_INK[worst] } : undefined}
+          style={{ color: trusted ? severityInk : undefined }}
         >
-          {incidents.total.toLocaleString("en-US")}
+          {showIncidentCount ? incidents.total.toLocaleString("en-US") : "—"}
         </span>
         <span className={TILE_NOTE}>
-          {incidents.total === 0 ? (
+          {!showIncidentCount ? (
+            "current count unavailable"
+          ) : incidents.total === 0 ? (
             "none current at fresh sources"
           ) : (
             <>
               {SEVERITIES.filter((sev) => incidents.bySeverity[sev] > 0).map(
                 (sev) => (
                   <span key={sev}>
-                    <span style={{ color: SEVERITY_INK[sev] }}>
+                    <span style={{ color: trusted ? SEVERITY_INK[sev] : undefined }}>
                       {incidents.bySeverity[sev]} {sev}
                     </span>
                     {" · "}
@@ -266,25 +297,21 @@ function Tiles({
         )}
       </Tile>
 
-      <Tile
-        accent={
-          coverage.fresh === coverage.total
-            ? "var(--ink-info)"
-            : "var(--ink-minor)"
-        }
-      >
-        <span className={TILE_LABEL}>Source coverage</span>
+      <Tile accent={trusted ? coverageAccent : undefined}>
+        <span className={TILE_LABEL}>
+          {trusted ? "Source coverage" : "Last known source coverage"}
+        </span>
         <span className={`${TILE_VALUE} !gap-x-0`}>
           {coverage.fresh}
           <span className={TILE_UNIT}>/{coverage.total} fresh</span>
         </span>
         <span
           role="img"
-          aria-label={`${coverage.fresh} fresh, ${coverage.stale} stale, ${coverage.unavailable} unavailable`}
+          aria-label={`${trusted ? "" : "Last known coverage: "}${coverage.fresh} fresh, ${coverage.stale} stale, ${coverage.unavailable} unavailable`}
           className="my-0.5 flex h-2 gap-0.5 overflow-hidden rounded-full"
         >
           {coverage.fresh > 0 && (
-            <span className="bg-secondary" style={{ flexGrow: coverage.fresh }} />
+            <span className={trusted ? "bg-secondary" : "bg-text-muted"} style={{ flexGrow: coverage.fresh }} />
           )}
           {coverage.stale > 0 && (
             <span
@@ -300,24 +327,18 @@ function Tiles({
           )}
         </span>
         <span className={TILE_NOTE}>
-          {coverage.fresh === coverage.total
-            ? "every source checked recently"
-            : [
-                coverage.stale > 0 && `${coverage.stale} stale`,
-                coverage.unavailable > 0 &&
-                  `${coverage.unavailable} unavailable`,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
+          {coverageGaps || (trusted ? "every source checked recently" : "all fresh at last refresh")}
         </span>
       </Tile>
 
       <Tile>
-        <span className={TILE_LABEL}>Last completed poll</span>
+        <span className={TILE_LABEL}>
+          {trusted ? "Last completed poll" : "Last known completed poll"}
+        </span>
         {pollAge && summary.lastPollAt ? (
           <time
             dateTime={summary.lastPollAt}
-            title={`Last successful source check: ${formatUtc(summary.lastPollAt)}`}
+            title={`Poll completed at ${formatUtc(summary.lastPollAt)}`}
             className={TILE_VALUE}
           >
             {pollAge.value}
@@ -328,20 +349,16 @@ function Tiles({
         )}
         <span className={TILE_NOTE}>
           {summary.lastPollAt
-            ? "newest successful source check"
-            : "no source has been checked yet"}
+            ? "latest finished attempt"
+            : "no completed poll recorded"}
         </span>
-        <span className={`${TILE_NOTE} flex items-center gap-1.5`}>
-          <span
-            className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${live.dot}`}
-            aria-hidden="true"
-          />
-          {live.text}
-        </span>
+        <StreamStatus live={live} />
       </Tile>
 
       <Tile>
-        <span className={TILE_LABEL}>Not counted as incidents</span>
+        <span className={TILE_LABEL}>
+          {trusted ? "Not counted as incidents" : "Last known advisories and signals"}
+        </span>
         <span className={TILE_VALUE}>
           {advisories.recent.toLocaleString("en-US")}
           <span className={TILE_UNIT}>
@@ -380,9 +397,6 @@ function AffectedNow({
   const serviceGaps = unknown.filter((p) => p.role === "service").length;
   // Sources that cannot be confirmed now but listed incidents when last read.
   const lastKnown = unknown.filter((p) => p.openAtLastCheck > 0);
-  const olderOpen = summary.providers.filter(
-    (p) => p.coverage === "fresh" && p.olderOpen > 0,
-  );
   const freshServices = summary.providers.filter(
     (p) => p.role === "service" && p.coverage === "fresh",
   ).length;
@@ -390,25 +404,32 @@ function AffectedNow({
 
   return (
     <>
-      {/* Announced only when the wording changes, not on every refresh. */}
-      <p role="status" className="sr-only">
-        {plural(incidents.total, "confirmed incident")} across{" "}
-        {plural(incidents.providers, "provider")}
-        {observedOutages > 0 &&
-          `, plus ${plural(observedOutages, "observed internet outage")}`}
-        . {summary.coverage.fresh} of {summary.coverage.total} sources fresh.
-      </p>
+      {trusted && freshServices > 0 && (
+        <p role="status" className="sr-only">
+          {plural(incidents.total, "confirmed incident")} across{" "}
+          {plural(incidents.providers, "provider")}
+          {observedOutages > 0 &&
+            `, plus ${plural(observedOutages, "observed internet outage")}`}
+          . {summary.coverage.fresh} of {summary.coverage.total} sources fresh.
+        </p>
+      )}
 
       {summary.affected.length > 0 ? (
         <ul className="mt-1.5">
           {summary.affected.map((row) => (
-            <AffectedRow key={row.source} row={row} nowMs={nowMs} />
+            <AffectedRow
+              key={row.source}
+              row={row}
+              nowMs={nowMs}
+              trusted={trusted}
+            />
           ))}
         </ul>
       ) : (
         <p className="mt-1.5 flex items-start gap-2 border-t border-border py-3 text-[13px] text-text-secondary">
-          {trusted && serviceGaps === 0 && olderOpen.length === 0 ? (
-            // The only all-clear: every service source fresh, nothing open.
+          {!trusted ? (
+            "Current incident status is unavailable."
+          ) : serviceGaps === 0 && freshServices > 0 ? (
             <>
               <CircleCheck
                 className="mt-0.5 h-4 w-4 shrink-0 text-secondary-ink"
@@ -418,29 +439,17 @@ function AffectedNow({
                 <span className="font-semibold text-text-primary">
                   No confirmed incidents.
                 </span>{" "}
-                All {freshServices} service sources were checked in the last
-                15 minutes and none lists an open incident.
+                All {freshServices} service sources are fresh and report no
+                open incidents.
               </span>
             </>
-          ) : !trusted || serviceGaps > 0 ? (
+          ) : freshServices > 0 ? (
             <span>
-              <span className="font-semibold text-text-primary">
-                No confirmed incidents from the sources that could be checked.
-              </span>{" "}
-              {trusted
-                ? `${plural(serviceGaps, "service source")} can't be confirmed right now, so this is not an all-clear.`
-                : "This snapshot is out of date, so this is not an all-clear."}
+              No confirmed incidents at fresh service sources. Coverage is
+              incomplete.
             </span>
           ) : (
-            <span>
-              <span className="font-semibold text-text-primary">
-                No current incidents.
-              </span>{" "}
-              Every service source was checked in the last 15 minutes, but{" "}
-              {plural(olderOpen.length, "provider")} still{" "}
-              {olderOpen.length === 1 ? "lists" : "list"} older records as
-              open, so this is not a full all-clear.
-            </span>
+            "Current incident status is unavailable. No service sources are fresh."
           )}
         </p>
       )}
@@ -454,7 +463,7 @@ function AffectedNow({
             aria-hidden="true"
           />
           <span>
-            Can&apos;t confirm right now:{" "}
+            {trusted ? "Sources with incomplete coverage: " : "Coverage gaps at last refresh: "}
             {stale.length > 0 && (
               <>
                 <span className="font-semibold text-text-secondary">
@@ -472,7 +481,7 @@ function AffectedNow({
                 (unavailable)
               </>
             )}
-            . Shown as Unknown, never as Operational.
+            .
             {lastKnown.length > 0 && (
               <>
                 {" "}
@@ -498,34 +507,6 @@ function AffectedNow({
           </span>
         </p>
       )}
-
-      {olderOpen.length > 0 && (
-        <p
-          className={`flex items-start gap-2 px-1 text-xs leading-relaxed text-text-muted ${
-            unknown.length > 0 ? "pt-2" : "border-t border-border pt-2.5"
-          }`}
-        >
-          <span
-            className="status-dot status-dot-older mt-1"
-            aria-hidden="true"
-          />
-          <span>
-            Not counted:{" "}
-            <span className="font-semibold text-text-secondary">
-              {plural(summary.olderOpen.total, "older open record")}
-            </span>{" "}
-            from {nameList(olderOpen)}.{" "}
-            {olderOpen.length === 1
-              ? "Its feed still lists"
-              : "Their feeds still list"}{" "}
-            {summary.olderOpen.total === 1
-              ? "it as open, but it is"
-              : "them as open, but they are"}{" "}
-            more than {summary.windowDays} days old with no dated updates. Not
-            shown as Operational either.
-          </span>
-        </p>
-      )}
     </>
   );
 }
@@ -533,24 +514,25 @@ function AffectedNow({
 function AffectedRow({
   row,
   nowMs,
+  trusted,
 }: {
   row: SummaryAffected;
   nowMs: number | null;
+  trusted: boolean;
 }) {
   const style = PROVIDER_STATUS_STYLES[row.status];
-  const statusInk =
-    row.status === "outage" ? "var(--ink-critical)" : "var(--ink-minor)";
+  const statusInk = row.status === "outage" ? "var(--ink-critical)" : "var(--ink-minor)";
 
   return (
     <li className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-t border-border px-1 py-2">
       <span className="flex w-full items-center gap-2 text-[13px] @xl:w-52 @xl:shrink-0">
-        <span className={`status-dot ${style.dot}`} aria-hidden="true" />
+        <span className={`status-dot ${trusted ? style.dot : "bg-text-muted"}`} aria-hidden="true" />
         <span className="min-w-0 font-semibold text-text-primary [overflow-wrap:anywhere]">
           {providerName(row.source)}
         </span>
         <span
           className={`${MONO} text-[11px] uppercase tracking-wide`}
-          style={{ color: statusInk }}
+          style={{ color: trusted ? statusInk : undefined }}
         >
           {style.label}
         </span>
@@ -577,7 +559,7 @@ function AffectedRow({
       </span>
 
       <span className={`${MONO} text-[11px] text-text-muted`}>
-        <span style={{ color: SEVERITY_INK[row.severity] }}>
+        <span style={{ color: trusted ? SEVERITY_INK[row.severity] : undefined }}>
           {SEVERITY_LABELS[row.severity]}
         </span>
         {row.confidence !== "official" && (

@@ -12,7 +12,7 @@ import type { DashboardSummary } from "@/lib/dashboard-snapshot";
 export const DASHBOARD_SUMMARY_KEY = "/api/alerts/summary";
 
 const REFRESH_MS = 30_000;
-/** After this many missed refreshes the snapshot is treated as out of date. */
+/** Maximum time to present a snapshot as current. */
 const OUT_OF_DATE_MS = 3 * 60_000;
 const CLOCK_TICK_MS = 15_000;
 
@@ -32,6 +32,7 @@ async function fetchSummary(url: string): Promise<SummaryEnvelope> {
   if (
     !summary ||
     typeof summary.generatedAt !== "string" ||
+    !Number.isFinite(Date.parse(summary.generatedAt)) ||
     !Array.isArray(summary.providers) ||
     !Array.isArray(summary.affected) ||
     typeof summary.incidents?.total !== "number"
@@ -85,26 +86,39 @@ export interface DashboardSummaryState {
   isLoading: boolean;
   /** The latest refresh failed. A previous snapshot may still be shown. */
   isError: boolean;
-  /** The snapshot on screen is too old to describe the present. */
-  isOutOfDate: boolean;
+  /** A refresh failed or this snapshot expired. */
+  isLastKnown: boolean;
 }
 
-export function useDashboardSummary(): DashboardSummaryState {
-  const { data, error, isLoading, isValidating } = useSWR<SummaryEnvelope>(
-    DASHBOARD_SUMMARY_KEY,
+export function useDashboardSummary(enabled = true): DashboardSummaryState {
+  const { data, error, isLoading } = useSWR<SummaryEnvelope>(
+    enabled ? DASHBOARD_SUMMARY_KEY : null,
     fetchSummary,
     { refreshInterval: REFRESH_MS },
   );
-  const clock = useSyncExternalStore(subscribeClock, readClock, readServerClock);
+  const clock = useSyncExternalStore(
+    enabled ? subscribeClock : subscribeNever,
+    readClock,
+    readServerClock,
+  );
+  return getDashboardSummaryState(data, !!error, isLoading, clock, clockStartedAt);
+}
 
+export function getDashboardSummaryState(
+  data: SummaryEnvelope | undefined,
+  failed: boolean,
+  loading: boolean,
+  clock: number,
+  startedAt: number,
+): DashboardSummaryState {
   const summary = data?.summary ?? null;
   if (!summary) {
     return {
       summary: null,
       nowMs: null,
-      isLoading: isLoading && !error,
-      isError: !!error,
-      isOutOfDate: false,
+      isLoading: loading && !failed,
+      isError: failed,
+      isLastKnown: false,
     };
   }
 
@@ -113,16 +127,14 @@ export function useDashboardSummary(): DashboardSummaryState {
   const elapsed =
     clock === 0
       ? 0
-      : Math.max(0, clock - (data?.receivedAt ?? clockStartedAt));
+      : Math.max(0, clock - (data?.receivedAt ?? startedAt));
 
   return {
     summary,
     nowMs: generatedAtMs + elapsed,
     isLoading: false,
-    isError: !!error,
-    // While a refresh of an old cached snapshot is still in flight (for
-    // example after navigating back), wait for its result before warning.
-    isOutOfDate: elapsed > OUT_OF_DATE_MS && (!!error || !isValidating),
+    isError: failed,
+    isLastKnown: failed || elapsed >= OUT_OF_DATE_MS,
   };
 }
 

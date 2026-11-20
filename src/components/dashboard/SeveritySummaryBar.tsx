@@ -12,12 +12,16 @@ import { MONO, SEVERITIES, SEVERITY_LABELS, plural } from "./console-labels";
  * not change with the feed's filters or page size.
  */
 export function SeveritySummaryBar() {
-  const { summary, isOutOfDate } = useDashboardSummary();
+  const { summary, isLastKnown } = useDashboardSummary();
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeSeverity = searchParams.get("severity") ?? "";
-  // No snapshot, or one too old to trust: show the shortcuts without numbers.
-  const counts = summary && !isOutOfDate ? summary.incidents.bySeverity : null;
+  const hasFreshService = summary?.providers.some(
+    (provider) => provider.role === "service" && provider.coverage === "fresh",
+  );
+  const counts = !isLastKnown && hasFreshService
+    ? summary?.incidents.bySeverity ?? null
+    : null;
 
   const toggle = (severity: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -37,7 +41,7 @@ export function SeveritySummaryBar() {
       className="flex flex-wrap items-center gap-1.5"
     >
       <span className={`${MONO} mr-1 text-[10px] uppercase tracking-[0.1em] text-text-muted`}>
-        Confirmed now
+        {counts ? "Confirmed now" : "Severity"}
       </span>
       {SEVERITIES.map((severity) => {
         const count = counts ? counts[severity] : null;

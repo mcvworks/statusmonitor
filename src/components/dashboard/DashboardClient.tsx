@@ -56,7 +56,7 @@ export function DashboardClient({
 
 function Console({ children }: { children?: React.ReactNode }) {
   const { status } = useSSE();
-  const { summary, isOutOfDate } = useDashboardSummary();
+  const { summary, isLastKnown } = useDashboardSummary();
   const [filters, setFilters] = useState<FilterValues>({
     search: "",
     category: "",
@@ -74,10 +74,10 @@ function Console({ children }: { children?: React.ReactNode }) {
   // Null while that is not known, so nothing is claimed in the meantime.
   const affectedProviders = useMemo(
     () =>
-      summary && !isOutOfDate
+      summary && !isLastKnown
         ? summary.affected.map((row) => row.source)
         : null,
-    [summary, isOutOfDate],
+    [summary, isLastKnown],
   );
 
   return (

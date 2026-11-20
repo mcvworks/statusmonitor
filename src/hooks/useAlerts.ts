@@ -42,8 +42,8 @@ function buildUrl(filters: AlertFilters): string {
   return `/api/alerts${qs ? `?${qs}` : ""}`;
 }
 
-export function useAlerts(filters: AlertFilters = {}) {
-  const url = buildUrl(filters);
+export function useAlerts(filters: AlertFilters = {}, enabled = true) {
+  const url = enabled ? buildUrl(filters) : null;
   const { data, error, isLoading, mutate } = useSWR<AlertsResponse>(
     url,
     fetcher,

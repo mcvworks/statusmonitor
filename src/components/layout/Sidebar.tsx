@@ -19,9 +19,11 @@ import {
   CATEGORY_LABELS,
   type ProviderMeta,
 } from "@/lib/constants";
-import type { AlertCategory } from "@/lib/alert-schema";
+import type { AlertCategory, SerializedAlert } from "@/lib/alert-schema";
+import { useAlerts } from "@/hooks/useAlerts";
 import { useDashboardSummary } from "@/hooks/useDashboardSummary";
 import {
+  deriveProviderStatus,
   PROVIDER_STATUS_STYLES,
   type ProviderStatus,
 } from "@/lib/provider-status";
@@ -40,14 +42,25 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed, onToggle, mobile }: SidebarProps) {
-  // Live per-provider status for the dots, from the same snapshot as the
-  // homepage summary (SWR shares the request). A provider is only shown as
-  // operational when its source is fresh and reports no open incident.
-  const { summary, isOutOfDate } = useDashboardSummary();
+  const isHomepage = usePathname() === "/";
+  const { summary, isLastKnown } = useDashboardSummary(isHomepage);
+  const { alerts } = useAlerts({}, !isHomepage);
   const statusBySource: Record<string, ProviderStatus> = {};
-  if (summary && !isOutOfDate) {
-    for (const provider of summary.providers) {
-      statusBySource[provider.key] = provider.status;
+  const defaultStatus = isHomepage ? "unknown" : "operational";
+
+  if (isHomepage) {
+    if (summary && !isLastKnown) {
+      for (const provider of summary.providers) {
+        statusBySource[provider.key] = provider.status;
+      }
+    }
+  } else {
+    const alertsBySource: Record<string, SerializedAlert[]> = {};
+    for (const alert of alerts) {
+      (alertsBySource[alert.source] ??= []).push(alert);
+    }
+    for (const [key, sourceAlerts] of Object.entries(alertsBySource)) {
+      statusBySource[key] = deriveProviderStatus(sourceAlerts);
     }
   }
 
@@ -92,6 +105,7 @@ export function Sidebar({ collapsed, onToggle, mobile }: SidebarProps) {
               category={cat}
               providers={grouped[cat] ?? []}
               statusBySource={statusBySource}
+              defaultStatus={defaultStatus}
             />
           ))}
         {collapsed && !mobile &&
@@ -137,10 +151,12 @@ function CategorySection({
   category,
   providers,
   statusBySource,
+  defaultStatus,
 }: {
   category: AlertCategory;
   providers: (ProviderMeta & { id: string })[];
   statusBySource: Record<string, ProviderStatus>;
+  defaultStatus: ProviderStatus;
 }) {
   const [expanded, setExpanded] = useState(true);
   const pathname = usePathname();
@@ -172,7 +188,7 @@ function CategorySection({
               >
                 <span
                   className={`status-dot ${
-                    PROVIDER_STATUS_STYLES[statusBySource[p.id] ?? "unknown"]
+                    PROVIDER_STATUS_STYLES[statusBySource[p.id] ?? defaultStatus]
                       .dot
                   }`}
                 />

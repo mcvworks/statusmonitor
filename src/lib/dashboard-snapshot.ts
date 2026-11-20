@@ -3,35 +3,12 @@ import { SEVERITY_ORDER } from "./constants";
 import type { ProviderStatus } from "./provider-status";
 import { isAdvisorySignal, isOperationalSignal } from "./signal-kind";
 
-/**
- * Pure rules behind the homepage summary. No database or network access here,
- * so the same rules can be unit-tested and reused for typing on the client.
- *
- * What counts as happening "now":
- * - the source itself must be fresh (same freshness rule as provider health);
- * - the record must still have been listed by that source at its latest
- *   successful check; and
- * - its open state must be the source's own statement. Sources that publish
- *   dated updates for a record track its lifecycle themselves, so such a
- *   record is open for as long as the source lists it, however old it is.
- *   Where the open state is only read out of feed text (no dated updates),
- *   old items stay "open" forever, so those count only if they started within
- *   CURRENT_INCIDENT_WINDOW_DAYS.
- * Open records that fail the last test are reported separately as "older open
- * records": they are never counted as current incidents, and their provider is
- * never shown as operational.
- */
-
-/**
- * Open records without dated source updates that started longer ago than
- * this are not "now".
- */
-export const CURRENT_INCIDENT_WINDOW_DAYS = 7;
+/** Recent advisories are shown separately from active incidents. */
+export const RECENT_ADVISORY_WINDOW_DAYS = 7;
 /** A record counts as listed at the latest check if seen this close to it. */
 export const VERIFY_TOLERANCE_MS = 2 * 60_000;
 /** Records dated further ahead than this are announcements, not incidents. */
 const FUTURE_TOLERANCE_MS = 5 * 60_000;
-const DAY_MS = 24 * 60 * 60_000;
 
 export type SourceDataState =
   | "healthy"
@@ -89,19 +66,13 @@ export interface SummaryProvider {
   role: SourceRole;
   dataState: SourceDataState;
   coverage: SourceCoverage;
-  /**
-   * "operational" only when the source is fresh and lists nothing open.
-   * "unknown" when the source is not fresh, or when it has no current
-   * incident but still lists older open records.
-   */
+  /** Only a fresh source with no open incidents is operational. */
   status: ProviderStatus;
   lastSuccessAt: string | null;
   /** Current incidents (confirmed or observed) from this source. */
   incidents: number;
   /** How many of those are observed outages rather than confirmed incidents. */
   observed: number;
-  /** Still listed as open by the source, but too old to count as current. */
-  olderOpen: number;
   /**
    * For sources that are not fresh: incidents that were current at their last
    * good check. Reported as last-known, never counted as happening now.
@@ -126,7 +97,7 @@ export interface SummaryAffected {
 
 export interface DashboardSummary {
   generatedAt: string;
-  /** Last successful check of any source, or null if none has succeeded. */
+  /** Latest completed poll attempt, including failures. */
   lastPollAt: string | null;
   windowDays: number;
   /** Officially reported or corroborated incidents that are current. */
@@ -137,8 +108,6 @@ export interface DashboardSummary {
   };
   /** Observed (not officially confirmed) internet outages that are current. */
   observedOutages: number;
-  /** Older open records. Never part of incidents.total. */
-  olderOpen: { total: number; providers: number };
   /** Advisories are never incidents. */
   advisories: { open: number; recent: number };
   /** Community or crowdsourced reports. Never incidents. */
@@ -219,42 +188,9 @@ function activityMs(alert: SummaryAlertInput): number {
   );
 }
 
-/**
- * Whether a record the source still lists as open describes the present.
- * See the rules at the top of this file.
- */
-function isCurrent(alert: SummaryAlertInput, cutoffMs: number): boolean {
-  return alert.lastUpdateAt !== null || alert.timestamp.getTime() >= cutoffMs;
-}
-
-/**
- * Some feeds publish one record per update, all with the same headline.
- * Collapse those so one incident is counted once, keeping the most severe
- * and then the most recently active record.
- */
-function distinctByTitle(alerts: SummaryAlertInput[]): SummaryAlertInput[] {
-  const best = new Map<string, SummaryAlertInput>();
-  for (const alert of alerts) {
-    const key = alert.title.trim().toLowerCase();
-    const current = best.get(key);
-    if (
-      !current ||
-      severityRank(alert.severity) < severityRank(current.severity) ||
-      (severityRank(alert.severity) === severityRank(current.severity) &&
-        activityMs(alert) > activityMs(current))
-    ) {
-      best.set(key, alert);
-    }
-  }
-  return [...best.values()].sort(
-    (a, b) =>
-      severityRank(a.severity) - severityRank(b.severity) ||
-      activityMs(b) - activityMs(a),
-  );
-}
-
 export function buildDashboardSummary(input: {
   now: Date;
+  lastPollAt: Date | null;
   sources: SummarySourceInput[];
   /** Unresolved operational records and community signals. */
   openAlerts: SummaryAlertInput[];
@@ -262,7 +198,6 @@ export function buildDashboardSummary(input: {
   advisoriesRecent: number;
 }): DashboardSummary {
   const nowMs = input.now.getTime();
-  const currentCutoff = nowMs - CURRENT_INCIDENT_WINDOW_DAYS * DAY_MS;
 
   const bySource = new Map<string, SummaryAlertInput[]>();
   for (const alert of input.openAlerts) {
@@ -284,9 +219,6 @@ export function buildDashboardSummary(input: {
   let confirmedProviders = 0;
   let observedOutages = 0;
   let unconfirmedSignals = 0;
-  let olderTotal = 0;
-  let olderProviders = 0;
-  let lastPollMs = 0;
 
   for (const source of input.sources) {
     const dataState = deriveDataState(source, nowMs);
@@ -295,16 +227,13 @@ export function buildDashboardSummary(input: {
     coverage.total += 1;
     coverage[sourceCoverage] += 1;
 
-    if (lastSuccessMs !== null && lastSuccessMs > lastPollMs) {
-      lastPollMs = lastSuccessMs;
-    }
-
     // Only records the source still listed at its latest successful check.
     const listed =
       lastSuccessMs === null
         ? []
         : (bySource.get(source.key) ?? []).filter(
             (alert) =>
+              alert.status !== "resolved" &&
               alert.lastObservedAt.getTime() >=
                 lastSuccessMs - VERIFY_TOLERANCE_MS &&
               alert.timestamp.getTime() <= nowMs + FUTURE_TOLERANCE_MS,
@@ -323,17 +252,12 @@ export function buildDashboardSummary(input: {
       lastSuccessAt: source.state?.lastSuccessAt?.toISOString() ?? null,
       incidents: 0,
       observed: 0,
-      olderOpen: 0,
       openAtLastCheck: 0,
     };
     providers.push(provider);
 
     if (sourceCoverage !== "fresh") {
-      // Cannot be confirmed now: report what was open, claim nothing. Older
-      // open records are left out here too, as they would be for a fresh source.
-      provider.openAtLastCheck = distinctByTitle(
-        operational.filter((alert) => isCurrent(alert, currentCutoff)),
-      ).length;
+      provider.openAtLastCheck = operational.length;
       continue;
     }
 
@@ -341,27 +265,15 @@ export function buildDashboardSummary(input: {
       (alert) => classifySignal(alert) === "unconfirmed",
     ).length;
 
-    const current = distinctByTitle(
-      operational.filter((alert) => isCurrent(alert, currentCutoff)),
+    // Each row has a stable ID. Headline text is only for display.
+    const current = operational.sort(
+      (a, b) =>
+        severityRank(a.severity) - severityRank(b.severity) ||
+        activityMs(b) - activityMs(a),
     );
-    const currentTitles = new Set(
-      current.map((alert) => alert.title.trim().toLowerCase()),
-    );
-    const older = distinctByTitle(
-      operational.filter((alert) => !isCurrent(alert, currentCutoff)),
-    ).filter((alert) => !currentTitles.has(alert.title.trim().toLowerCase()));
-
     provider.incidents = current.length;
-    provider.olderOpen = older.length;
-    if (older.length > 0) {
-      olderTotal += older.length;
-      olderProviders += 1;
-    }
-
     if (current.length === 0) {
-      // Operational only when the source lists nothing open at all. Older
-      // open records are not incidents, but they are not an all-clear either.
-      if (older.length === 0) provider.status = "operational";
+      provider.status = "operational";
       continue;
     }
 
@@ -403,15 +315,14 @@ export function buildDashboardSummary(input: {
 
   return {
     generatedAt: input.now.toISOString(),
-    lastPollAt: lastPollMs > 0 ? new Date(lastPollMs).toISOString() : null,
-    windowDays: CURRENT_INCIDENT_WINDOW_DAYS,
+    lastPollAt: input.lastPollAt?.toISOString() ?? null,
+    windowDays: RECENT_ADVISORY_WINDOW_DAYS,
     incidents: {
       total: confirmedTotal,
       bySeverity,
       providers: confirmedProviders,
     },
     observedOutages,
-    olderOpen: { total: olderTotal, providers: olderProviders },
     advisories: {
       open: input.advisoriesOpen,
       recent: input.advisoriesRecent,

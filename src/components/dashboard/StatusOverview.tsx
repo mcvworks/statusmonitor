@@ -151,7 +151,7 @@ function attentionRank(provider: SummaryProvider): number {
 }
 
 function ProviderRail() {
-  const { summary, nowMs, isLoading, isOutOfDate } = useDashboardSummary();
+  const { summary, nowMs, isLoading, isLastKnown } = useDashboardSummary();
 
   return (
     <section
@@ -189,14 +189,12 @@ function ProviderRail() {
       ) : (
         <RailGroups
           summaryProviders={summary.providers}
-          windowDays={summary.windowDays}
           nowMs={nowMs}
-          trusted={!isOutOfDate}
+          trusted={!isLastKnown}
         >
-          {isOutOfDate && (
+          {isLastKnown && (
             <p className="mt-2 rounded-md border border-major/40 bg-major/5 px-2.5 py-1.5 text-xs text-text-primary">
-              Last refreshed {formatUtc(summary.generatedAt)}. Statuses below
-              may have changed.
+              Last known provider status as of {formatUtc(summary.generatedAt)}.
             </p>
           )}
         </RailGroups>
@@ -214,13 +212,11 @@ function ProviderRail() {
 
 function RailGroups({
   summaryProviders,
-  windowDays,
   nowMs,
   trusted,
   children,
 }: {
   summaryProviders: SummaryProvider[];
-  windowDays: number;
   nowMs: number | null;
   /** False once the snapshot is too old to describe the present. */
   trusted: boolean;
@@ -232,25 +228,24 @@ function RailGroups({
   const fresh = summaryProviders.filter(
     (p) => p.coverage === "fresh" && p.incidents === 0,
   );
-  // A fresh source that still lists older open records is kept apart: it has
-  // no current incident, but it is not listed as operational either.
-  const olderOnly = fresh.filter((p) => p.olderOpen > 0);
-  const clear = fresh.filter((p) => p.olderOpen === 0);
-  const operational = clear.filter((p) => p.role === "service");
-  const advisoryFeeds = clear.filter((p) => p.role === "advisory");
-  const communityFeeds = clear.filter((p) => p.role === "community");
+  const operational = fresh.filter((p) => p.role === "service");
+  const advisoryFeeds = fresh.filter((p) => p.role === "advisory");
+  const communityFeeds = fresh.filter((p) => p.role === "community");
 
   return (
     <>
       {children}
 
-      <h3 className={`${GROUP_HEADING} mt-3`}>
-        Needs attention · {attention.length}
-      </h3>
+      {(trusted || attention.length > 0) && (
+        <h3 className={`${GROUP_HEADING} mt-3`}>
+          {trusted ? "Needs attention" : "Needed attention at last refresh"} · {attention.length}
+        </h3>
+      )}
       {attention.length === 0 ? (
         <p className="mt-1.5 text-[13px] text-text-secondary">
-          Nothing right now. Every source is fresh and none has a current
-          incident.
+          {trusted
+            ? "Every source is fresh and none lists an open incident."
+            : "Current provider status is unavailable."}
         </p>
       ) : (
         <ul className="mt-1">
@@ -270,18 +265,6 @@ function RailGroups({
         providers={operational}
         trusted={trusted}
         describe={() => "Operational. Source fresh."}
-      />
-      <ChipGroup
-        heading={trusted ? "Older open records" : "Older open records at last refresh"}
-        note={`Still listed as open by the feed, but more than ${windowDays} days old with no dated updates. Not counted as incidents, and not shown as operational.`}
-        providers={olderOnly}
-        trusted={trusted}
-        dot="status-dot-older"
-        count={(p) => p.olderOpen}
-        countLabel="older open record"
-        describe={(p) =>
-          `${plural(p.olderOpen, "older open record")}, not counted as current.`
-        }
       />
       <ChipGroup
         heading={trusted ? "Advisory feeds · fresh" : "Advisory feeds at last refresh"}
@@ -318,7 +301,7 @@ function AttentionRow({
     : provider.coverage === "stale"
       ? "status-dot-stale"
       : "status-dot-unavailable";
-  const labelInk = !hasIncident
+  const labelInk = !trusted || !hasIncident
     ? undefined
     : provider.status === "outage"
       ? "var(--ink-critical)"
@@ -335,9 +318,6 @@ function AttentionRow({
     details.push(
       `${trusted ? "fresh · " : ""}checked ${formatAge(provider.lastSuccessAt, nowMs)}`,
     );
-    if (provider.olderOpen > 0) {
-      details.push(`${provider.olderOpen} older not counted`);
-    }
   } else if (provider.coverage === "stale") {
     details.push(
       `stale · last check ${formatAge(provider.lastSuccessAt, nowMs)}`,
@@ -355,7 +335,7 @@ function AttentionRow({
         href={`/status/${provider.key}`}
         className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-md px-1 py-1.5 transition-colors hover:bg-surface-hover"
       >
-        <span className={`status-dot ${dot}`} aria-hidden="true" />
+        <span className={`status-dot ${trusted ? dot : "bg-text-muted"}`} aria-hidden="true" />
         <span className="min-w-0 flex-1 text-[13px] font-medium text-text-primary [overflow-wrap:anywhere]">
           {providerName(provider.key)}
         </span>
@@ -375,24 +355,13 @@ function AttentionRow({
 
 function ChipGroup({
   heading,
-  note,
   providers,
   trusted,
-  dot = "status-dot-operational",
-  count,
-  countLabel,
   describe,
 }: {
   heading: string;
-  /** Plain-text explanation shown under the heading. */
-  note?: string;
   providers: SummaryProvider[];
   trusted: boolean;
-  /** Marker class while the snapshot is current. */
-  dot?: string;
-  /** A number shown after the name, with the noun it counts. */
-  count?: (provider: SummaryProvider) => number;
-  countLabel?: string;
   describe: (provider: SummaryProvider) => string;
 }) {
   if (providers.length === 0) return null;
@@ -401,9 +370,6 @@ function ChipGroup({
       <h3 className={`${GROUP_HEADING} mt-4`}>
         {heading} · {providers.length}
       </h3>
-      {note && (
-        <p className="mt-1 text-xs leading-relaxed text-text-muted">{note}</p>
-      )}
       <ul className="mt-2 flex flex-wrap gap-1.5">
         {providers.map((provider) => (
           <li key={provider.key}>
@@ -415,18 +381,10 @@ function ChipGroup({
               className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs text-text-secondary transition-colors hover:border-border-hover hover:bg-surface-hover hover:text-text-primary"
             >
               <span
-                className={`status-dot ${trusted ? dot : "bg-text-muted"}`}
+                className={`status-dot ${trusted ? "status-dot-operational" : "bg-text-muted"}`}
                 aria-hidden="true"
               />
               {providerName(provider.key)}
-              {count && countLabel && (
-                <span className={`${MONO} text-[11px] text-text-muted`}>
-                  <span aria-hidden="true">· {count(provider)}</span>
-                  <span className="sr-only">
-                    , {plural(count(provider), countLabel)}
-                  </span>
-                </span>
-              )}
             </Link>
           </li>
         ))}

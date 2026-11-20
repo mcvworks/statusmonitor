@@ -230,14 +230,6 @@ body::before {
   border: 2px dotted var(--t-text-muted);
 }
 
-/* Fresh source that still lists older open records: not an incident, but
-   not confirmed operational either. */
-.status-dot-older {
-  width: 9px;
-  height: 9px;
-  border: 2px solid var(--t-text-muted);
-}
-
 /* ─── Console (public dashboard) ───────────────────────── */
 /* Scoped to the homepage: text-safe severity inks, a visible keyboard focus
    ring, and a muted gray that stays readable at 10–11px in the light theme. */

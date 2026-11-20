@@ -3,7 +3,7 @@ import { PROVIDERS } from "@/lib/constants";
 import { getProvider } from "@/lib/providers/registry";
 import {
   buildDashboardSummary,
-  CURRENT_INCIDENT_WINDOW_DAYS,
+  RECENT_ADVISORY_WINDOW_DAYS,
   VERIFY_TOLERANCE_MS,
   type DashboardSummary,
   type SummarySourceInput,
@@ -85,7 +85,12 @@ async function readDashboardSummary(): Promise<DashboardSummary> {
   );
 
   const advisoryWhere = { signalKind: "advisory", status: { not: "resolved" } };
-  const [openAlerts, advisoriesOpen, advisoriesRecent] = await Promise.all([
+  const [lastPoll, openAlerts, advisoriesOpen, advisoriesRecent] = await Promise.all([
+    prisma.pollLog.findFirst({
+      where: { completedAt: { not: null } },
+      orderBy: { completedAt: "desc" },
+      select: { completedAt: true },
+    }),
     listedAtLastCheck.length === 0
       ? []
       : prisma.alert.findMany({
@@ -118,7 +123,7 @@ async function readDashboardSummary(): Promise<DashboardSummary> {
       where: {
         ...advisoryWhere,
         timestamp: {
-          gte: new Date(now.getTime() - CURRENT_INCIDENT_WINDOW_DAYS * DAY_MS),
+          gte: new Date(now.getTime() - RECENT_ADVISORY_WINDOW_DAYS * DAY_MS),
         },
       },
     }),
@@ -126,6 +131,7 @@ async function readDashboardSummary(): Promise<DashboardSummary> {
 
   return buildDashboardSummary({
     now,
+    lastPollAt: lastPoll?.completedAt ?? null,
     sources,
     openAlerts: openAlerts.map(({ updates, ...alert }) => ({
       ...alert,
