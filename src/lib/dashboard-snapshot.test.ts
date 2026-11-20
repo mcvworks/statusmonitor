@@ -26,6 +26,7 @@ function source(
     key,
     category: "cloud",
     freshnessWindowMs: 6 * MINUTE,
+    hasUnverifiedObservations: false,
     successfulPoll: state?.lastSuccessAt ? {
       startedAt: new Date(state.lastSuccessAt.getTime() - 10_000),
       completedAt: state.lastSuccessAt,

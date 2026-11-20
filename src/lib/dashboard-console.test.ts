@@ -2,14 +2,16 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement, type ComponentProps } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { PathnameContext } from "next/dist/shared/lib/hooks-client-context.shared-runtime";
-import { SWRConfig } from "swr";
+import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import { PathnameContext, SearchParamsContext } from "next/dist/shared/lib/hooks-client-context.shared-runtime";
+import { SWRConfig, type State } from "swr";
 import { HealthBanner } from "../components/dashboard/HealthBanner";
 import { NewsTicker } from "../components/dashboard/NewsTicker";
+import { ProviderDetailPanel } from "../components/dashboard/ProviderDetailPanel";
 import { StatusOverview } from "../components/dashboard/StatusOverview";
 import { Sidebar } from "../components/layout/Sidebar";
 import { DASHBOARD_SUMMARY_KEY } from "../hooks/useDashboardSummary";
-import { buildDashboardSummary } from "./dashboard-snapshot";
+import { buildDashboardSummary, type SummaryProvider } from "./dashboard-snapshot";
 
 const now = new Date("2026-11-20T03:00:00Z");
 const summary = buildDashboardSummary({
@@ -20,6 +22,7 @@ const summary = buildDashboardSummary({
     category: "cloud",
     freshnessWindowMs: 6 * 60_000,
     successfulPoll: { startedAt: now, completedAt: now },
+    hasUnverifiedObservations: false,
     state: { lastSuccessAt: now, lastError: null, consecutiveFailures: 0 },
   }],
   openAlerts: [],
@@ -96,4 +99,108 @@ test("sidebar uses the summary on the homepage and the alert feed on other route
   assert.match(renderSidebar("/"), /href="\/status\/cloudflare"><span class="status-dot status-dot-operational"/);
   assert.match(renderSidebar("/dashboard"), /href="\/status\/cloudflare"><span class="status-dot status-dot-outage"/);
   assert.match(renderSidebar("/status/aws"), /href="\/status\/cloudflare"><span class="status-dot status-dot-outage"/);
+});
+
+
+test("the Console reports incomplete coverage while a source awaits its next verified poll", () => {
+  const inFlight = withSourceUnavailable("unverified");
+  const cache = new Map([[DASHBOARD_SUMMARY_KEY, { data: inFlight }]]);
+  const markup = renderToStaticMarkup(createElement(
+    SWRConfig,
+    { value: { provider: () => cache } },
+    createElement(HealthBanner, { sseStatus: "connected" }),
+    createElement<NonNullable<ComponentProps<typeof StatusOverview>>>(StatusOverview, { variant: "rail" }),
+  ));
+
+  assert.match(markup, /Current incident status is unavailable/);
+  assert.match(markup, /Sources with incomplete coverage/);
+  assert.match(markup, /awaiting a recorded successful poll/);
+  assert.doesNotMatch(markup, /No confirmed incidents|none current at fresh sources|Operational|Every source is fresh/);
+});
+
+const emptyAlerts = { data: { alerts: [] }, isLoading: false };
+
+function withSourceUnavailable(dataState: "stale" | "unverified") {
+  const coverage = dataState === "stale" ? "stale" : "unavailable";
+  const provider: SummaryProvider = {
+    ...summary.providers[0],
+    dataState,
+    coverage,
+    status: "unknown",
+  };
+  return {
+    ...summaryData,
+    summary: {
+      ...summary,
+      coverage: { ...summary.coverage, fresh: 0, [coverage]: 1 },
+      providers: [provider],
+    },
+  };
+}
+
+function renderProviderDetail(
+  alerts: State<unknown>,
+  snapshot: State<unknown> = { data: summaryData },
+) {
+  const cache = new Map([
+    [DASHBOARD_SUMMARY_KEY, snapshot],
+    ["/api/alerts?source=cloudflare", alerts],
+  ]);
+  const noop = () => {};
+  return renderToStaticMarkup(createElement(
+    AppRouterContext.Provider,
+    { value: { back: noop, forward: noop, refresh: noop, push: noop, replace: noop, prefetch: noop } },
+    createElement(
+      SearchParamsContext.Provider,
+      { value: new URLSearchParams("source=cloudflare") },
+      createElement(
+        SWRConfig,
+        { value: { provider: () => cache } },
+        createElement(ProviderDetailPanel, { source: "cloudflare" }),
+      ),
+    ),
+  ));
+}
+
+function assertUnknownDetail(markup: string, note: RegExp) {
+  assert.match(markup, />Unknown</);
+  assert.match(markup, note);
+  assert.match(markup, />Active incidents<\/span><span[^>]*>—</);
+  assert.doesNotMatch(markup, />Operational</);
+}
+
+test("provider detail suppresses current status and counts during alert loading or failure", () => {
+  assertUnknownDetail(renderProviderDetail({ isLoading: true }), /Checking provider status/);
+  assertUnknownDetail(
+    renderProviderDetail({ ...emptyAlerts, error: new Error("refresh failed") }),
+    /Provider alerts could not be refreshed/,
+  );
+});
+
+test("provider detail requires current verified source data even after a successful alert fetch", () => {
+  assertUnknownDetail(
+    renderProviderDetail(emptyAlerts, { data: withSourceUnavailable("stale") }),
+    /Source data is stale/,
+  );
+  assertUnknownDetail(
+    renderProviderDetail(emptyAlerts, { data: withSourceUnavailable("unverified") }),
+    /Waiting for a verified source poll/,
+  );
+  assertUnknownDetail(
+    renderProviderDetail(emptyAlerts, { data: summaryData, error: new Error("refresh failed") }),
+    /Current provider status is unavailable/,
+  );
+  const lastObservedAt = new Date(now.getTime() + 1000).toISOString();
+  assertUnknownDetail(
+    renderProviderDetail({ data: { alerts: [{ ...feedData.alerts[0], lastObservedAt }] }, isLoading: false }),
+    /Waiting for a verified source poll/,
+  );
+});
+
+test("provider detail reports operational after a successful empty fetch with verified source data", () => {
+  const markup = renderProviderDetail(emptyAlerts);
+  assert.match(markup, />Operational</);
+  assert.match(markup, />Active incidents<\/span><span[^>]*>0</);
+  assert.match(markup, />Official status page</);
+  assert.match(markup, /href="\/feed.xml\?source=cloudflare"/);
 });

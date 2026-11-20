@@ -36,8 +36,10 @@ export function getDashboardSummary(): Promise<DashboardSummary> {
   return summary;
 }
 
-async function readDashboardSummary(db: Prisma.TransactionClient): Promise<DashboardSummary> {
-  const now = new Date();
+export async function readDashboardSummary(
+  db: Prisma.TransactionClient,
+  now = new Date(),
+): Promise<DashboardSummary> {
   const states = await db.providerState.findMany({
     select: {
       provider: true,
@@ -76,6 +78,22 @@ async function readDashboardSummary(db: Prisma.TransactionClient): Promise<Dashb
     }
   }
 
+  // Ingestion can overwrite a record's previous observation before the new
+  // poll is verified. Any newer observation makes the old interval incomplete,
+  // including observations of resolved incidents and other signal kinds.
+  const afterCompletion = Array.from(pollByProvider, ([source, poll]) => ({
+    source,
+    lastObservedAt: { gt: poll.completedAt },
+  }));
+  const unverifiedSources = new Set(
+    afterCompletion.length === 0
+      ? []
+      : (await db.alert.groupBy({
+          by: ["source"],
+          where: { OR: afterCompletion },
+        })).map(({ source }) => source),
+  );
+
   // Same freshness windows as /api/providers/health. A source listed in the
   // registry without an adapter has no window and can never count as fresh.
   const sources: SummarySourceInput[] = Object.entries(PROVIDERS).map(
@@ -92,6 +110,7 @@ async function readDashboardSummary(db: Prisma.TransactionClient): Promise<Dashb
           : null,
         state: stateByProvider.get(key) ?? null,
         successfulPoll: pollByProvider.get(key) ?? null,
+        hasUnverifiedObservations: unverifiedSources.has(key),
       };
     },
   );

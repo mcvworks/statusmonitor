@@ -40,6 +40,7 @@ export interface SummarySourceInput {
   /** Null when no adapter is registered for this source. */
   freshnessWindowMs: number | null;
   successfulPoll: { startedAt: Date; completedAt: Date } | null;
+  hasUnverifiedObservations: boolean;
   state: {
     lastSuccessAt: Date | null;
     lastError: string | null;
@@ -148,7 +149,9 @@ export function deriveDataState(
     return "stale";
   }
   if (state.consecutiveFailures > 0) return "error";
-  return source.successfulPoll ? "healthy" : "unverified";
+  return source.successfulPoll && !source.hasUnverifiedObservations
+    ? "healthy"
+    : "unverified";
 }
 
 /**

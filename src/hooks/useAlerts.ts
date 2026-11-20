@@ -55,6 +55,7 @@ export function useAlerts(filters: AlertFilters = {}, enabled = true) {
     total: data?.total ?? 0,
     hasMore: data?.hasMore ?? false,
     avgResolutionBySource: data?.avgResolutionBySource ?? {},
+    hasData: Array.isArray(data?.alerts),
     isLoading,
     isError: !!error,
     mutate,
