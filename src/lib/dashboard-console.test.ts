@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { PathnameContext, SearchParamsContext } from "next/dist/shared/lib/hooks-client-context.shared-runtime";
 import { SWRConfig, type State } from "swr";
+import { AlertList } from "../components/dashboard/AlertList";
 import { HealthBanner } from "../components/dashboard/HealthBanner";
 import { NewsTicker } from "../components/dashboard/NewsTicker";
 import { ProviderDetailPanel } from "../components/dashboard/ProviderDetailPanel";
@@ -36,9 +37,11 @@ const feedData = {
   alerts: [{
     id: "example-alert",
     source: "cloudflare",
+    category: "cloud",
     title: "Example incident",
     severity: "major",
     timestamp: now.toISOString(),
+    lastObservedAt: now.toISOString(),
     status: "investigating",
     signalKind: "incident",
     confidence: "official",
@@ -204,4 +207,30 @@ test("provider detail reports operational after a successful empty fetch with ve
   assert.match(markup, />Active incidents<\/span><span[^>]*>0</);
   assert.match(markup, />Official status page</);
   assert.match(markup, /href="\/feed.xml\?source=cloudflare"/);
+});
+
+
+test("a personal feed refresh failure is shown alongside cached alerts without a feed count", () => {
+  const cache = new Map([["/api/alerts", {
+    data: { ...feedData, total: 1 },
+    isLoading: false,
+    error: new Error("Alert request failed"),
+  }]]);
+  const markup = renderToStaticMarkup(createElement(
+    SWRConfig,
+    { value: { provider: () => cache } },
+    createElement<NonNullable<ComponentProps<typeof AlertList>>>(AlertList, { sourceFilter: ["cloudflare"] }),
+  ));
+
+  assert.match(markup, /role="alert"[^>]*>Failed to load alerts\. Retrying\.\.\./);
+  assert.match(markup, /Example incident/);
+  assert.doesNotMatch(markup, /Showing 1/);
+
+  const filtered = renderToStaticMarkup(createElement(
+    SWRConfig,
+    { value: { provider: () => new Map(cache) } },
+    createElement<NonNullable<ComponentProps<typeof AlertList>>>(AlertList, { sourceFilter: ["slack"] }),
+  ));
+  assert.match(filtered, /Failed to load alerts/);
+  assert.doesNotMatch(filtered, /Example incident/);
 });

@@ -74,6 +74,7 @@ test("signals are classified into distinct kinds", () => {
   assert.equal(classifySignal({ signalKind: "incident", confidence: "official" }), "confirmed");
   assert.equal(classifySignal({ signalKind: "incident", confidence: "corroborated" }), "confirmed");
   assert.equal(classifySignal({ signalKind: "internet_outage", confidence: "observed" }), "observed");
+  assert.equal(classifySignal({ signalKind: "incident", confidence: "observed" }), "unconfirmed");
   assert.equal(classifySignal({ signalKind: "community_signal", confidence: "crowdsourced" }), "unconfirmed");
   assert.equal(classifySignal({ signalKind: "incident", confidence: "crowdsourced" }), "unconfirmed");
   assert.equal(classifySignal({ signalKind: "advisory", confidence: "official" }), "advisory");
@@ -89,6 +90,7 @@ test("advisories and unconfirmed signals stay out of the confirmed total", () =>
     ],
     [
       alert({ severity: "major" }),
+      alert({ severity: "critical", confidence: "observed" }),
       alert({
         source: "downdetector",
         signalKind: "community_signal",
@@ -106,7 +108,8 @@ test("advisories and unconfirmed signals stay out of the confirmed total", () =>
     minor: 0,
     info: 0,
   });
-  assert.equal(summary.unconfirmedSignals, 1);
+  assert.equal(summary.unconfirmedSignals, 2);
+  assert.equal(summary.observedOutages, 0);
   assert.deepEqual(summary.advisories, { open: 48001, recent: 12 });
   assert.equal(summary.affected.length, 1);
   assert.equal(summary.affected[0].source, "cloudflare");

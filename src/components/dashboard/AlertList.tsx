@@ -145,6 +145,11 @@ export function AlertList({
   }
 
   const hasFilters = !!(search || source || category || severity || status);
+  const refreshNotice = isError && (
+    <p role="alert" className="px-1 font-[family-name:var(--font-mono)] text-[11px] text-critical-ink">
+      Failed to load alerts. Retrying...
+    </p>
+  );
 
   if (visible.length === 0 && hiddenCount === 0) {
     const providerName = source
@@ -156,27 +161,30 @@ export function AlertList({
     // This describes the feed only. Whether services are healthy is the
     // summary's job, which also knows which sources could not be checked.
     return (
-      <div role="status" className="glass-card corner-brackets flex flex-col items-center justify-center p-12 text-center">
-        <Inbox className="mb-3 h-8 w-8 text-text-muted" aria-hidden="true" />
-        <p className="text-lg font-medium text-text-primary">
-          {providerName
-            ? `No recent alerts from ${providerName}`
-            : hasOtherFilters
-              ? "No matching alerts"
-              : limitedToView
-                ? "No alerts from the services in this view"
-                : "No alerts in the feed"}
-        </p>
-        <p className="mt-1 max-w-md text-sm text-text-secondary">
-          {hasOtherFilters
-            ? "Nothing matches your search or filters. Clear them to see the full feed."
-            : providerName
-              ? `Nothing from ${providerName} in the retained history (${MAX_ALERT_AGE_DAYS} days).`
-              : limitedToView
-                ? "None of the latest alerts come from the services in this view. An empty list on its own is not an all-clear."
-                : "The monitored sources have reported nothing in the retained history. An empty feed on its own is not an all-clear."}
-        </p>
-      </div>
+      <>
+        {refreshNotice}
+        <div role="status" className="glass-card corner-brackets flex flex-col items-center justify-center p-12 text-center">
+          <Inbox className="mb-3 h-8 w-8 text-text-muted" aria-hidden="true" />
+          <p className="text-lg font-medium text-text-primary">
+            {providerName
+              ? `No recent alerts from ${providerName}`
+              : hasOtherFilters
+                ? "No matching alerts"
+                : limitedToView
+                  ? "No alerts from the services in this view"
+                  : "No alerts in the feed"}
+          </p>
+          <p className="mt-1 max-w-md text-sm text-text-secondary">
+            {hasOtherFilters
+              ? "Nothing matches your search or filters. Clear them to see the full feed."
+              : providerName
+                ? `Nothing from ${providerName} in the retained history (${MAX_ALERT_AGE_DAYS} days).`
+                : limitedToView
+                  ? "None of the latest alerts come from the services in this view. An empty list on its own is not an all-clear."
+                  : "The monitored sources have reported nothing in the retained history. An empty feed on its own is not an all-clear."}
+          </p>
+        </div>
+      </>
     );
   }
 
@@ -184,7 +192,7 @@ export function AlertList({
 
   return (
     <div className="space-y-6">
-      {showCount && (
+      {showCount ? (
         <p
           role="status"
           className="mb-2 px-1 font-[family-name:var(--font-mono)] text-[11px] text-text-muted"
@@ -205,7 +213,7 @@ export function AlertList({
             </>
           )}
         </p>
-      )}
+      ) : refreshNotice}
 
       {CATEGORY_ORDER.map((cat) =>
         grouped[cat] ? (

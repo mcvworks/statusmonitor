@@ -15,6 +15,7 @@ export class PagerDutyProvider implements AlertProvider {
   name = 'pagerduty';
   category = 'devops';
   pollInterval = 'slow' as const;
+  boundedIncidentFeed = true;
   metadata: ProviderMetadata = {
     name: 'pagerduty',
     displayName: 'PagerDuty',

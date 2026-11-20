@@ -53,7 +53,7 @@ export function ProviderDetailPanel({ source }: ProviderDetailPanelProps) {
     (alert) => Date.parse(alert.lastObservedAt) > lastSuccessMs,
   );
   let statusNote: string | undefined;
-  let hasVerifiedOutage = false;
+  let hasVerifiedIncident = false;
   if (isError) {
     statusNote = "Provider alerts could not be refreshed.";
   } else if (isLoading || summaryLoading) {
@@ -65,13 +65,13 @@ export function ProviderDetailPanel({ source }: ProviderDetailPanelProps) {
   } else if (provider.dataState === "unverified" || hasNewerObservations) {
     statusNote = "Waiting for a verified source poll.";
   } else if (provider.dataState === "incomplete") {
-    statusNote = "The latest Radar results did not verify a previous outage’s status.";
-    hasVerifiedOutage = provider.observed > 0;
+    statusNote = "The latest poll did not verify a previous incident’s status.";
+    hasVerifiedIncident = provider.incidents > 0;
   } else if (provider.coverage !== "fresh") {
     statusNote = "Source data is unavailable.";
   }
 
-  const currentProvider = !statusNote || hasVerifiedOutage ? provider : undefined;
+  const currentProvider = !statusNote || hasVerifiedIncident ? provider : undefined;
   const style = PROVIDER_STATUS_STYLES[currentProvider?.status ?? "unknown"];
   const activeCount = currentProvider?.incidents;
   const weekActivity = activity[source] ?? [];

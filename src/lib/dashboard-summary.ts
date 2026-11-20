@@ -101,20 +101,27 @@ export async function readDashboardSummary(
         })).map(({ source }) => source),
   );
 
-  const radarSource = "cloudflare-radar";
-  const radarPoll = pollByProvider.get(radarSource);
-  // Radar's window and record cap can omit an outage that has no end date.
-  // Keep the coverage gap until the record is observed again or explicitly
-  // resolved, without promoting the older observation to a current outage.
-  const omittedRadarOutage = radarPoll && await db.alert.findFirst({
-    where: {
-      source: radarSource,
-      signalKind: "internet_outage",
-      status: { not: "resolved" },
-      lastObservedAt: { lt: radarPoll.startedAt },
-    },
-    select: { id: true },
-  });
+  // A bounded feed can omit an unresolved incident. The older row is a
+  // coverage gap rather than evidence of either a current incident or a resolution.
+  const boundedPolls = Array.from(pollByProvider).flatMap(([source, poll]) =>
+    getProvider(source)?.boundedIncidentFeed
+      ? [{ source, lastObservedAt: { lt: poll.startedAt } }]
+      : [],
+  );
+  const sourcesWithOmissions = new Set(
+    boundedPolls.length === 0
+      ? []
+      : (await db.alert.groupBy({
+          by: ["source"],
+          where: {
+            signalKind: { in: ["incident", "internet_outage"] },
+            status: { not: "resolved" },
+            confidence: { not: "crowdsourced" },
+            NOT: { signalKind: "incident", confidence: "observed" },
+            OR: boundedPolls,
+          },
+        })).map(({ source }) => source),
+  );
 
   // Same freshness windows as /api/providers/health. A source listed in the
   // registry without an adapter has no window and can never count as fresh.
@@ -133,7 +140,7 @@ export async function readDashboardSummary(
         state: stateByProvider.get(key) ?? null,
         successfulPoll: pollByProvider.get(key) ?? null,
         hasUnverifiedObservations: unverifiedSources.has(key),
-        hasOmittedOutage: key === radarSource && Boolean(omittedRadarOutage),
+        hasOmittedIncident: sourcesWithOmissions.has(key),
       };
     },
   );

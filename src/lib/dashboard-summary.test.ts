@@ -185,3 +185,62 @@ test("Radar omission leaves coverage incomplete until the adapter reports an exp
   assert.equal(resolved.observedOutages, 0);
   assert.equal(resolved.affected.length, 0);
 });
+
+test("bounded Slack and PagerDuty polls preserve current incidents when an unresolved incident is missing", async (t) => {
+  const db = await createSummaryDb(t);
+  const previous = new Date("2026-11-19T10:00:00Z");
+  const pollStart = new Date("2026-11-20T10:05:00Z");
+  const observed = new Date("2026-11-20T10:05:02Z");
+  const completedAt = new Date("2026-11-20T10:05:05Z");
+
+  for (const [provider, category] of [["slack", "cloud"], ["pagerduty", "devops"]]) {
+    await db.providerState.create({
+      data: { provider, lastAttemptAt: pollStart, lastSuccessAt: completedAt },
+    });
+    await db.pollLog.create({
+      data: { provider, startedAt: pollStart, completedAt },
+    });
+    const record = {
+      source: provider,
+      category,
+      severity: "major",
+      status: "investigating",
+      title: "Service disruption",
+      timestamp: previous,
+    };
+    await db.alert.createMany({
+      data: [
+        { ...record, id: `${provider}-omitted`, externalId: "omitted", lastObservedAt: previous },
+        { ...record, id: `${provider}-current`, externalId: "current", lastObservedAt: observed },
+        { ...record, externalId: "unconfirmed", lastObservedAt: previous, confidence: "observed" },
+      ],
+    });
+  }
+
+  const read = () => db.$transaction((tx) => readDashboardSummary(tx, completedAt));
+  const latest = await read();
+  for (const key of ["slack", "pagerduty"]) {
+    const source = latest.providers.find((provider) => provider.key === key);
+    assert.equal(source?.dataState, "incomplete");
+    assert.equal(source.coverage, "unavailable");
+    assert.equal(source.status, "outage");
+    assert.equal(source.incidents, 1);
+  }
+  assert.equal(latest.incidents.bySeverity.major, 2);
+  assert.deepEqual(latest.affected.map(({ id }) => id).sort(), ["pagerduty-current", "slack-current"]);
+  assert.equal(latest.observedOutages, 0);
+
+  await db.alert.updateMany({ where: { externalId: "current" }, data: { status: "resolved" } });
+  const missingOnly = await read();
+  assert.equal(missingOnly.incidents.total, 0);
+  assert.equal(missingOnly.providers.find(({ key }) => key === "slack")?.status, "unknown");
+
+  await db.alert.updateMany({
+    where: { externalId: "omitted" },
+    data: { status: "resolved", lastObservedAt: observed },
+  });
+  const resolved = await read();
+  for (const key of ["slack", "pagerduty"]) {
+    assert.equal(resolved.providers.find((provider) => provider.key === key)?.status, "operational");
+  }
+});

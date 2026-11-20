@@ -42,8 +42,8 @@ export interface SummarySourceInput {
   freshnessWindowMs: number | null;
   successfulPoll: { startedAt: Date; completedAt: Date } | null;
   hasUnverifiedObservations: boolean;
-  /** A bounded outage feed omitted a previously observed unresolved record. */
-  hasOmittedOutage?: boolean;
+  /** A bounded feed omitted a previously verified unresolved incident. */
+  hasOmittedIncident?: boolean;
   state: {
     lastSuccessAt: Date | null;
     lastError: string | null;
@@ -134,7 +134,9 @@ export function classifySignal(alert: {
     return "unconfirmed";
   }
   // Observed outages keep their operational meaning but are not "confirmed".
-  if (alert.confidence === "observed") return "observed";
+  if (alert.confidence === "observed") {
+    return alert.signalKind === "internet_outage" ? "observed" : "unconfirmed";
+  }
   return "confirmed";
 }
 
@@ -155,7 +157,7 @@ export function deriveDataState(
   }
   if (state.consecutiveFailures > 0) return "error";
   if (!source.successfulPoll || source.hasUnverifiedObservations) return "unverified";
-  return source.hasOmittedOutage ? "incomplete" : "healthy";
+  return source.hasOmittedIncident ? "incomplete" : "healthy";
 }
 
 /**
@@ -271,8 +273,13 @@ export function buildDashboardSummary(input: {
       continue;
     }
 
+    const unconfirmed = listed.filter(
+      (alert) => classifySignal(alert) === "unconfirmed",
+    ).length;
+    unconfirmedSignals += unconfirmed;
+
     if (
-      (sourceCoverage === "fresh" || operational.length > 0) &&
+      (sourceCoverage === "fresh" || operational.length > 0 || unconfirmed > 0) &&
       lastSuccessMs !== null && source.freshnessWindowMs !== null
     ) {
       freshnessDeadlineMs = Math.min(
@@ -280,10 +287,6 @@ export function buildDashboardSummary(input: {
         lastSuccessMs + source.freshnessWindowMs,
       );
     }
-
-    unconfirmedSignals += listed.filter(
-      (alert) => classifySignal(alert) === "unconfirmed",
-    ).length;
 
     // Each row has a stable ID. Headline text is only for display.
     const current = operational.sort(

@@ -141,7 +141,7 @@ const UNAVAILABLE_REASONS: Record<SummaryProvider["dataState"], string> = {
   error: "latest check failed",
   not_configured: "not configured",
   unverified: "awaiting a recorded successful poll",
-  incomplete: "prior outage missing from Radar results",
+  incomplete: "prior incident missing from the latest poll",
   pending: "awaiting first check",
 };
 

@@ -30,6 +30,8 @@ export interface AlertProvider {
   category: string;
   pollInterval: 'fast' | 'slow';
   metadata: ProviderMetadata;
+  /** The poll may omit unresolved incidents due to a result cap or history window. */
+  boundedIncidentFeed?: boolean;
   /** Prevent polling APIs more frequently than their published guidance. */
   minimumIntervalMs?: number;
   /** Populate existing records on the first successful poll without emitting alert events. */
