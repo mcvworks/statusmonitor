@@ -19,7 +19,6 @@ import { EventFeed } from "./EventFeed";
 import { HealthBanner } from "./HealthBanner";
 import { NewsTicker } from "./NewsTicker";
 import { ProviderDetailPanel } from "./ProviderDetailPanel";
-import { SeveritySummaryBar } from "./SeveritySummaryBar";
 
 interface DashboardClientProps {
   /** Server snapshot for the first render; null if it could not be read. */
@@ -120,10 +119,7 @@ function Console({ children }: { children?: React.ReactNode }) {
               </div>
             </div>
             <Suspense>
-              <SeveritySummaryBar />
-            </Suspense>
-            <Suspense>
-              <SearchFilter onChange={handleFilterChange} />
+              <SearchFilter onChange={handleFilterChange} showSeverityShortcuts />
             </Suspense>
           </div>
 

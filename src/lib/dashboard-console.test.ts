@@ -19,6 +19,7 @@ const summary = buildDashboardSummary({
     key: "cloudflare",
     category: "cloud",
     freshnessWindowMs: 6 * 60_000,
+    successfulPoll: { startedAt: now, completedAt: now },
     state: { lastSuccessAt: now, lastError: null, consecutiveFailures: 0 },
   }],
   openAlerts: [],

@@ -140,6 +140,7 @@ const UNAVAILABLE_REASONS: Record<SummaryProvider["dataState"], string> = {
   stale: "no successful check yet",
   error: "latest check failed",
   not_configured: "not configured",
+  unverified: "awaiting a recorded successful poll",
   pending: "awaiting first check",
 };
 

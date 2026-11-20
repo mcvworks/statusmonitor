@@ -288,16 +288,16 @@ body::before {
 /* ─── Alert Card ───────────────────────────────────────── */
 /* Share and snooze menus open past the card edge, so the card must not clip
    them, and it rises above the cards below while one is open. */
-.alert-card {
+.console .alert-card {
   overflow: visible;
 }
 
 /* With clipping off, the scanline overlay follows the rounded corners itself. */
-.alert-card::before {
+.console .alert-card::before {
   border-radius: inherit;
 }
 
-.alert-card:has([aria-expanded="true"]) {
+.console .alert-card:has([aria-expanded="true"]) {
   z-index: 30;
 }
 

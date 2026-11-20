@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/db";
+import type { Prisma } from "@/generated/prisma/client";
 import { PROVIDERS } from "@/lib/constants";
 import { getProvider } from "@/lib/providers/registry";
 import {
   buildDashboardSummary,
   RECENT_ADVISORY_WINDOW_DAYS,
-  VERIFY_TOLERANCE_MS,
   type DashboardSummary,
   type SummarySourceInput,
 } from "@/lib/dashboard-snapshot";
@@ -27,7 +27,7 @@ export function getDashboardSummary(): Promise<DashboardSummary> {
   const now = Date.now();
   if (shared && now - shared.at < SHARE_MS) return shared.summary;
 
-  const summary = readDashboardSummary();
+  const summary = prisma.$transaction(readDashboardSummary);
   shared = { at: now, summary };
   // A failed read must never be handed to the next caller.
   summary.catch(() => {
@@ -36,17 +36,45 @@ export function getDashboardSummary(): Promise<DashboardSummary> {
   return summary;
 }
 
-async function readDashboardSummary(): Promise<DashboardSummary> {
+async function readDashboardSummary(db: Prisma.TransactionClient): Promise<DashboardSummary> {
   const now = new Date();
-  const states = await prisma.providerState.findMany({
+  const states = await db.providerState.findMany({
     select: {
       provider: true,
       lastSuccessAt: true,
+      lastAttemptAt: true,
       lastError: true,
       consecutiveFailures: true,
     },
   });
   const stateByProvider = new Map(states.map((state) => [state.provider, state]));
+
+  // ProviderState records success after the alert writes, just before PollLog
+  // records completion. Match that success to its completed, error-free run.
+  const successfulAttempts = states.flatMap((state) =>
+    state.lastSuccessAt
+      ? [{
+          provider: state.provider,
+          startedAt: state.consecutiveFailures === 0
+            ? state.lastAttemptAt
+            : { lte: state.lastSuccessAt },
+          completedAt: { gte: state.lastSuccessAt },
+        }]
+      : [],
+  );
+  const successfulPolls = successfulAttempts.length === 0
+    ? []
+    : await db.pollLog.findMany({
+        where: { error: null, OR: successfulAttempts },
+        orderBy: { startedAt: "desc" },
+        select: { provider: true, startedAt: true, completedAt: true },
+      });
+  const pollByProvider = new Map<string, NonNullable<SummarySourceInput["successfulPoll"]>>();
+  for (const { provider, startedAt, completedAt } of successfulPolls) {
+    if (completedAt && !pollByProvider.has(provider)) {
+      pollByProvider.set(provider, { startedAt, completedAt });
+    }
+  }
 
   // Same freshness windows as /api/providers/health. A source listed in the
   // registry without an adapter has no window and can never count as fresh.
@@ -63,37 +91,32 @@ async function readDashboardSummary(): Promise<DashboardSummary> {
             )
           : null,
         state: stateByProvider.get(key) ?? null,
+        successfulPoll: pollByProvider.get(key) ?? null,
       };
     },
   );
 
   // Only records a source still listed at its latest successful check can
   // describe the present, so nothing older is read.
-  const listedAtLastCheck = sources.flatMap((source) =>
-    source.state?.lastSuccessAt
-      ? [
-          {
-            source: source.key,
-            lastObservedAt: {
-              gte: new Date(
-                source.state.lastSuccessAt.getTime() - VERIFY_TOLERANCE_MS,
-              ),
-            },
-          },
-        ]
+  const listedAtLastCheck = sources.flatMap(({ key, successfulPoll }) =>
+    successfulPoll
+      ? [{
+          source: key,
+          lastObservedAt: { gte: successfulPoll.startedAt, lte: successfulPoll.completedAt },
+        }]
       : [],
   );
 
   const advisoryWhere = { signalKind: "advisory", status: { not: "resolved" } };
   const [lastPoll, openAlerts, advisoriesOpen, advisoriesRecent] = await Promise.all([
-    prisma.pollLog.findFirst({
+    db.pollLog.findFirst({
       where: { completedAt: { not: null } },
       orderBy: { completedAt: "desc" },
       select: { completedAt: true },
     }),
     listedAtLastCheck.length === 0
       ? []
-      : prisma.alert.findMany({
+      : db.alert.findMany({
           where: {
             status: { not: "resolved" },
             signalKind: {
@@ -118,8 +141,8 @@ async function readDashboardSummary(): Promise<DashboardSummary> {
             },
           },
         }),
-    prisma.alert.count({ where: advisoryWhere }),
-    prisma.alert.count({
+    db.alert.count({ where: advisoryWhere }),
+    db.alert.count({
       where: {
         ...advisoryWhere,
         timestamp: {

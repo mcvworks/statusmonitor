@@ -5,8 +5,6 @@ import { isAdvisorySignal, isOperationalSignal } from "./signal-kind";
 
 /** Recent advisories are shown separately from active incidents. */
 export const RECENT_ADVISORY_WINDOW_DAYS = 7;
-/** A record counts as listed at the latest check if seen this close to it. */
-export const VERIFY_TOLERANCE_MS = 2 * 60_000;
 /** Records dated further ahead than this are announcements, not incidents. */
 const FUTURE_TOLERANCE_MS = 5 * 60_000;
 
@@ -14,6 +12,7 @@ export type SourceDataState =
   | "healthy"
   | "error"
   | "stale"
+  | "unverified"
   | "not_configured"
   | "pending";
 
@@ -40,6 +39,7 @@ export interface SummarySourceInput {
   category: AlertCategory;
   /** Null when no adapter is registered for this source. */
   freshnessWindowMs: number | null;
+  successfulPoll: { startedAt: Date; completedAt: Date } | null;
   state: {
     lastSuccessAt: Date | null;
     lastError: string | null;
@@ -147,7 +147,8 @@ export function deriveDataState(
   ) {
     return "stale";
   }
-  return state.consecutiveFailures > 0 ? "error" : "healthy";
+  if (state.consecutiveFailures > 0) return "error";
+  return source.successfulPoll ? "healthy" : "unverified";
 }
 
 /**
@@ -228,14 +229,15 @@ export function buildDashboardSummary(input: {
     coverage[sourceCoverage] += 1;
 
     // Only records the source still listed at its latest successful check.
+    const { successfulPoll } = source;
     const listed =
-      lastSuccessMs === null
+      !successfulPoll
         ? []
         : (bySource.get(source.key) ?? []).filter(
             (alert) =>
               alert.status !== "resolved" &&
-              alert.lastObservedAt.getTime() >=
-                lastSuccessMs - VERIFY_TOLERANCE_MS &&
+              alert.lastObservedAt >= successfulPoll.startedAt &&
+              alert.lastObservedAt <= successfulPoll.completedAt &&
               alert.timestamp.getTime() <= nowMs + FUTURE_TOLERANCE_MS,
           );
     const operational = listed.filter((alert) => {

@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, X, SlidersHorizontal } from "lucide-react";
 import { CATEGORY_LABELS, PROVIDERS } from "@/lib/constants";
+import { SeveritySummaryBar } from "./SeveritySummaryBar";
 import type { AlertCategory, AlertSeverity, AlertStatus } from "@/lib/alert-schema";
 
 export interface FilterValues {
@@ -17,6 +18,7 @@ export interface FilterValues {
 
 interface SearchFilterProps {
   onChange: (filters: FilterValues) => void;
+  showSeverityShortcuts?: boolean;
 }
 
 const SEVERITIES: { value: AlertSeverity; label: string }[] = [
@@ -54,6 +56,24 @@ const STATUS_LABELS = Object.fromEntries(
   STATUSES.map(({ value, label }) => [value, label]),
 );
 
+const FILTER_PARAMS: Record<keyof FilterValues, string> = {
+  search: "q",
+  category: "category",
+  severity: "severity",
+  status: "status",
+  source: "source",
+  sort: "sort",
+};
+
+const EMPTY_FILTERS: FilterValues = {
+  search: "",
+  category: "",
+  severity: "",
+  status: "",
+  source: "",
+  sort: "",
+};
+
 function readParams(params: URLSearchParams): FilterValues {
   return {
     search: params.get("q") ?? "",
@@ -65,71 +85,103 @@ function readParams(params: URLSearchParams): FilterValues {
   };
 }
 
-export function SearchFilter({ onChange }: SearchFilterProps) {
+export function patchFilterParams(
+  params: URLSearchParams,
+  patch: Partial<FilterValues> | ((current: FilterValues) => Partial<FilterValues>),
+) {
+  const next = new URLSearchParams(params);
+  const changes = typeof patch === "function" ? patch(readParams(params)) : patch;
+  for (const key of Object.keys(FILTER_PARAMS) as (keyof FilterValues)[]) {
+    const value = changes[key];
+    if (value === undefined) continue;
+    if (value) next.set(FILTER_PARAMS[key], value);
+    else next.delete(FILTER_PARAMS[key]);
+  }
+  return next;
+}
+
+export function scheduleSearchUpdate(
+  readSearch: () => string | null,
+  commit: () => void,
+) {
+  const initialSearch = readSearch();
+  const timeout = setTimeout(() => {
+    // A separate navigation that changes q takes precedence over the draft.
+    if (readSearch() === initialSearch) commit();
+  }, 300);
+  return () => clearTimeout(timeout);
+}
+
+export function SearchFilter({ onChange, showSeverityShortcuts }: SearchFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [filters, setFilters] = useState<FilterValues>(() =>
-    readParams(searchParams),
-  );
+  const filters = useMemo(() => readParams(searchParams), [searchParams]);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [draft, setDraft] = useState<{ baseSearch: string; value: string } | null>(null);
+  const cancelPendingSearch = useRef<() => void>(undefined);
+  const search = draft?.baseSearch === filters.search ? draft.value : filters.search;
+  if (draft && draft.baseSearch !== filters.search) {
+    setDraft(null);
+  }
 
-  // Sync URL → state whenever search params change (e.g. provider icon click)
   useEffect(() => {
-    const vals = readParams(searchParams);
-    setFilters(vals);
-    onChange(vals);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+    onChange(filters);
+  }, [filters, onChange]);
 
-  const pushToUrl = useCallback(
-    (next: FilterValues) => {
-      const params = new URLSearchParams();
-      if (next.search) params.set("q", next.search);
-      if (next.category) params.set("category", next.category);
-      if (next.severity) params.set("severity", next.severity);
-      if (next.status) params.set("status", next.status);
-      if (next.source) params.set("source", next.source);
-      if (next.sort) params.set("sort", next.sort);
-      const qs = params.toString();
-      router.replace(qs ? `/?${qs}` : "/", { scroll: false });
-    },
-    [router],
-  );
+  const cancelSearch = useCallback(() => {
+    cancelPendingSearch.current?.();
+    cancelPendingSearch.current = undefined;
+  }, []);
+
+  useEffect(() => {
+    function onPopState() {
+      cancelSearch();
+      setDraft(null);
+    }
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      cancelSearch();
+    };
+  }, [cancelSearch]);
 
   const update = useCallback(
-    (partial: Partial<FilterValues>, debounce = false) => {
-      setFilters((prev) => {
-        const next = { ...prev, ...partial };
-        if (debounce) {
-          clearTimeout(debounceRef.current);
-          debounceRef.current = setTimeout(() => {
-            onChange(next);
-            pushToUrl(next);
-          }, 300);
-        } else {
-          onChange(next);
-          pushToUrl(next);
-        }
-        return next;
-      });
+    (patch: Parameters<typeof patchFilterParams>[1]) => {
+      // Read the current URL at commit time. A pending search changes only q.
+      const params = patchFilterParams(new URLSearchParams(window.location.search), patch);
+      const query = params.toString();
+      const url = `/${query ? `?${query}` : ""}${window.location.hash}`;
+      if (showSeverityShortcuts) {
+        // Next syncs useSearchParams with history. The URL changes immediately,
+        // so another control can build on it before React renders again.
+        window.history.replaceState(null, "", url);
+      } else {
+        router.replace(url, { scroll: false });
+      }
     },
-    [onChange, pushToUrl],
+    [router, showSeverityShortcuts],
   );
 
-  const clearAll = useCallback(() => {
-    const empty: FilterValues = {
-      search: "",
-      category: "",
-      severity: "",
-      status: "",
-      source: "",
-      sort: "",
-    };
-    setFilters(empty);
-    onChange(empty);
-    pushToUrl(empty);
-  }, [onChange, pushToUrl]);
+  const queueSearch = (value: string) => {
+    cancelSearch();
+    setDraft({ baseSearch: filters.search, value });
+    cancelPendingSearch.current = scheduleSearchUpdate(
+      () => new URLSearchParams(window.location.search).get("q"),
+      () => update({ search: value }),
+    );
+  };
+
+  const clearSearch = () => {
+    cancelSearch();
+    setDraft(null);
+    update({ search: "" });
+  };
+
+  const clearAll = () => {
+    cancelSearch();
+    setDraft(null);
+    update(EMPTY_FILTERS);
+  };
 
   const activeChips = [
     filters.category && {
@@ -152,6 +204,14 @@ export function SearchFilter({ onChange }: SearchFilterProps) {
 
   return (
     <div className="space-y-3">
+      {showSeverityShortcuts && (
+        <SeveritySummaryBar
+          activeSeverity={filters.severity}
+          onToggle={(severity) => update((current) => ({
+            severity: current.severity === severity ? "" : severity,
+          }))}
+        />
+      )}
       <div className="flex flex-wrap items-center gap-2">
         {/* Search input */}
         <div className="relative min-w-0 flex-[4_1_200px]">
@@ -162,16 +222,16 @@ export function SearchFilter({ onChange }: SearchFilterProps) {
           <input
             type="search"
             aria-label="Search alerts"
-            value={filters.search}
-            onChange={(e) => update({ search: e.target.value }, true)}
+            value={search}
+            onChange={(e) => queueSearch(e.target.value)}
             placeholder="Search alerts…"
             className="w-full rounded-lg border border-border bg-surface-input py-2 pl-9 pr-8 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-[rgba(242,194,0,0.08)] [&::-webkit-search-cancel-button]:hidden"
           />
-          {filters.search && (
+          {search && (
             <button
               type="button"
               aria-label="Clear search"
-              onClick={() => update({ search: "" })}
+              onClick={clearSearch}
               className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-text-muted hover:text-text-primary"
             >
               <X className="h-3.5 w-3.5" aria-hidden="true" />

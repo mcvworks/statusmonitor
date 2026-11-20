@@ -19,16 +19,19 @@ function source(
   key: string,
   overrides: Partial<SummarySourceInput> = {},
 ): SummarySourceInput {
+  const state = overrides.state === undefined
+    ? { lastSuccessAt: ago(MINUTE), lastError: null, consecutiveFailures: 0 }
+    : overrides.state;
   return {
     key,
     category: "cloud",
     freshnessWindowMs: 6 * MINUTE,
-    state: {
-      lastSuccessAt: ago(MINUTE),
-      lastError: null,
-      consecutiveFailures: 0,
-    },
+    successfulPoll: state?.lastSuccessAt ? {
+      startedAt: new Date(state.lastSuccessAt.getTime() - 10_000),
+      completedAt: state.lastSuccessAt,
+    } : null,
     ...overrides,
+    state,
   };
 }
 
@@ -245,6 +248,40 @@ test("last-known incidents keep distinct IDs and older open records", () => {
   assert.equal(summary.providers[0].openAtLastCheck, 3);
   assert.equal(summary.providers[0].incidents, 0);
   assert.equal(summary.incidents.total, 0);
+});
+
+test("observations use the successful poll bounds even when the poll ran for over two minutes", () => {
+  const startedAt = ago(5 * MINUTE);
+  const completedAt = ago(MINUTE);
+  const summary = summarize(
+    [source("cloudflare", { successfulPoll: { startedAt, completedAt } })],
+    [
+      alert({ id: "early-in-slow-poll", lastObservedAt: startedAt, severity: "major" }),
+      alert({ id: "at-completion", lastObservedAt: completedAt }),
+      alert({ id: "before-poll", lastObservedAt: new Date(startedAt.getTime() - 1), severity: "critical" }),
+      alert({ id: "after-poll", lastObservedAt: new Date(completedAt.getTime() + 1), severity: "critical" }),
+    ],
+  );
+  assert.equal(summary.incidents.total, 2);
+  assert.deepEqual(summary.incidents.bySeverity, { critical: 0, major: 1, minor: 1, info: 0 });
+  assert.equal(summary.affected[0].id, "early-in-slow-poll");
+});
+
+test("a record from just before a short successful poll is not current", () => {
+  const summary = summarize(
+    [source("cloudflare")],
+    [alert({ lastObservedAt: ago(MINUTE + 11_000) })],
+  );
+  assert.equal(summary.incidents.total, 0);
+  assert.equal(summary.providers[0].status, "operational");
+});
+
+test("a recent provider state without a completed successful poll cannot establish an all-clear", () => {
+  const summary = summarize([source("cloudflare", { successfulPoll: null })], [alert()]);
+  assert.equal(summary.incidents.total, 0);
+  assert.equal(summary.providers[0].status, "unknown");
+  assert.equal(summary.providers[0].dataState, "unverified");
+  assert.equal(summary.coverage.fresh, 0);
 });
 
 test("records a fresh source no longer lists are not current", () => {

@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
 import { useDashboardSummary } from "@/hooks/useDashboardSummary";
 import { SEVERITY_COLORS } from "@/lib/constants";
 import { MONO, SEVERITIES, SEVERITY_LABELS, plural } from "./console-labels";
@@ -11,28 +10,20 @@ import { MONO, SEVERITIES, SEVERITY_LABELS, plural } from "./console-labels";
  * confirmed incidents right now, taken from the server snapshot, so they do
  * not change with the feed's filters or page size.
  */
-export function SeveritySummaryBar() {
+export function SeveritySummaryBar({
+  activeSeverity,
+  onToggle,
+}: {
+  activeSeverity: string;
+  onToggle: (severity: string) => void;
+}) {
   const { summary, isLastKnown } = useDashboardSummary();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const activeSeverity = searchParams.get("severity") ?? "";
   const hasFreshService = summary?.providers.some(
     (provider) => provider.role === "service" && provider.coverage === "fresh",
   );
   const counts = !isLastKnown && hasFreshService
     ? summary?.incidents.bySeverity ?? null
     : null;
-
-  const toggle = (severity: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (activeSeverity === severity) {
-      params.delete("severity");
-    } else {
-      params.set("severity", severity);
-    }
-    const qs = params.toString();
-    router.replace(qs ? `/?${qs}` : "/", { scroll: false });
-  };
 
   return (
     <div
@@ -56,7 +47,7 @@ export function SeveritySummaryBar() {
                 ? `${SEVERITY_LABELS[severity]}: filter the feed`
                 : `${SEVERITY_LABELS[severity]}: ${plural(count, "confirmed incident")} now. Filter the feed.`
             }
-            onClick={() => toggle(severity)}
+            onClick={() => onToggle(severity)}
             className={`${MONO} inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] transition-colors ${
               pressed
                 ? "border-primary bg-primary/10 text-primary-ink"

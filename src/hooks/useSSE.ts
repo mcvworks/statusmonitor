@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useSWRConfig } from "swr";
+import { useSWRConfig, type ScopedMutator } from "swr";
 import type { SerializedAlert } from "@/lib/alert-schema";
 
 export type SSEStatus = "connected" | "connecting" | "disconnected";
@@ -14,6 +14,14 @@ interface SSEEvent {
 const MAX_RETRIES = 10;
 const BASE_DELAY = 1000;
 const MAX_DELAY = 30_000;
+
+export function revalidateAlertQueries(mutate: ScopedMutator) {
+  // A key-only mutation revalidates without replacing cached data
+  // or resetting a refresh error while the request is in flight.
+  return mutate((key: unknown) =>
+    typeof key === "string" && key.startsWith("/api/alerts"),
+  );
+}
 
 export function useSSE() {
   const [status, setStatus] = useState<SSEStatus>("disconnected");
@@ -41,11 +49,7 @@ export function useSSE() {
         try {
           const data: SSEEvent = JSON.parse(event.data);
           setLastEventAt(new Date());
-          mutate(
-            (key: string) => typeof key === "string" && key.startsWith("/api/alerts"),
-            undefined,
-            { revalidate: true },
-          );
+          void revalidateAlertQueries(mutate);
 
           window.dispatchEvent(
             new CustomEvent("sse:alert", { detail: data }),
