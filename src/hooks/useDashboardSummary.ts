@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import useSWR from "swr";
 import type { DashboardSummary } from "@/lib/dashboard-snapshot";
 
@@ -33,6 +33,9 @@ async function fetchSummary(url: string): Promise<SummaryEnvelope> {
     !summary ||
     typeof summary.generatedAt !== "string" ||
     !Number.isFinite(Date.parse(summary.generatedAt)) ||
+    (summary.freshnessExpiresAt !== null &&
+      (typeof summary.freshnessExpiresAt !== "string" ||
+        !Number.isFinite(Date.parse(summary.freshnessExpiresAt)))) ||
     !Array.isArray(summary.providers) ||
     !Array.isArray(summary.affected) ||
     typeof summary.incidents?.total !== "number"
@@ -40,6 +43,13 @@ async function fetchSummary(url: string): Promise<SummaryEnvelope> {
     throw new Error("Summary response was incomplete");
   }
   return { summary: summary as DashboardSummary, receivedAt: Date.now() };
+}
+
+function snapshotLifetimeMs(summary: DashboardSummary): number {
+  if (!summary.freshnessExpiresAt) return OUT_OF_DATE_MS;
+  const untilSourceExpires =
+    Date.parse(summary.freshnessExpiresAt) - Date.parse(summary.generatedAt);
+  return Math.min(OUT_OF_DATE_MS, untilSourceExpires);
 }
 
 // ─── Shared ticking clock ──────────────────────────────────────
@@ -51,21 +61,43 @@ let clockStartedAt = 0;
 let clockTimer: ReturnType<typeof setInterval> | undefined;
 const clockListeners = new Set<() => void>();
 
-function subscribeClock(listener: () => void) {
+function updateClock() {
+  const now = Date.now();
+  if (now === clockNow) return;
+  clockNow = now;
+  for (const notify of clockListeners) notify();
+}
+
+function subscribeClock(
+  listener: () => void,
+  lifetimeMs: number | null,
+  receivedAt: number | null,
+) {
   clockListeners.add(listener);
   if (!clockTimer) {
     clockNow = Date.now();
     if (clockStartedAt === 0) clockStartedAt = clockNow;
-    clockTimer = setInterval(() => {
-      clockNow = Date.now();
-      for (const notify of clockListeners) notify();
-    }, CLOCK_TICK_MS);
+    clockTimer = setInterval(updateClock, CLOCK_TICK_MS);
+    document.addEventListener("visibilitychange", updateClock);
   }
+
+  // Source deadlines rarely align with relative-time ticks. Wake the shared
+  // clock at expiry even when the refresh is still in flight.
+  let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
+  if (lifetimeMs !== null) {
+    const deadline = (receivedAt ?? clockStartedAt) + lifetimeMs;
+    if (deadline > clockNow) {
+      deadlineTimer = setTimeout(updateClock, Math.max(0, deadline - Date.now()));
+    }
+  }
+
   return () => {
+    clearTimeout(deadlineTimer);
     clockListeners.delete(listener);
     if (clockListeners.size === 0 && clockTimer) {
       clearInterval(clockTimer);
       clockTimer = undefined;
+      document.removeEventListener("visibilitychange", updateClock);
     }
   };
 }
@@ -96,11 +128,13 @@ export function useDashboardSummary(enabled = true): DashboardSummaryState {
     fetchSummary,
     { refreshInterval: REFRESH_MS },
   );
-  const clock = useSyncExternalStore(
-    enabled ? subscribeClock : subscribeNever,
-    readClock,
-    readServerClock,
+  const lifetimeMs = data ? snapshotLifetimeMs(data.summary) : null;
+  const receivedAt = data?.receivedAt ?? null;
+  const subscribe = useCallback(
+    (listener: () => void) => subscribeClock(listener, lifetimeMs, receivedAt),
+    [lifetimeMs, receivedAt],
   );
+  const clock = useSyncExternalStore(enabled ? subscribe : subscribeNever, readClock, readServerClock);
   return getDashboardSummaryState(data, !!error, isLoading, clock, clockStartedAt);
 }
 
@@ -134,7 +168,7 @@ export function getDashboardSummaryState(
     nowMs: generatedAtMs + elapsed,
     isLoading: false,
     isError: failed,
-    isLastKnown: failed || elapsed >= OUT_OF_DATE_MS,
+    isLastKnown: failed || elapsed >= snapshotLifetimeMs(summary),
   };
 }
 

@@ -98,6 +98,8 @@ export interface SummaryAffected {
 
 export interface DashboardSummary {
   generatedAt: string;
+  /** First deadline among the sources counted as fresh in this snapshot. */
+  freshnessExpiresAt: string | null;
   /** Latest completed poll attempt, including failures. */
   lastPollAt: string | null;
   windowDays: number;
@@ -144,7 +146,7 @@ export function deriveDataState(
   }
   if (
     !state.lastSuccessAt ||
-    nowMs - state.lastSuccessAt.getTime() > freshnessWindowMs
+    nowMs - state.lastSuccessAt.getTime() >= freshnessWindowMs
   ) {
     return "stale";
   }
@@ -223,6 +225,7 @@ export function buildDashboardSummary(input: {
   let confirmedProviders = 0;
   let observedOutages = 0;
   let unconfirmedSignals = 0;
+  let freshnessDeadlineMs = Infinity;
 
   for (const source of input.sources) {
     const dataState = deriveDataState(source, nowMs);
@@ -264,6 +267,13 @@ export function buildDashboardSummary(input: {
     if (sourceCoverage !== "fresh") {
       provider.openAtLastCheck = operational.length;
       continue;
+    }
+
+    if (lastSuccessMs !== null && source.freshnessWindowMs !== null) {
+      freshnessDeadlineMs = Math.min(
+        freshnessDeadlineMs,
+        lastSuccessMs + source.freshnessWindowMs,
+      );
     }
 
     unconfirmedSignals += listed.filter(
@@ -320,6 +330,9 @@ export function buildDashboardSummary(input: {
 
   return {
     generatedAt: input.now.toISOString(),
+    freshnessExpiresAt: Number.isFinite(freshnessDeadlineMs)
+      ? new Date(freshnessDeadlineMs).toISOString()
+      : null,
     lastPollAt: input.lastPollAt?.toISOString() ?? null,
     windowDays: RECENT_ADVISORY_WINDOW_DAYS,
     incidents: {
