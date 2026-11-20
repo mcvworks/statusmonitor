@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { PROVIDERS } from "@/lib/constants";
 import { getProvider } from "@/lib/providers/registry";
+import type { SummarySample } from "@/lib/dashboard-summary-clock";
 import {
   buildDashboardSummary,
   RECENT_ADVISORY_WINDOW_DAYS,
@@ -23,7 +24,7 @@ let shared: { at: number; summary: Promise<DashboardSummary> } | null = null;
  * on any filter a visitor has applied. The counting rules live in
  * dashboard-snapshot.ts.
  */
-export function getDashboardSummary(): Promise<DashboardSummary> {
+function getSharedDashboardSummary(): Promise<DashboardSummary> {
   const now = Date.now();
   if (shared && now - shared.at < SHARE_MS) return shared.summary;
 
@@ -34,6 +35,12 @@ export function getDashboardSummary(): Promise<DashboardSummary> {
     if (shared?.summary === summary) shared = null;
   });
   return summary;
+}
+
+export async function getTimedDashboardSummary(): Promise<SummarySample> {
+  const summary = await getSharedDashboardSummary();
+  // Sample per request after the read, even when the snapshot was shared.
+  return { summary, servedAt: Date.now(), requestStartedAt: null };
 }
 
 export async function readDashboardSummary(

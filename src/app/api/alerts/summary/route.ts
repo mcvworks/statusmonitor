@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDashboardSummary } from "@/lib/dashboard-summary";
+import { getTimedDashboardSummary } from "@/lib/dashboard-summary";
 import { DASHBOARD_SERVED_AT_HEADER } from "@/lib/dashboard-summary-clock";
 
 export const dynamic = "force-dynamic";
@@ -8,11 +8,11 @@ export const dynamic = "force-dynamic";
 // client can never mistake it for a confirmed zero.
 export async function GET() {
   try {
-    const summary = await getDashboardSummary();
+    const { summary, servedAt } = await getTimedDashboardSummary();
     return NextResponse.json(summary, {
       headers: {
         "Cache-Control": "no-store",
-        [DASHBOARD_SERVED_AT_HEADER]: String(Date.now()),
+        [DASHBOARD_SERVED_AT_HEADER]: String(servedAt),
       },
     });
   } catch (error) {

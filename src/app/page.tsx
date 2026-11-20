@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getDashboardSummary } from "@/lib/dashboard-summary";
+import { getTimedDashboardSummary } from "@/lib/dashboard-summary";
 import type { SummarySample } from "@/lib/dashboard-summary-clock";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
 import { SubscriptionForm } from "@/components/subscriptions/SubscriptionForm";
@@ -20,8 +20,7 @@ export default async function Home() {
   // says so. It never falls back to zeros.
   let initialSummary: SummarySample | null = null;
   try {
-    const summary = await getDashboardSummary();
-    initialSummary = { summary, servedAt: Date.now(), requestStartedAt: null };
+    initialSummary = await getTimedDashboardSummary();
   } catch (error) {
     console.error("Dashboard summary failed", error);
   }
