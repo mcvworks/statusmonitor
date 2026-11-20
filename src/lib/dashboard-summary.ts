@@ -6,6 +6,7 @@ import type { SummarySample } from "@/lib/dashboard-summary-clock";
 import {
   buildDashboardSummary,
   RECENT_ADVISORY_WINDOW_DAYS,
+  sourceRole,
   type DashboardSummary,
   type SummarySourceInput,
 } from "@/lib/dashboard-snapshot";
@@ -101,15 +102,17 @@ export async function readDashboardSummary(
         })).map(({ source }) => source),
   );
 
-  // A bounded feed can omit an unresolved incident. The older row is a
-  // coverage gap rather than evidence of either a current incident or a resolution.
-  const boundedPolls = Array.from(pollByProvider).flatMap(([source, poll]) =>
-    getProvider(source)?.boundedIncidentFeed
+  // History endpoints and RSS/Atom feeds do not establish a complete open
+  // set. Treat an omission as inconclusive unless the adapter guarantees it.
+  const pollsWithInconclusiveOmissions = Array.from(pollByProvider).flatMap(([source, poll]) =>
+    sourceRole(source, PROVIDERS[source]?.category) === "service" &&
+      getProvider(source)?.openIncidentSetIsExhaustive !== true
       ? [{ source, lastObservedAt: { lt: poll.startedAt } }]
       : [],
   );
+  const unexpired = { OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] };
   const sourcesWithOmissions = new Set(
-    boundedPolls.length === 0
+    pollsWithInconclusiveOmissions.length === 0
       ? []
       : (await db.alert.groupBy({
           by: ["source"],
@@ -118,7 +121,8 @@ export async function readDashboardSummary(
             status: { not: "resolved" },
             confidence: { not: "crowdsourced" },
             NOT: { signalKind: "incident", confidence: "observed" },
-            OR: boundedPolls,
+            AND: [unexpired],
+            OR: pollsWithInconclusiveOmissions,
           },
         })).map(({ source }) => source),
   );
@@ -171,6 +175,7 @@ export async function readDashboardSummary(
             signalKind: {
               in: ["incident", "internet_outage", "community_signal"],
             },
+            AND: [unexpired],
             OR: listedAtLastCheck,
           },
           select: {

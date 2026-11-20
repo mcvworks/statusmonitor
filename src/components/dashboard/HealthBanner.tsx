@@ -22,6 +22,7 @@ import {
   SEVERITIES,
   SEVERITY_INK,
   SEVERITY_LABELS,
+  hasCompleteServiceCoverage,
   plural,
   providerName,
 } from "./console-labels";
@@ -233,17 +234,9 @@ function Tiles({
 }) {
   const { incidents, coverage, advisories } = summary;
   const worst = SEVERITIES.find((sev) => incidents.bySeverity[sev] > 0);
-  const serviceGaps = summary.providers.filter(
-    (p) => p.role === "service" && p.coverage !== "fresh",
-  ).length;
-  const hasFreshService = summary.providers.some(
-    (p) => p.role === "service" && p.coverage === "fresh",
-  );
-  const showIncidentCount = incidents.total > 0 || (trusted && hasFreshService);
-  // Teal only for a real all-clear: nothing open anywhere, every service
-  // source fresh.
-  const allServiceSourcesClear =
-    hasFreshService && serviceGaps === 0 && summary.observedOutages === 0;
+  const completeCoverage = hasCompleteServiceCoverage(summary);
+  const showIncidentCount = incidents.total > 0 || (trusted && completeCoverage);
+  const allServiceSourcesClear = completeCoverage && summary.observedOutages === 0;
   const severityInk = worst ? SEVERITY_INK[worst] : undefined;
   const incidentAccent = trusted
     ? severityInk ?? (allServiceSourcesClear ? "var(--ink-info)" : undefined)
@@ -394,7 +387,7 @@ function AffectedNow({
   const unknown = summary.providers.filter((p) => p.coverage !== "fresh");
   const stale = unknown.filter((p) => p.coverage === "stale");
   const unavailable = unknown.filter((p) => p.coverage === "unavailable");
-  const serviceGaps = unknown.filter((p) => p.role === "service").length;
+  const completeCoverage = hasCompleteServiceCoverage(summary);
   // Sources that cannot be confirmed now but listed incidents when last read.
   const lastKnown = unknown.filter((p) => p.openAtLastCheck > 0);
   const freshServices = summary.providers.filter(
@@ -404,13 +397,13 @@ function AffectedNow({
 
   return (
     <>
-      {trusted && freshServices > 0 && (
+      {trusted && (completeCoverage || incidents.total > 0 || observedOutages > 0) && (
         <p role="status" className="sr-only">
-          {plural(incidents.total, "confirmed incident")} across{" "}
-          {plural(incidents.providers, "provider")}
-          {observedOutages > 0 &&
-            `, plus ${plural(observedOutages, "observed internet outage")}`}
-          . {summary.coverage.fresh} of {summary.coverage.total} sources fresh.
+          {completeCoverage || incidents.total > 0
+            ? `${plural(incidents.total, "confirmed incident")} across ${plural(incidents.providers, "provider")}. `
+            : "Confirmed incident count unavailable. "}
+          {observedOutages > 0 && `${plural(observedOutages, "observed internet outage")}. `}
+          {summary.coverage.fresh} of {summary.coverage.total} sources fresh.
         </p>
       )}
 
@@ -429,7 +422,7 @@ function AffectedNow({
         <p className="mt-1.5 flex items-start gap-2 border-t border-border py-3 text-[13px] text-text-secondary">
           {!trusted ? (
             "Current incident status is unavailable."
-          ) : serviceGaps === 0 && freshServices > 0 ? (
+          ) : completeCoverage ? (
             <>
               <CircleCheck
                 className="mt-0.5 h-4 w-4 shrink-0 text-secondary-ink"
@@ -445,8 +438,7 @@ function AffectedNow({
             </>
           ) : freshServices > 0 ? (
             <span>
-              No confirmed incidents at fresh service sources. Coverage is
-              incomplete.
+              Current incident count is unavailable because source coverage is incomplete.
             </span>
           ) : (
             "Current incident status is unavailable. No service sources are fresh."

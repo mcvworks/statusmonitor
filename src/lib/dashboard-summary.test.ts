@@ -139,7 +139,7 @@ test("Radar omission leaves coverage incomplete until the adapter reports an exp
   const omitted = await saveOutage(1, earlier, earlier);
   await db.alert.create({
     data: {
-      source: "cloudflare", externalId: "exhaustive-omission", category: "cloud",
+      source: "cloudflare", externalId: "statuspage-omission", category: "cloud",
       severity: "major", status: "investigating", title: "Past service disruption",
       timestamp: earlier, lastObservedAt: earlier,
     },
@@ -155,7 +155,9 @@ test("Radar omission leaves coverage incomplete until the adapter reports an exp
   assert.equal(missing.observedOutages, 0);
   assert.equal(missing.incidents.total, 0);
   assert.equal(missing.affected.length, 0);
-  assert.equal(missing.providers.find(({ key }) => key === "cloudflare")?.status, "operational");
+  const cloudflare = missing.providers.find(({ key }) => key === "cloudflare");
+  assert.equal(cloudflare?.dataState, "incomplete");
+  assert.equal(cloudflare.status, "unknown");
 
   const observed = await saveOutage(2, pollStart, observation);
   const mixed = await read();
@@ -186,14 +188,17 @@ test("Radar omission leaves coverage incomplete until the adapter reports an exp
   assert.equal(resolved.affected.length, 0);
 });
 
-test("bounded Slack and PagerDuty polls preserve current incidents when an unresolved incident is missing", async (t) => {
+test("windowed, RSS, and JSON polls preserve current incidents when an unresolved incident is missing", async (t) => {
   const db = await createSummaryDb(t);
   const previous = new Date("2026-11-19T10:00:00Z");
   const pollStart = new Date("2026-11-20T10:05:00Z");
   const observed = new Date("2026-11-20T10:05:02Z");
   const completedAt = new Date("2026-11-20T10:05:05Z");
 
-  for (const [provider, category] of [["slack", "cloud"], ["pagerduty", "devops"]]) {
+  const adapters = [
+    ["slack", "cloud"], ["pagerduty", "devops"], ["fastly", "cloud"], ["gcp", "cloud"],
+  ];
+  for (const [provider, category] of adapters) {
     await db.providerState.create({
       data: { provider, lastAttemptAt: pollStart, lastSuccessAt: completedAt },
     });
@@ -213,21 +218,23 @@ test("bounded Slack and PagerDuty polls preserve current incidents when an unres
         { ...record, id: `${provider}-omitted`, externalId: "omitted", lastObservedAt: previous },
         { ...record, id: `${provider}-current`, externalId: "current", lastObservedAt: observed },
         { ...record, externalId: "unconfirmed", lastObservedAt: previous, confidence: "observed" },
+        { ...record, externalId: "expired-omission", lastObservedAt: previous, expiresAt: completedAt },
+        { ...record, externalId: "expired-current", lastObservedAt: observed, expiresAt: completedAt },
       ],
     });
   }
 
   const read = () => db.$transaction((tx) => readDashboardSummary(tx, completedAt));
   const latest = await read();
-  for (const key of ["slack", "pagerduty"]) {
+  for (const [key] of adapters) {
     const source = latest.providers.find((provider) => provider.key === key);
     assert.equal(source?.dataState, "incomplete");
     assert.equal(source.coverage, "unavailable");
     assert.equal(source.status, "outage");
     assert.equal(source.incidents, 1);
   }
-  assert.equal(latest.incidents.bySeverity.major, 2);
-  assert.deepEqual(latest.affected.map(({ id }) => id).sort(), ["pagerduty-current", "slack-current"]);
+  assert.equal(latest.incidents.bySeverity.major, adapters.length);
+  assert.deepEqual(latest.affected.map(({ id }) => id).sort(), adapters.map(([key]) => `${key}-current`).sort());
   assert.equal(latest.observedOutages, 0);
 
   await db.alert.updateMany({ where: { externalId: "current" }, data: { status: "resolved" } });
@@ -240,7 +247,7 @@ test("bounded Slack and PagerDuty polls preserve current incidents when an unres
     data: { status: "resolved", lastObservedAt: observed },
   });
   const resolved = await read();
-  for (const key of ["slack", "pagerduty"]) {
+  for (const [key] of adapters) {
     assert.equal(resolved.providers.find((provider) => provider.key === key)?.status, "operational");
   }
 });

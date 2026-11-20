@@ -23,7 +23,6 @@ export class CloudflareRadarProvider extends BaseJSONProvider<RadarResponse> {
   name = 'cloudflare-radar';
   category = 'isp';
   pollInterval = 'slow' as const;
-  boundedIncidentFeed = true;
   metadata: ProviderMetadata = {
     name: 'cloudflare-radar',
     displayName: 'Cloudflare Radar',

@@ -1,4 +1,5 @@
 import type { AlertSeverity } from "@/lib/alert-schema";
+import type { DashboardSummary } from "@/lib/dashboard-snapshot";
 import { PROVIDERS, SEVERITY_ORDER } from "@/lib/constants";
 
 /** Shared wording and colors for the homepage Console pieces. */
@@ -34,4 +35,11 @@ export function plural(count: number, one: string, many = `${one}s`): string {
 
 export function providerName(key: string): string {
   return PROVIDERS[key]?.name ?? key;
+}
+
+
+/** Only complete service coverage supports a current zero across the Console. */
+export function hasCompleteServiceCoverage(summary: DashboardSummary): boolean {
+  const services = summary.providers.filter((provider) => provider.role === "service");
+  return services.length > 0 && services.every((provider) => provider.coverage === "fresh");
 }

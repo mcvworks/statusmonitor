@@ -9,10 +9,11 @@ import { AlertList } from "../components/dashboard/AlertList";
 import { HealthBanner } from "../components/dashboard/HealthBanner";
 import { NewsTicker } from "../components/dashboard/NewsTicker";
 import { ProviderDetailPanel } from "../components/dashboard/ProviderDetailPanel";
+import { SeveritySummaryBar } from "../components/dashboard/SeveritySummaryBar";
 import { StatusOverview } from "../components/dashboard/StatusOverview";
 import { Sidebar } from "../components/layout/Sidebar";
 import { DASHBOARD_SUMMARY_KEY } from "../hooks/useDashboardSummary";
-import { buildDashboardSummary, type SummaryProvider } from "./dashboard-snapshot";
+import { buildDashboardSummary, type DashboardSummary, type SummaryProvider, type SummarySourceInput } from "./dashboard-snapshot";
 
 const now = new Date("2026-11-20T03:00:00Z");
 const summary = buildDashboardSummary({
@@ -233,4 +234,86 @@ test("a personal feed refresh failure is shown alongside cached alerts without a
   ));
   assert.match(filtered, /Failed to load alerts/);
   assert.doesNotMatch(filtered, /Example incident/);
+});
+
+function renderCoverageConsole(data: DashboardSummary) {
+  const sample = { ...summarySample, summary: data };
+  const cache = new Map([[DASHBOARD_SUMMARY_KEY, { data: sample }]]);
+  return renderToStaticMarkup(createElement(
+    SWRConfig,
+    { value: { provider: () => cache } },
+    createElement(HealthBanner, { sseStatus: "connected" }),
+    createElement(SeveritySummaryBar, { activeSeverity: "", onToggle: () => {} }),
+    createElement<NonNullable<ComponentProps<typeof StatusOverview>>>(StatusOverview, { variant: "rail" }),
+  ));
+}
+
+const incompleteSource: SummarySourceInput = {
+  key: "cloudflare",
+  category: "cloud",
+  freshnessWindowMs: 6 * 60_000,
+  successfulPoll: { startedAt: now, completedAt: now },
+  hasUnverifiedObservations: false,
+  hasOmittedIncident: true,
+  state: { lastSuccessAt: now, lastError: null, consecutiveFailures: 0 },
+};
+
+function buildPartialCoverage(withVerifiedIncident: boolean, withFreshSource = false) {
+  return buildDashboardSummary({
+    now,
+    lastPollAt: now,
+    sources: withFreshSource
+      ? [incompleteSource, { ...incompleteSource, key: "fastly", hasOmittedIncident: false }]
+      : [incompleteSource],
+    openAlerts: withVerifiedIncident
+      ? [{
+          ...feedData.alerts[0],
+          timestamp: now,
+          lastObservedAt: now,
+          lastUpdateAt: null,
+        }]
+      : [],
+    advisoriesOpen: 0,
+    advisoriesRecent: 0,
+  });
+}
+
+test("partial coverage shows verified counts in tiles, severity chips, affected rows, and provider detail", () => {
+  const data = buildPartialCoverage(true);
+  assert.equal(data.coverage.fresh, 0);
+  const markup = renderCoverageConsole(data);
+  assert.match(markup, /Confirmed incidents<\/span><span[^>]*>1<\/span>/);
+  assert.match(markup, /aria-label="Major: 1 confirmed incident now\. Filter the feed\."/);
+  assert.match(markup, /aria-label="Critical: confirmed count unavailable\. Filter the feed\."/);
+  assert.match(markup, /href="\/incident\/example-alert"[^>]*>Example incident/);
+  assert.match(markup, /Sources with incomplete coverage/);
+  assert.match(markup, /prior incident missing from the latest poll/);
+  assert.doesNotMatch(markup, /No confirmed incidents|>Operational</);
+
+  const detail = renderProviderDetail(emptyAlerts, {
+    data: { ...summarySample, summary: data },
+  });
+  assert.match(detail, />Outage</);
+  assert.match(detail, />Active incidents<\/span><span[^>]*>1</);
+  assert.match(detail, /The latest poll did not verify a previous incident/);
+});
+
+test("incomplete coverage distinguishes unknown counts from a verified zero", () => {
+  for (const otherSourceFresh of [false, true]) {
+    const data = buildPartialCoverage(false, otherSourceFresh);
+    const markup = renderCoverageConsole(data);
+    assert.match(markup, /Confirmed incidents<\/span><span[^>]*>—<\/span>/);
+    assert.match(markup, /aria-label="Major: confirmed count unavailable\. Filter the feed\."/);
+    assert.match(markup, /Sources with incomplete coverage/);
+    assert.doesNotMatch(markup, /0 confirmed incidents|No confirmed incidents/);
+    assertUnknownDetail(
+      renderProviderDetail(emptyAlerts, { data: { ...summarySample, summary: data } }),
+      /The latest poll did not verify a previous incident/,
+    );
+  }
+
+  const complete = renderCoverageConsole(summary);
+  assert.match(complete, /Confirmed incidents<\/span><span[^>]*>0<\/span>/);
+  assert.match(complete, /aria-label="Major: 0 confirmed incidents now\. Filter the feed\."/);
+  assert.match(complete, /No confirmed incidents/);
 });

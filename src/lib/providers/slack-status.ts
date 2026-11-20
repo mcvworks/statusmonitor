@@ -17,7 +17,6 @@ export class SlackStatusProvider implements AlertProvider {
   name = 'slack';
   category = 'cloud';
   pollInterval = 'fast' as const;
-  boundedIncidentFeed = true;
   metadata: ProviderMetadata = {
     name: 'slack',
     displayName: 'Slack',

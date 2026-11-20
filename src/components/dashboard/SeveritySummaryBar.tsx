@@ -2,7 +2,7 @@
 
 import { useDashboardSummary } from "@/hooks/useDashboardSummary";
 import { SEVERITY_COLORS } from "@/lib/constants";
-import { MONO, SEVERITIES, SEVERITY_LABELS, plural } from "./console-labels";
+import { MONO, SEVERITIES, SEVERITY_LABELS, hasCompleteServiceCoverage, plural } from "./console-labels";
 
 /**
  * Severity shortcuts for the alert-feed header. Each chip toggles the feed's
@@ -18,12 +18,9 @@ export function SeveritySummaryBar({
   onToggle: (severity: string) => void;
 }) {
   const { summary, isLastKnown } = useDashboardSummary();
-  const hasFreshService = summary?.providers.some(
-    (provider) => provider.role === "service" && provider.coverage === "fresh",
-  );
-  const counts = !isLastKnown && hasFreshService
-    ? summary?.incidents.bySeverity ?? null
-    : null;
+  const counts = !isLastKnown ? summary?.incidents.bySeverity : undefined;
+  const canShowZero = !!summary && hasCompleteServiceCoverage(summary);
+  const hasCurrentCounts = !!counts && (canShowZero || Object.values(counts).some((count) => count > 0));
 
   return (
     <div
@@ -32,10 +29,11 @@ export function SeveritySummaryBar({
       className="flex flex-wrap items-center gap-1.5"
     >
       <span className={`${MONO} mr-1 text-[10px] uppercase tracking-[0.1em] text-text-muted`}>
-        {counts ? "Confirmed now" : "Severity"}
+        {hasCurrentCounts ? "Confirmed now" : "Severity"}
       </span>
       {SEVERITIES.map((severity) => {
-        const count = counts ? counts[severity] : null;
+        const verified = counts?.[severity];
+        const count = verified !== undefined && (verified > 0 || canShowZero) ? verified : null;
         const pressed = activeSeverity === severity;
         return (
           <button
@@ -44,7 +42,7 @@ export function SeveritySummaryBar({
             aria-pressed={pressed}
             aria-label={
               count === null
-                ? `${SEVERITY_LABELS[severity]}: filter the feed`
+                ? `${SEVERITY_LABELS[severity]}: confirmed count unavailable. Filter the feed.`
                 : `${SEVERITY_LABELS[severity]}: ${plural(count, "confirmed incident")} now. Filter the feed.`
             }
             onClick={() => onToggle(severity)}
